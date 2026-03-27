@@ -1,0 +1,70 @@
+{
+  "card_store": [
+    {
+      "class_card": "Бог Император",
+      "type": "Зеленый",
+      "rarity": "UR",
+      "hp": 18,
+      "damage": 10,
+      "sale_now": 1,
+      "price": 3000,
+      "discount": 0,
+      "discount_now": 0
+    },
+    {
+      "class_card": "Оборотень",
+      "type": "Синий",
+      "rarity": "UR",
+      "hp": 17,
+      "damage": 13,
+      "sale_now": 1,
+      "price": 3000,
+      "discount": 0,
+      "discount_now": 0
+    },
+    {
+      "class_card": "Демон",
+      "type": "Красный",
+      "rarity": "UR",
+      "hp": 18,
+      "damage": 10,
+      "sale_now": 1,
+      "price": 3000,
+      "discount": 0,
+      "discount_now": 0
+    },
+    {
+      "class_card": "Эльф",
+      "type": "Красный",
+      "rarity": "UR",
+      "hp": 18,
+      "damage": 10,
+      "sale_now": 1,
+      "price": 3000,
+      "discount": 0,
+      "discount_now": 0
+    },
+    {
+      "class_card": "Дриада",
+      "type": "Красный",
+      "rarity": "UR",
+      "hp": 18,
+      "damage": 10,
+      "sale_now": 1,
+      "price": 3000,
+      "discount": 0,
+      "discount_now": 0
+    },
+    {
+      "class_card": "Призрак",
+      "type": "Синий",
+      "rarity": "UR",
+      "hp": 18,
+      "damage": 10,
+      "sale_now": 1,
+      "price": 3000,
+      "discount": 0,
+      "discount_now": 0
+    }
+  ]
+}

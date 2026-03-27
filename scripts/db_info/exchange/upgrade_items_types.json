@@ -1,0 +1,31 @@
+{
+  "upgrade_items_type": [
+    {
+      "name": "Случайное усиление",
+      "description": "Увеличение ? характеристики на 5",
+      "type": "random",
+      "amount_up": 5,
+      "image": "image/upgrade_items/random.png",
+      "price": 40000,
+      "price_of_use": 10000
+    },
+    {
+      "name": "Усиление атаки",
+      "description": "Увеличение атаки на 3",
+      "type": "attack",
+      "amount_up": 3,
+      "image": "image/upgrade_items/attack.png",
+      "price": 40000,
+      "price_of_use": 10000
+    },
+    {
+      "name": "Усиление здоровья",
+      "description": "Увеличение здоровья на 3",
+      "type": "hp",
+      "amount_up": 3,
+      "image": "image/upgrade_items/hp.png",
+      "price": 40000,
+      "price_of_use": 10000
+    }
+  ]
+}
