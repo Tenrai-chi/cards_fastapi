@@ -25,8 +25,11 @@ class User(Base):
     date_joined: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     first_name: Mapped[str] = mapped_column(String(150), nullable=True)
     last_name: Mapped[str] = mapped_column(String(150), nullable=True)
+    pending_email: Mapped[str] = mapped_column(String(254), nullable=True)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
 
     profile = relationship('Profile', foreign_keys='[Profile.user_id]', back_populates='user', uselist=False, cascade='all, delete-orphan')
+    refresh_tokens = relationship('RefreshToken', back_populates='user')
 
 
 class Profile(Base):
@@ -45,8 +48,8 @@ class Profile(Base):
     win: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     lose: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     current_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
-    is_activated: Mapped[bool] = mapped_column(Boolean, default=False)
-    profile_pic: Mapped[str] = mapped_column(String(255), default='image/profile/avatar.jpg', nullable=True)
+
+    profile_pic: Mapped[str] = mapped_column(String(255), default='image/profile/avatar_default.png', nullable=True)
     guild_id: Mapped[int] = mapped_column(ForeignKey('guilds.id', use_alter=True), nullable=True)
     date_guild_accession: Mapped[Date] = mapped_column(Date, nullable=True)
     guild_point: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -56,7 +59,6 @@ class Profile(Base):
     experience_bar: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     event_visit: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     date_event_visit: Mapped[Date] = mapped_column(Date, nullable=True)
-    pending_email: Mapped[str] = mapped_column(String(254), nullable=True)
 
     user = relationship('User', foreign_keys=[user_id], back_populates='profile')
     current_card = relationship('Card', foreign_keys=[current_card_id], back_populates='selected_by')
@@ -69,8 +71,8 @@ class Profile(Base):
     cards_received = relationship('HistoryReceivingCards', foreign_keys='[HistoryReceivingCards.user_id]',
                                   back_populates='user')
     favorites = relationship('FavoriteUsers', foreign_keys='[FavoriteUsers.user_id]', back_populates='user')
-    favorited_by = relationship('FavoriteUsers', foreign_keys='[FavoriteUsers.favorite_user_id]',
-                                back_populates='favorite_user')
+    favored_by = relationship('FavoriteUsers', foreign_keys='[FavoriteUsers.favorite_user_id]',
+                              back_populates='favorite_user')
     transactions = relationship('Transactions', foreign_keys='[Transactions.user_id]', back_populates='user')
     purchases = relationship('SaleUserCards', foreign_keys='[SaleUserCards.buyer_id]', back_populates='buyer')
     sales = relationship('SaleUserCards', foreign_keys='[SaleUserCards.salesman_id]', back_populates='salesman')
@@ -96,7 +98,7 @@ class FavoriteUsers(Base):
     favorite_user_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
 
     user = relationship('Profile', foreign_keys=[user_id], back_populates='favorites')
-    favorite_user = relationship('Profile', foreign_keys=[favorite_user_id], back_populates='favorited_by')
+    favorite_user = relationship('Profile', foreign_keys=[favorite_user_id], back_populates='favored_by')
 
 
 class Transactions(Base):
@@ -136,3 +138,23 @@ class FightHistory(Base):
     loser = relationship('Profile', foreign_keys=[loser_id], back_populates='lost_fights')
     card_winner = relationship('Card', foreign_keys=[card_winner_id], back_populates='won_fights')
     card_loser = relationship('Card', foreign_keys=[card_loser_id], back_populates='lost_fights')
+
+
+class RefreshToken(Base):
+    """ Токины пользователей для сессий.
+        Позволяет:
+        - Отзывать токен при выходе из сессии (токен удаляется)
+        - Добавлять новый токе сессии (при входе создается новый)
+        - Делать проверку на валидность токена при обновлении access-токена
+        - Управлять активными сессиями
+    """
+
+    __tablename__ = 'refresh_tokens'
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    token: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    expires_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now())
+
+    user = relationship('User', back_populates='refresh_tokens')

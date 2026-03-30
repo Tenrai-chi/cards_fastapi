@@ -13,7 +13,6 @@ def setup_logging(level: str = 'INFO'):
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
 
-    # Удаляем все существующие обработчики, чтобы избежать дублирования
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
@@ -26,5 +25,4 @@ def setup_logging(level: str = 'INFO'):
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
 
-    # Можно отключить логи SQLAlchemy, если не нужно
     logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)

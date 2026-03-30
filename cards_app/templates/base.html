@@ -1,10 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cards App{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', path='/image/rin.jpg') }}">
 </head>
 <body>
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">
+                <img src="{{ url_for('static', path='/image/rin.jpg') }}" alt="Logo">
+            </div>
+            <nav class="nav-links">
+                <a href="/">Главная</a>
+                <a href="#">Рейтинг</a>
+                <a href="#">Гильдия</a>
+                <a href="#">Карты</a>
+                <a href="#">Магазин<br>карт</a>
+                <a href="#">Магазин<br>предметов</a>
+                <a href="#">Получить<br>бесплатно</a>
+                <a href="#">Торговая<br>площадка</a>
+            </nav>
+            <div class="user-area">
+                {% if user %}
+                <div class="user-info">
+                    <a href="/users/{{ user.id }}" style="color: white; text-decoration: none;">
+                        <span>{{ user.username }}</span>
+                    </a>
+                    <span class="gold">{{ user.profile.gold if user.profile else 0 }}</span>
+                    <span class="diamond">{{ user.profile.diamond if user.profile else 0 }}</span>
+                </div>
+                {% else %}
+                <div class="auth-links">
+                    <a href="{{ url_for('login_page') }}">Вход</a>
+                    <a href="{{ url_for('register_page') }}">Регистрация</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
 
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer style="text-align: center; padding: 1rem; background: var(--primary-light); margin-top: auto;">
+        &copy; 2025 Cards App
+    </footer>
+
+    <script>
+        // Можно добавить общие скрипты
+    </script>
 </body>
 </html>

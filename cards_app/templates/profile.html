@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block content %}
+<div class="profile-card">
+    <div class="profile-header">
+        <h2>{{ user.username }}</h2>
+        <p>{{ user.email }}</p>
+        <p>На сайте с {{ user.date_joined.strftime('%d.%m.%Y') }}</p>
+    </div>
+    <div class="profile-stats">
+        <div class="stat-card">
+            <h3>Золото</h3>
+            <div class="stat-value">{{ user.profile.gold if user.profile else 0 }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Алмазы</h3>
+            <div class="stat-value">{{ user.profile.diamond if user.profile else 0 }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Победы</h3>
+            <div class="stat-value">{{ user.profile.win if user.profile else 0 }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Поражения</h3>
+            <div class="stat-value">{{ user.profile.lose if user.profile else 0 }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Уровень</h3>
+            <div class="stat-value">{{ user.profile.level if user.profile else 1 }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Слоты карт</h3>
+            <div class="stat-value">{{ user.profile.card_slots if user.profile else 80 }}</div>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('logout') }}" class="btn" style="display: inline-block; width: auto; padding: 0.6rem 1.5rem;">Выйти</a>
+    </div>
+</div>
+{% endblock %}
