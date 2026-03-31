@@ -1,42 +1,135 @@
 {% extends "base.html" %}
 
-{% block title %}Профиль{% endblock %}
+{% block title %}{{ user_info.username }}{% endblock %}
 
 {% block content %}
-<div class="profile-card">
-    <div class="profile-header">
-        <h2>{{ user.username }}</h2>
-        <p>{{ user.email }}</p>
-        <p>На сайте с {{ user.date_joined.strftime('%d.%m.%Y') }}</p>
+<div class="profile-container">
+    <!-- Левая колонка: информация о пользователе -->
+    <div class="profile-left">
+        <div class="avatar">
+            {% if user_info.profile.profile_pic and user_info.profile.profile_pic != 'image/profile/avatar.jpg' %}
+                <img src="{{ url_for('media', path=user_info.profile.profile_pic) }}" alt="Аватар">
+            {% else %}
+                <img src="{{ url_for('static', path='/image/avatar_default.png') }}" alt="Аватар">
+            {% endif %}
+        </div>
+        <div class="profile-info">
+            <p><strong>Обо мне:</strong> {{ user_info.profile.about_user if user_info.profile.about_user else 'Не заполнено' }}</p>
+            {% if current_user and current_user.id == user_info.id %}
+                <p><strong>Почта:</strong> {{ user_info.email }}</p>
+            {% endif %}
+            <p><strong>Гильдия:</strong> {% if user_info.profile.guild %}{{ user_info.profile.guild.name }}{% else %}Нет гильдии{% endif %}</p>
+            <p><strong>Победы:</strong> {{ user_info.profile.win }}</p>
+            <p><strong>Поражения:</strong> {{ user_info.profile.lose }}</p>
+        </div>
+
+        {% if current_user and current_user.id == user_info.id %}
+            <div class="profile-actions">
+                <a href="#" class="btn-action">Избранные</a>
+                <a href="#" class="btn-action">Транзакции</a>
+                <a href="#" class="btn-action">Редактировать</a>
+                <a href="/auth/logout" class="btn-action">Выйти</a>
+            </div>
+        {% endif %}
+
+        {% if current_user and current_user.id != user_info.id %}
+            <button class="btn-favorite" data-user-id="{{ user_info.id }}" data-favorite="{{ 'true' if is_favorite else 'false' }}">
+                {% if is_favorite %}Удалить из избранного{% else %}В избранное{% endif %}
+            </button>
+        {% endif %}
     </div>
-    <div class="profile-stats">
-        <div class="stat-card">
-            <h3>Золото</h3>
-            <div class="stat-value">{{ user.profile.gold if user.profile else 0 }}</div>
+
+    <!-- Правая колонка: избранная карта и дополнительные действия -->
+    <div class="profile-right">
+        <div class="selected-card">
+            {% if user_info.profile.current_card %}
+                <div class="card-image">
+                    <!-- Здесь путь к картинке карты (если есть поле image в модели ClassCard или отдельное) -->
+                    <img src="{{ url_for('static', path='/image/cards/' + user_info.profile.current_card.class_card.image) }}" alt="Карта">
+                </div>
+                <div class="card-info">
+                    <div class="card-name">{{ user_info.profile.current_card.class_card.name }} ({{ user_info.profile.current_card.type_card.name }})</div>
+                    <div class="card-stats">
+                        <div class="card-stat">Уровень: {{ user_info.profile.current_card.level }}</div>
+                        <div class="card-stat">HP: {{ user_info.profile.current_card.hp }}</div>
+                        <div class="card-stat">Урон: {{ user_info.profile.current_card.damage }}</div>
+                        <div class="card-stat">Редкость: {{ user_info.profile.current_card.rarity_card.name }}</div>
+                        <div class="card-stat">Усилений: {{ user_info.profile.current_card.enhancement }}/{{ user_info.profile.current_card.max_enhancement }}</div>
+                        <div class="card-stat">Слияний: {{ user_info.profile.current_card.merger }}/{{ user_info.profile.current_card.max_merger }}</div>
+                    </div>
+                    {% if user_info.profile.current_card.amulets %}
+                        <div class="amulet-info">
+                            <strong>Амулет:</strong> {{ user_info.profile.current_card.amulets[0].amulet_type.name if user_info.profile.current_card.amulets[0].amulet_type else 'Базовый' }}
+                            (Улучшений: {{ user_info.profile.current_card.amulets[0].upgrades }})
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="card-image">
+                    <img src="{{ url_for('static', path='/image/default_current_card.png') }}" alt="Нет выбранной карты">
+                </div>
+                <div class="card-info">
+                    <div class="card-name">Карта не выбрана</div>
+                    <div class="card-stats">Пользователь ещё не выбрал избранную карту.</div>
+                </div>
+            {% endif %}
         </div>
-        <div class="stat-card">
-            <h3>Алмазы</h3>
-            <div class="stat-value">{{ user.profile.diamond if user.profile else 0 }}</div>
-        </div>
-        <div class="stat-card">
-            <h3>Победы</h3>
-            <div class="stat-value">{{ user.profile.win if user.profile else 0 }}</div>
-        </div>
-        <div class="stat-card">
-            <h3>Поражения</h3>
-            <div class="stat-value">{{ user.profile.lose if user.profile else 0 }}</div>
-        </div>
-        <div class="stat-card">
-            <h3>Уровень</h3>
-            <div class="stat-value">{{ user.profile.level if user.profile else 1 }}</div>
-        </div>
-        <div class="stat-card">
-            <h3>Слоты карт</h3>
-            <div class="stat-value">{{ user.profile.card_slots if user.profile else 80 }}</div>
-        </div>
-    </div>
-    <div style="text-align: center; margin-top: 2rem;">
-        <a href="{{ url_for('logout') }}" class="btn" style="display: inline-block; width: auto; padding: 0.6rem 1.5rem;">Выйти</a>
+
+        {% if current_user and current_user.id != user_info.id %}
+            <div class="guest-actions">
+                <a href="#" class="btn-guest">Все карты</a>
+                <a href="#" class="btn-guest">Обмен</a>
+                <a href="#" class="btn-guest">Бой</a>
+            </div>
+        {% endif %}
+
+        {% if current_user and current_user.id == user_info.id %}
+            <div class="fight-history">
+                <h3>История боёв (последние 50)</h3>
+                <table class="fight-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Соперник</th>
+                            <th>Результат</th>
+                            <th>Ваша карта</th>
+                            <th>Карта соперника</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fight in fight_history %}
+                            {% set is_win = fight.winner_id == user_info.profile.id %}
+                            {% set opponent = fight.loser if is_win else fight.winner %}
+                            <tr>
+                                <td>{{ fight.date_and_time.strftime('%d.%m.%Y %H:%M') if fight.date_and_time else '—' }}</td>
+                                <td><a href="/users/{{ opponent.user.id }}">{{ opponent.user.username }}</a></td>
+                                <td class="{% if is_win %}fight-result-win{% else %}fight-result-lose{% endif %}">
+                                    {% if is_win %}Победа{% else %}Поражение{% endif %}
+                                </td>
+                                <td>
+                                    {% if is_win %}
+                                        {{ fight.card_winner.class_card.name if fight.card_winner else '—' }}
+                                    {% else %}
+                                        {{ fight.card_loser.class_card.name if fight.card_loser else '—' }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if is_win %}
+                                        {{ fight.card_loser.class_card.name if fight.card_loser else '—' }}
+                                    {% else %}
+                                        {{ fight.card_winner.class_card.name if fight.card_winner else '—' }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center;">Нет записей о боях</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
