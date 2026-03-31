@@ -44,16 +44,15 @@
         <div class="selected-card">
             {% if user_info.profile.current_card %}
                 <div class="card-image">
-                    <!-- Здесь путь к картинке карты (если есть поле image в модели ClassCard или отдельное) -->
                     <img src="{{ url_for('static', path=user_info.profile.current_card.class_card.image) }}" alt="Карта">
                 </div>
                 <div class="card-info">
                     <div class="card-name">{{ user_info.profile.current_card.class_card.name }} ({{ user_info.profile.current_card.type_card.name }})</div>
                     <div class="card-stats">
                         <div class="card-stat">Уровень: {{ user_info.profile.current_card.level }}</div>
-                        <div class="card-stat">HP: {{ user_info.profile.current_card.hp }}</div>
-                        <div class="card-stat">Урон: {{ user_info.profile.current_card.damage }}</div>
                         <div class="card-stat">Редкость: {{ user_info.profile.current_card.rarity_card.name }}</div>
+                        <div class="card-stat">Здоровье: {{ user_info.profile.current_card.hp }} + {{ user_info.profile.current_card.amulets[0].amulet_type.bonus_hp }}</div>
+                        <div class="card-stat">Урон: {{ user_info.profile.current_card.damage }} + {{ user_info.profile.current_card.amulets[0].amulet_type.bonus_attack }}</div>
                         <div class="card-stat">Усилений: {{ user_info.profile.current_card.enhancement }}/{{ user_info.profile.current_card.max_enhancement }}</div>
                         <div class="card-stat">Слияний: {{ user_info.profile.current_card.merger }}/{{ user_info.profile.current_card.max_merger }}</div>
                     </div>
@@ -82,10 +81,14 @@
                 <a href="#" class="btn-guest">Бой</a>
             </div>
         {% endif %}
+    </div>
+</div>
 
-        {% if current_user and current_user.id == user_info.id %}
-            <div class="fight-history">
-                <h3>История боёв (последние 50)</h3>
+{% if current_user and current_user.id == user_info.id %}
+    <div class="fight-history-wrapper">
+        <div class="fight-history">
+            <h3>История боёв (последние 50)</h3>
+            <div class="table-responsive">
                 <table class="fight-table">
                     <thead>
                         <tr>
@@ -129,7 +132,7 @@
                     </tbody>
                 </table>
             </div>
-        {% endif %}
+        </div>
     </div>
-</div>
+{% endif %}
 {% endblock %}

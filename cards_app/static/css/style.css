@@ -337,6 +337,9 @@ body {
 .profile-right {
     flex: 2;
     min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* центрируем содержимое по горизонтали */
 }
 
 /* Карточка избранной карты */
@@ -346,6 +349,8 @@ body {
     overflow: hidden;
     box-shadow: var(--shadow);
     margin-bottom: 1.5rem;
+    max-width: 450px;       /* ограничиваем ширину карточки */
+    width: 100%;
 }
 
 .card-image {
@@ -357,7 +362,7 @@ body {
 .card-image img {
     max-width: 100%;
     height: auto;
-    max-height: 200px;
+    max-height: 300px;
     object-fit: contain;
 }
 
@@ -420,15 +425,24 @@ body {
     background: var(--primary-dark);
 }
 
-/* Таблица истории боёв */
+/* История боёв (перенесена под обе колонки) */
+.fight-history-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto 0;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
 .fight-history {
-    margin-top: 2rem;
+    margin-top: 0;
     overflow-x: auto;
 }
 
-.fight-history h3 {
-    margin-bottom: 1rem;
-    color: var(--primary-dark);
+.table-responsive {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
 }
 
 .fight-table {
@@ -437,7 +451,7 @@ body {
     background: white;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: var(--shadow);
+    min-width: 600px;
 }
 
 .fight-table th,
