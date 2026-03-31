@@ -45,7 +45,7 @@
             {% if user_info.profile.current_card %}
                 <div class="card-image">
                     <!-- Здесь путь к картинке карты (если есть поле image в модели ClassCard или отдельное) -->
-                    <img src="{{ url_for('static', path='/image/cards/' + user_info.profile.current_card.class_card.image) }}" alt="Карта">
+                    <img src="{{ url_for('static', path=user_info.profile.current_card.class_card.image) }}" alt="Карта">
                 </div>
                 <div class="card-info">
                     <div class="card-name">{{ user_info.profile.current_card.class_card.name }} ({{ user_info.profile.current_card.type_card.name }})</div>

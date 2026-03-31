@@ -4,10 +4,10 @@ from fastapi.templating import Jinja2Templates
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from cards_app.auth.dependencies import get_current_user_with_profile
-from cards_app.models import User, Profile, Card, FightHistory, FavoriteUsers
+from cards_app.models import User, Profile, Card, FightHistory, FavoriteUsers, AmuletItem
 
 from cards_app.config.security import decode_token
 from cards_app.config.database import get_db_session
@@ -17,17 +17,22 @@ from cards_app.config.settings import settings
 async def get_profile_data(session_db: AsyncSession, user_id: int) -> User | None:
     """ Возвращает пользователя с профилем, гильдией, текущей картой и её амулетами """
 
-    query = (
+    base_query = (
         select(User)
         .where(User.id == user_id)
         .options(
             selectinload(User.profile).selectinload(Profile.guild),
             selectinload(User.profile)
             .selectinload(Profile.current_card)
-            .selectinload(Card.amulets)  # подгружаем амулеты текущей карты
+            .options(
+                joinedload(Card.class_card),
+                joinedload(Card.type_card),
+                joinedload(Card.rarity_card),
+                selectinload(Card.amulets).joinedload(AmuletItem.amulet_type),
+            )
         )
     )
-    result = await session_db.execute(query)
+    result = await session_db.execute(base_query)
     return result.scalar_one_or_none()
 
 
