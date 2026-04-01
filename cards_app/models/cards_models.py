@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,7 +13,7 @@ class ClassCard(Base):
     """
 
     __tablename__ = 'class_cards'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     skill: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -30,7 +31,7 @@ class Type(Base):
     """ Тип карты. Отвечает за урон карты по цветовой схеме """
 
     __tablename__ = 'type_cards'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(String(10), nullable=False)
     better_id: Mapped[int] = mapped_column(ForeignKey('type_cards.id', use_alter=True), nullable=True)
@@ -49,7 +50,7 @@ class Rarity(Base):
     """
 
     __tablename__ = 'rarity_cards'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(String(2), nullable=False)
     max_level: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -77,16 +78,16 @@ class Card(Base):
     """
 
     __tablename__ = 'cards'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     owner_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=True, index=True)
-    class_card_id: Mapped[int] = mapped_column(ForeignKey('class_cards.id', use_alter=True), nullable=False)
-    type_id: Mapped[int] = mapped_column(ForeignKey('type_cards.id', use_alter=True), nullable=False)
+    class_card_id: Mapped[int] = mapped_column(ForeignKey('class_cards.id'), nullable=False)
+    type_id: Mapped[int] = mapped_column(ForeignKey('type_cards.id'), nullable=False)
+    rarity_id: Mapped[int] = mapped_column(ForeignKey('rarity_cards.id'), nullable=False)
     hp: Mapped[float] = mapped_column(Float, nullable=False)
     damage: Mapped[float] = mapped_column(Float, nullable=False)
     level: Mapped[int] = mapped_column(Integer, default=1)
     experience_bar: Mapped[int] = mapped_column(Integer, default=0)
-    rarity_id: Mapped[int] = mapped_column(ForeignKey('rarity_cards.id', use_alter=True), nullable=False)
     sale_status: Mapped[bool] = mapped_column(Boolean, default=False)
     price: Mapped[int] = mapped_column(Integer, nullable=True)
     enhancement: Mapped[int] = mapped_column(Integer, default=0)
@@ -132,11 +133,11 @@ class CardStore(Base):
     """ Карты в продаже """
 
     __tablename__ = 'card_store'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
-    class_card_id: Mapped[int] = mapped_column(ForeignKey('class_cards.id', use_alter=True), nullable=False)
-    type_id: Mapped[int] = mapped_column(ForeignKey('type_cards.id', use_alter=True), nullable=False)
-    rarity_id: Mapped[int] = mapped_column(ForeignKey('rarity_cards.id', use_alter=True), nullable=False)
+    class_card_id: Mapped[int] = mapped_column(ForeignKey('class_cards.id'), nullable=False)
+    type_id: Mapped[int] = mapped_column(ForeignKey('type_cards.id'), nullable=False)
+    rarity_id: Mapped[int] = mapped_column(ForeignKey('rarity_cards.id'), nullable=False)
     hp: Mapped[int] = mapped_column(Integer, nullable=False)
     damage: Mapped[int] = mapped_column(Integer, nullable=False)
     sale_now: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -153,9 +154,9 @@ class HistoryReceivingCards(Base):
     """ История получения карт """
 
     __tablename__ = 'history_receiving_cards'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
-    card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=False)
+    card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=False)
     date_and_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
     method_receiving: Mapped[str] = mapped_column(String(20), nullable=True)

@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from sqlalchemy import Integer, String, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -9,7 +10,7 @@ class News(Base):
     """ Новости сайта """
 
     __tablename__ = 'news'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     theme: Mapped[str] = mapped_column(String(200), nullable=True)
@@ -21,7 +22,7 @@ class InitialEventAwards(Base):
     """ Награды начального события """
 
     __tablename__ = 'initial_event_awards'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     day_event_visit: Mapped[int] = mapped_column(Integer, nullable=True)
     type_award: Mapped[str] = mapped_column(String(30), nullable=True)
@@ -37,12 +38,12 @@ class TeamsForBattleEvent(Base):
     """
 
     __tablename__ = 'teams_template_for_battle_event'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
-    first_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
-    second_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
-    third_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
+    first_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=True)
+    second_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=True)
+    third_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=True)
 
     user = relationship('Profile', foreign_keys=[user_id], back_populates='battle_template')
     template_first_card = relationship('Card', foreign_keys=[first_card_id], back_populates='template_first_cards')
@@ -60,12 +61,12 @@ class BattleEventParticipants(Base):
     """
 
     __tablename__ = 'battle_event_participants'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
-    first_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
-    second_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
-    third_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
+    first_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=True)
+    second_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=True)
+    third_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=True)
     enemies: Mapped[dict] = mapped_column(JSON, default=dict, nullable=True)
     battle_progress: Mapped[dict] = mapped_column(JSON, default=dict, nullable=True)
     points: Mapped[int] = mapped_column(Integer, default=0)
@@ -80,7 +81,7 @@ class BattleEventAwards(Base):
     """ Награды боевого события """
 
     __tablename__ = 'battle_event_awards'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     award: Mapped[str] = mapped_column(String(200), nullable=False)

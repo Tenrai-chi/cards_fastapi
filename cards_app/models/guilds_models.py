@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from sqlalchemy import Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -10,7 +11,7 @@ class GuildBuff(Base):
     """ Все доступные усиления гильдии """
 
     __tablename__ = 'guild_buffs'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     description: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -23,7 +24,7 @@ class Guild(Base):
     """ Список гильдий """
 
     __tablename__ = 'guilds'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(String(75), unique=True, nullable=False, index=True)
     leader_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)

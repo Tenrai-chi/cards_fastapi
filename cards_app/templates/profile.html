@@ -51,14 +51,27 @@
                     <div class="card-stats">
                         <div class="card-stat">Уровень: {{ user_info.profile.current_card.level }}</div>
                         <div class="card-stat">Редкость: {{ user_info.profile.current_card.rarity_card.name }}</div>
-                        <div class="card-stat">Здоровье: {{ user_info.profile.current_card.hp }} + {{ user_info.profile.current_card.amulets[0].amulet_type.bonus_hp }}</div>
-                        <div class="card-stat">Урон: {{ user_info.profile.current_card.damage }} + {{ user_info.profile.current_card.amulets[0].amulet_type.bonus_attack }}</div>
+                        {% if user_info.profile.current_card.amulets[0] %}
+                            {% if user_info.profile.current_card.amulets[0].amulet_type.bonus_hp > 0%}
+                                <div class="card-stat">Здоровье: {{ user_info.profile.current_card.hp }} +{{ user_info.profile.current_card.amulets[0].amulet_type.bonus_hp }}</div>
+                            {% else %}
+                                <div class="card-stat">Здоровье: {{ user_info.profile.current_card.hp }} {{ user_info.profile.current_card.amulets[0].amulet_type.bonus_hp }}</div>
+                            {% endif %}
+                            {% if user_info.profile.current_card.amulets[0].amulet_type.bonus_damage > 0%}
+                                <div class="card-stat">Урон: {{ user_info.profile.current_card.damage }} +{{ user_info.profile.current_card.amulets[0].amulet_type.bonus_damage }}</div>
+                            {% else %}
+                                <div class="card-stat">Урон: {{ user_info.profile.current_card.damage }} {{ user_info.profile.current_card.amulets[0].amulet_type.bonus_damage }}</div>
+                            {% endif %}
+                        {% else %}
+                        <div class="card-stat">Здоровье: {{ user_info.profile.current_card.hp }}</div>
+                        <div class="card-stat">Урон: {{ user_info.profile.current_card.damage }}</div>
+                        {% endif %}
                         <div class="card-stat">Усилений: {{ user_info.profile.current_card.enhancement }}/{{ user_info.profile.current_card.max_enhancement }}</div>
                         <div class="card-stat">Слияний: {{ user_info.profile.current_card.merger }}/{{ user_info.profile.current_card.max_merger }}</div>
                     </div>
                     {% if user_info.profile.current_card.amulets %}
                         <div class="amulet-info">
-                            <strong>Амулет:</strong> {{ user_info.profile.current_card.amulets[0].amulet_type.name if user_info.profile.current_card.amulets[0].amulet_type else 'Базовый' }}
+                            <strong>Амулет:</strong> {{ user_info.profile.current_card.amulets[0].amulet_type.name if user_info.profile.current_card.amulets[0] else 'Базовый' }}
                             (Улучшений: {{ user_info.profile.current_card.amulets[0].upgrades }})
                         </div>
                     {% endif %}

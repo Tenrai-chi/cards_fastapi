@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from sqlalchemy import Integer, String, Boolean, DateTime, Text, ForeignKey, BigInteger, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -13,7 +14,7 @@ class User(Base):
     """
 
     __tablename__ = 'users'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     username: Mapped[str] = mapped_column(String(150), unique=True, nullable=False, index=True)
     email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False, index=True)
@@ -38,7 +39,7 @@ class Profile(Base):
     """
 
     __tablename__ = 'profiles'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True, nullable=False)
     about_user: Mapped[str] = mapped_column(Text, nullable=True)
@@ -92,7 +93,7 @@ class FavoriteUsers(Base):
     """ Список избранных пользователей у пользователей """
 
     __tablename__ = 'favorite_users'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
     favorite_user_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
@@ -105,7 +106,7 @@ class Transactions(Base):
     """ Транзакции пользователей """
 
     __tablename__ = 'transactions'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     date_and_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
@@ -126,7 +127,7 @@ class FightHistory(Base):
     """ История боев """
 
     __tablename__ = 'fight_history'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     date_and_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     winner_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=True)
@@ -150,7 +151,7 @@ class RefreshToken(Base):
     """
 
     __tablename__ = 'refresh_tokens'
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     token: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
