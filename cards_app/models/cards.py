@@ -7,9 +7,8 @@ from .base import Base
 
 
 class ClassCard(Base):
-    """ Класс карты. Отвечает за:
-        - Картинку краты
-        - Способность, в т.ч как использование будет отображаться в истории боя
+    """ Модель класса карты.
+        Отвечает за отображение карты и ее способность, в т.ч в истории боя
     """
 
     __tablename__ = 'class_cards'
@@ -28,7 +27,9 @@ class ClassCard(Base):
 
 
 class Type(Base):
-    """ Тип карты. Отвечает за урон карты по цветовой схеме """
+    """ Модель типа карты.
+        Отвечает за урон карты по цветовой схеме
+    """
 
     __tablename__ = 'type_cards'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -44,9 +45,9 @@ class Type(Base):
 
 
 class Rarity(Base):
-    """ Редкость карты. Отвечает за максимально возможный уровень,
-        разброс здоровья и урона при генерации карты и
-        возрастание характеристик с ростом уровня
+    """ Модель редкости карты.
+        Отвечает за максимально возможный уровень, разброс здоровья и урона при генерации карты
+        и увеличение характеристик с ростом уровня
     """
 
     __tablename__ = 'rarity_cards'
@@ -67,7 +68,7 @@ class Rarity(Base):
 
 
 class Card(Base):
-    """ Карты пользователей
+    """ Модель карт пользователей.
         Class -> способности карты в бою и картинка
         Type -> цвет карты (зеленый, синий, красный) по принципу камень-ножницы-бумага
         Rarity -> максимальный уровень, разброс характеристик начального уровня при генерации, увеличение характеристик с уровнем
@@ -106,7 +107,7 @@ class Card(Base):
                                back_populates='card_loser')
     receiving_history = relationship('HistoryReceivingCards', foreign_keys='[HistoryReceivingCards.card_id]', back_populates='card')
     sale_records = relationship('SaleUserCards', foreign_keys='[SaleUserCards.card_id]',  back_populates='card')
-    amulets = relationship('AmuletItem', foreign_keys='[AmuletItem.card_id]',  back_populates='card')
+    amulet = relationship('AmuletItem', foreign_keys='[AmuletItem.card_id]',  back_populates='card', uselist=False)
 
     template_first_cards = relationship('TeamsForBattleEvent',
                                         foreign_keys='[TeamsForBattleEvent.first_card_id]',
@@ -130,7 +131,9 @@ class Card(Base):
 
 
 class CardStore(Base):
-    """ Карты в продаже """
+    """ Модель карт в магазине карт.
+        При покупке карты используется как шаблон создания карты пользователя.
+    """
 
     __tablename__ = 'card_store'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -151,7 +154,9 @@ class CardStore(Base):
 
 
 class HistoryReceivingCards(Base):
-    """ История получения карт """
+    """ Модель истории получения карт.
+        Описывает момент создания карты, будь это покупка или бесплатное получение
+    """
 
     __tablename__ = 'history_receiving_cards'
     id: Mapped[int] = mapped_column(primary_key=True)

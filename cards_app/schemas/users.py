@@ -1,11 +1,12 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from typing import Optional
 
 
 class UserOut(BaseModel):
     id: int
     username: str
-    email: str
+    email: EmailStr
     is_active: bool
     is_staff: bool
     is_superuser: bool
@@ -17,3 +18,10 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CurrentUserForMenuDTO(BaseModel):
+    id: Optional[int] = None
+    username: Optional[str] = None
+    gold: Optional[int] = None
+    diamond: Optional[int] = None

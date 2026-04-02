@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from cards_app.config.security import decode_token
 from cards_app.config.database import get_db_session
-from cards_app.models.users_models import User
+from cards_app.models.users import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login', auto_error=False)
 
@@ -30,7 +30,6 @@ async def get_current_user_with_profile(request: Request,
         # )
     user_id = payload.get('sub')
     if not user_id:
-        # raise HTTPException(status_code=401, detail='Invalid token payload')
         return None
 
     result = await db.execute(select(User)
@@ -39,8 +38,6 @@ async def get_current_user_with_profile(request: Request,
     user = result.scalar_one_or_none()
     if not user:
         return None
-        # raise HTTPException(status_code=401, detail='User not found')
     if not user.is_active:
         raise HTTPException(status_code=403, detail='User is blocked')
-        # return None
     return user

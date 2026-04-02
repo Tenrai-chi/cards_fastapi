@@ -8,7 +8,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from cards_app.config.database import AsyncSessionLocal
-from cards_app.models.events_models import News, BattleEventAwards, InitialEventAwards
+from cards_app.models.events import News, BattleEventAwards, InitialEventAwards
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 logger = logging.getLogger(__name__)

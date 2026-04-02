@@ -7,7 +7,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from cards_app.config.database import AsyncSessionLocal
-from cards_app.models.guilds_models import GuildBuff
+from cards_app.models.guilds import GuildBuff
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 logger = logging.getLogger(__name__)

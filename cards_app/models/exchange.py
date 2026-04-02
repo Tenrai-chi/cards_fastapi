@@ -7,7 +7,7 @@ from .base import Base
 
 
 class SaleUserCards(Base):
-    """ История покупок карт между пользователями """
+    """ Модель с историей покупок карт между пользователями """
 
     __tablename__ = 'sale_user_cards'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -30,7 +30,9 @@ class SaleUserCards(Base):
 
 
 class ExperienceItems(Base):
-    """ Предметы опыта """
+    """ Модель с существующими типами предметов опыта.
+        Используется для повышения уровня карты
+    """
 
     __tablename__ = 'experience_items'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -50,7 +52,7 @@ class ExperienceItems(Base):
 
 
 class UsersInventory(Base):
-    """ Инвентарь предметов опыта всех пользователей """
+    """ Модель, описывающая наличие предметов опыта всех пользователей """
 
     __tablename__ = 'users_inventory'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -64,7 +66,7 @@ class UsersInventory(Base):
 
 
 class HistoryPurchaseItems(Base):
-    """ История покупок в магазине """
+    """ Модель с историей покупок в магазине """
 
     __tablename__ = 'history_purchase_items'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -81,7 +83,9 @@ class HistoryPurchaseItems(Base):
 
 
 class AmuletRarity(Base):
-    """ Редкость амулетов """
+    """ Модель с редкостью амулетов.
+        Используется для расчета шанса выпадения при битвах и усилениях амулетов
+    """
 
     __tablename__ = 'amulet_rarities'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -95,7 +99,7 @@ class AmuletRarity(Base):
 
 
 class AmuletType(Base):
-    """ Типы амулетов """
+    """ Модель со всеми существующими типами амулетов """
 
     __tablename__ = 'amulet_types'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -115,7 +119,7 @@ class AmuletType(Base):
 
 
 class AmuletItem(Base):
-    """ Амулеты в инвентаре пользователей """
+    """ Модель с амулетами в инвентаре пользователей """
 
     __tablename__ = 'amulets_in_inventory'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -127,11 +131,11 @@ class AmuletItem(Base):
 
     amulet_type = relationship('AmuletType', foreign_keys=[amulet_type_id], back_populates='amulets_in_inventory')
     owner = relationship('Profile', foreign_keys=[owner_id],  back_populates='amulets')
-    card = relationship('Card', foreign_keys=[card_id],  back_populates='amulets')
+    card = relationship('Card', foreign_keys=[card_id],  back_populates='amulet')
 
 
 class UpgradeItemsType(Base):
-    """ Типы предметов, позволяющих улучшать амулеты """
+    """ Модель типов предметов, позволяющих усиливать карты (ее параметры) """
 
     __tablename__ = 'upgrade_items_types'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -148,7 +152,7 @@ class UpgradeItemsType(Base):
 
 
 class UpgradeItemsUsers(Base):
-    """ Предметы улучшения в инвентаре пользователей """
+    """ Модель предметов улучшения карт в инвентаре пользователей """
 
     __tablename__ = 'upgrade_items_users_in_inventory'
     id: Mapped[int] = mapped_column(primary_key=True)

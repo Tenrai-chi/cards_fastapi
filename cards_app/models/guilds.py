@@ -8,7 +8,7 @@ from .base import Base
 
 
 class GuildBuff(Base):
-    """ Все доступные усиления гильдии """
+    """ Модель с усилениями гильдии """
 
     __tablename__ = 'guild_buffs'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -21,7 +21,7 @@ class GuildBuff(Base):
 
 
 class Guild(Base):
-    """ Список гильдий """
+    """ Модель со списком гильдий """
 
     __tablename__ = 'guilds'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -33,7 +33,7 @@ class Guild(Base):
     guild_pic: Mapped[str] = mapped_column(String(255), default='image/guild/avatar.png')
     date_create: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     rating: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    buff_id: Mapped[int] = mapped_column(ForeignKey('guild_buffs.id', use_alter=True), nullable=False)
+    buff_id: Mapped[int] = mapped_column(ForeignKey('guild_buffs.id'), nullable=False)
     date_last_change_buff: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     leader = relationship('Profile', foreign_keys=[leader_id], back_populates='leader_guild')

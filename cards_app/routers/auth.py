@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.auth.db_utils import delete_refresh_token
-from ..services.auth import create_user_and_profile, authenticate_and_create_tokens
+from cards_app.services.auth import create_user_and_profile, authenticate_and_create_tokens
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
@@ -15,8 +15,8 @@ templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
 
 
 @router.get('/register')
-def register_page(request: Request):
-    """ Выводит форму регистрации """
+async def register_page(request: Request):
+    """ Отображает страницу регистрации """
 
     return templates.TemplateResponse(request=request, name='register.html', context={'request': request})
 
@@ -27,8 +27,8 @@ async def register(request: Request,
                    email: str = Form(...),
                    password: str = Form(...),
                    db_session: AsyncSession = Depends(get_db_session)):
-    """ Обработчик формы регистрации.
-        При успешной регистрации перенаправляет на страницу входа.
+    """ Обрабатывает форму регистрации.
+        При успехе перенаправляет на страницу входа, при ошибке возвращает форму с сообщением об ошибке.
     """
 
     result: dict = await create_user_and_profile(db_session, username, email, password)
@@ -43,7 +43,7 @@ async def register(request: Request,
 
 @router.get('/login')
 async def login_page(request: Request):
-    """ Выводит форму входа в систему """
+    """ Отображает форму входа """
 
     return templates.TemplateResponse(request=request, name='login.html', context={'request': request})
 
@@ -53,7 +53,10 @@ async def login(request: Request,
                 username: str = Form(...),
                 password: str = Form(...),
                 db_session: AsyncSession = Depends(get_db_session)):
-    """ Обрабатывает форму входа в систему """
+    """ Обрабатывает форму входа в систему.
+        При успехе устанавливает refresh_token и перенаправляет на страницу входа
+        При ошибке возвращает форму с сообщением об ошибке.
+    """
 
     result: dict = await authenticate_and_create_tokens(db_session, username, password)
     if result['error_message']:

@@ -8,7 +8,7 @@ from .base import Base
 
 
 class User(Base):
-    """ Пользователи.
+    """ Модель пользователей с полями с системными полями.
         Базовые данные и данные для аутентификации.
         Эта модель первостепенная, однако остальные сущности связаны к Профилю
     """
@@ -34,7 +34,7 @@ class User(Base):
 
 
 class Profile(Base):
-    """ Профили пользователей.
+    """ Модель профилей пользователей.
         Данные пользователей для взаимодействия с сайтом.
     """
 
@@ -48,10 +48,10 @@ class Profile(Base):
     receiving_timer: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     win: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     lose: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    current_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
+    current_card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=True)
 
     profile_pic: Mapped[str] = mapped_column(String(255), default='image/profile/avatar_default.png', nullable=True)
-    guild_id: Mapped[int] = mapped_column(ForeignKey('guilds.id', use_alter=True), nullable=True)
+    guild_id: Mapped[int] = mapped_column(ForeignKey('guilds.id'), nullable=True)
     date_guild_accession: Mapped[Date] = mapped_column(Date, nullable=True)
     guild_point: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     card_slots: Mapped[int] = mapped_column(Integer, default=80, nullable=False)
@@ -90,7 +90,7 @@ class Profile(Base):
 
 
 class FavoriteUsers(Base):
-    """ Список избранных пользователей у пользователей """
+    """ Модель со списком избранных пользователей у пользователей """
 
     __tablename__ = 'favorite_users'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -103,7 +103,7 @@ class FavoriteUsers(Base):
 
 
 class Transactions(Base):
-    """ Транзакции пользователей """
+    """ Модель с транзакциями пользователей """
 
     __tablename__ = 'transactions'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -124,16 +124,16 @@ class Transactions(Base):
 
 
 class FightHistory(Base):
-    """ История боев """
+    """ Модель с историей рейтинговых боев """
 
     __tablename__ = 'fight_history'
     id: Mapped[int] = mapped_column(primary_key=True)
 
     date_and_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    winner_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=True)
-    loser_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=True)
-    card_winner_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
-    card_loser_id: Mapped[int] = mapped_column(ForeignKey('cards.id', use_alter=True), nullable=True)
+    winner_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
+    loser_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
+    card_winner_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=False)
+    card_loser_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=False)
 
     winner = relationship('Profile', foreign_keys=[winner_id], back_populates='won_fights')
     loser = relationship('Profile', foreign_keys=[loser_id], back_populates='lost_fights')

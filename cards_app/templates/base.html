@@ -24,13 +24,13 @@
                 <a href="#">Торговая<br>площадка</a>
             </nav>
             <div class="user-area">
-                {% if user %}
+                {% if current_user %}
                 <div class="user-info">
-                    <a href="/users/{{ user.id }}" style="color: white; text-decoration: none;">
-                        <span>{{ user.username }}</span>
+                    <a href="/users/{{ current_user.id }}" style="color: white; text-decoration: none;">
+                        <span>{{ current_user.username }}</span>
                     </a>
-                    <span class="gold">{{ user.profile.gold if user.profile else 0 }}</span>
-                    <span class="diamond">{{ user.profile.diamond if user.profile else 0 }}</span>
+                    <span class="gold">{{ current_user.gold }}</span>
+                    <span class="diamond">{{ current_user.diamond }}</span>
                 </div>
                 {% else %}
                 <div class="auth-links">
@@ -51,7 +51,6 @@
     </footer>
 
     <script>
-        // Можно добавить общие скрипты
     </script>
 </body>
 </html>

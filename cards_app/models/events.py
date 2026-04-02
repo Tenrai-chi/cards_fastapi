@@ -7,7 +7,7 @@ from .base import Base
 
 
 class News(Base):
-    """ Новости сайта """
+    """ Модель с новостями сайта """
 
     __tablename__ = 'news'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -19,7 +19,7 @@ class News(Base):
 
 
 class InitialEventAwards(Base):
-    """ Награды начального события """
+    """ Модель со списком наград стартового события """
 
     __tablename__ = 'initial_event_awards'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -31,10 +31,11 @@ class InitialEventAwards(Base):
 
 
 class TeamsForBattleEvent(Base):
-    """ Шаблон отряда для участия в боевом событии.
+    """ Модель с шаблоном отряда для участия в боевом событии.
         Шаблон отряда можно изменять только вне проведения события (с 11 числа до конца месяца).
         На основе шаблона создается список участников при каждом событии.
-        В одном отряде не могут быть одни и те же карты.
+        В одном отряде не могут быть одни и те же карты, но в полях карты не уникальны, для того,
+        чтобы иметь возможность менять положение карты в отряде
     """
 
     __tablename__ = 'teams_template_for_battle_event'
@@ -52,7 +53,7 @@ class TeamsForBattleEvent(Base):
 
 
 class BattleEventParticipants(Base):
-    """ Список участников боевого события.
+    """ Модель со списком участников боевого события.
         При старте каждого сезона (1 числа каждого месяца) перезаписывает участников и их отряды.
         Добавляются только те участники, что сформировали полный отряд из 3 разных карт.
         Enemies -> json с противниками на каждый день. День: Противник
@@ -78,7 +79,7 @@ class BattleEventParticipants(Base):
 
 
 class BattleEventAwards(Base):
-    """ Награды боевого события """
+    """ Модель со списком наград боевого события """
 
     __tablename__ = 'battle_event_awards'
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -1,3 +1,4 @@
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from .settings import settings
@@ -8,7 +9,11 @@ AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def get_db_session() -> AsyncSession:
-    """ генератор сессий для подключения к бд """
+    """ Генератор сессий для подключения к бд """
 
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        except SQLAlchemyError as error:
+            await session.rollback()
+            raise

@@ -8,7 +8,7 @@ from sqlalchemy import select
 from cards_app.config.settings import settings
 
 from cards_app.config.database import AsyncSessionLocal
-from cards_app.models.cards_models import ClassCard, Type, Rarity, CardStore
+from cards_app.models.cards import ClassCard, Type, Rarity, CardStore
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 logger = logging.getLogger(__name__)

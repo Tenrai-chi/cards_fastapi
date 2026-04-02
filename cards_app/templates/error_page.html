@@ -2,7 +2,7 @@
 {% block title %}Страница не найдена{% endblock %}
 {% block content %}
 <div class="card" style="text-align: center;">
-    <h2>404</h2>
+    <h2>{{ error_code }}</h2>
     <p>{{ error|default('Страница не найдена') }}</p>
 </div>
 {% endblock %}
