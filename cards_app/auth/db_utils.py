@@ -8,11 +8,10 @@ from cards_app.models.users import RefreshToken
 async def store_refresh_token(db: AsyncSession, user_id: int, token: str, expires_at: datetime) -> RefreshToken:
     """ Создает новый refresh-токен для сессии пользователя """
 
-    db_token = RefreshToken(
-        token=token,
-        user_id=user_id,
-        expires_at=expires_at
-    )
+    db_token = RefreshToken(token=token,
+                            user_id=user_id,
+                            expires_at=expires_at
+                            )
     db.add(db_token)
     await db.commit()
     await db.refresh(db_token)
