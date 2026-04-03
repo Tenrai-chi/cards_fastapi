@@ -10,6 +10,7 @@ async def get_card_with_details(session: AsyncSession,
                                 card_id: int
                                 ) -> Card | None:
     """ Возвращает карту с подгруженными амулетом, классом, типом и редкостью """
+
     stmt = (
         select(Card)
         .where(Card.id == card_id)

@@ -45,9 +45,8 @@ async def view_user_profile(request: Request,
             status_code=500
         )
 
-    context = {
-        'request': request,
-        'current_user': current_user_dto,
-        'profile_dto': profile_dto,
-    }
+    context = {'request': request,
+               'current_user': current_user_dto,
+               'profile_dto': profile_dto,
+               }
     return templates.TemplateResponse(request, 'profile.html', context)

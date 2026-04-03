@@ -13,3 +13,9 @@ def time_difference_check(check_time: datetime, need_hours: int) -> tuple[bool, 
 
     return hours >= need_hours, hours
 
+
+def calculate_need_exp(level: int) -> int:
+    """ Вычисление необходимого уровня для получения следующего уровня """
+
+    return round(1000 + 100 * 1.15 ** level)
+

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Float
+from sqlalchemy import Integer, String, DateTime, ForeignKey, Float, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -8,7 +8,9 @@ from .base import Base
 
 
 class GuildBuff(Base):
-    """ Модель с усилениями гильдии """
+    """ Модель с усилениями гильдии.
+        Загружается через заполнение модели
+    """
 
     __tablename__ = 'guild_buffs'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -39,3 +41,8 @@ class Guild(Base):
     leader = relationship('Profile', foreign_keys=[leader_id], back_populates='leader_guild')
     buff = relationship('GuildBuff', foreign_keys=[buff_id], back_populates='guilds')
     members = relationship('Profile', foreign_keys='[Profile.guild_id]', back_populates='guild')
+
+    __table_args__ = (
+        CheckConstraint('number_of_participants BETWEEN 1 AND max_number_of_participants', name='check_amount_members'),
+        CheckConstraint('rating >= 0', name='check_rating'),
+    )

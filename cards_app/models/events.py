@@ -7,7 +7,9 @@ from .base import Base
 
 
 class News(Base):
-    """ Модель с новостями сайта """
+    """ Модель с новостями сайта.
+        Загружается через заполнение модели
+    """
 
     __tablename__ = 'news'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -19,7 +21,9 @@ class News(Base):
 
 
 class InitialEventAwards(Base):
-    """ Модель со списком наград стартового события """
+    """ Модель со списком наград стартового события.
+        Загружается через заполнение модели
+    """
 
     __tablename__ = 'initial_event_awards'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -79,7 +83,9 @@ class BattleEventParticipants(Base):
 
 
 class BattleEventAwards(Base):
-    """ Модель со списком наград боевого события """
+    """ Модель со списком наград боевого события.
+        Загружается через заполнение модели
+    """
 
     __tablename__ = 'battle_event_awards'
     id: Mapped[int] = mapped_column(primary_key=True)

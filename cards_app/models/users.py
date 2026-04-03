@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, String, Boolean, DateTime, Text, ForeignKey, BigInteger, Date
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Integer, String, Boolean, DateTime, Text, ForeignKey, BigInteger, Date, CheckConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.sql import func
 
 from .base import Base
@@ -60,6 +60,7 @@ class Profile(Base):
     experience_bar: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     event_visit: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     date_event_visit: Mapped[Date] = mapped_column(Date, nullable=True)
+    rating: Mapped[int] = mapped_column(Integer, default=500, nullable=False)
 
     user = relationship('User', foreign_keys=[user_id], back_populates='profile')
     current_card = relationship('Card', foreign_keys=[current_card_id], back_populates='selected_by')
@@ -87,6 +88,14 @@ class Profile(Base):
                                    back_populates='user', uselist=False)
     battle_participant = relationship('BattleEventParticipants', foreign_keys='[BattleEventParticipants.user_id]',
                                       back_populates='user', uselist=False)
+
+    __table_args__ = (
+        CheckConstraint('rating >= 0', name='check_rating_non_negative'),
+    )
+
+    @validates('rating')
+    def validate_rating(self, key, value):
+        return max(0, value)
 
 
 class FavoriteUsers(Base):

@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from cards_app.config.settings import settings
 from cards_app.config.logging import setup_logging
 
-from cards_app.routers import auth, users, cards
+from cards_app.routers import auth, users, cards, events
 
 setup_logging(settings.LOG_LEVEL)
 
@@ -22,6 +22,7 @@ app.mount(settings.MEDIA_URL,
 app.include_router(cards.router)
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(events.router)
 
 
 @app.get('/')

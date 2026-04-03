@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Float
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Float, CheckConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from .base import Base
 
@@ -9,6 +9,7 @@ from .base import Base
 class ClassCard(Base):
     """ Модель класса карты.
         Отвечает за отображение карты и ее способность, в т.ч в истории боя
+        Не изменяется системой, загружается через заполнение модели
     """
 
     __tablename__ = 'class_cards'
@@ -29,6 +30,7 @@ class ClassCard(Base):
 class Type(Base):
     """ Модель типа карты.
         Отвечает за урон карты по цветовой схеме
+        Не изменяется системой, загружается через заполнение модели
     """
 
     __tablename__ = 'type_cards'
@@ -48,6 +50,7 @@ class Rarity(Base):
     """ Модель редкости карты.
         Отвечает за максимально возможный уровень, разброс здоровья и урона при генерации карты
         и увеличение характеристик с ростом уровня
+        Не изменяется системой, загружается через заполнение модели
     """
 
     __tablename__ = 'rarity_cards'
@@ -129,10 +132,17 @@ class Card(Base):
                                       foreign_keys='[BattleEventParticipants.third_card_id]',
                                       back_populates='actual_third_card')
 
+    __table_args__ = (
+        CheckConstraint('price >= 0', name='check_price_non_negative'),
+        CheckConstraint('enhancement  BETWEEN 0 AND max_enhancement', name='check_enhancement'),
+        CheckConstraint('merger BETWEEN 0 AND max_merger', name='check_merger'),
+    )
+
 
 class CardStore(Base):
     """ Модель карт в магазине карт.
         При покупке карты используется как шаблон создания карты пользователя.
+        Загружается через заполнение модели
     """
 
     __tablename__ = 'card_store'

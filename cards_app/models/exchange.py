@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Float
+from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Float, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -31,7 +31,8 @@ class SaleUserCards(Base):
 
 class ExperienceItems(Base):
     """ Модель с существующими типами предметов опыта.
-        Используется для повышения уровня карты
+        Используется для повышения уровня карты.
+        Не изменяется системой, загружается через заполнение модели
     """
 
     __tablename__ = 'experience_items'
@@ -64,6 +65,10 @@ class UsersInventory(Base):
     owner = relationship('Profile', foreign_keys=[owner_id], back_populates='inventory')
     item = relationship('ExperienceItems', foreign_keys=[item_id],  back_populates='inventory_items')
 
+    __table_args__ = (
+        CheckConstraint('amount >= 0', name='check_amount'),
+    )
+
 
 class HistoryPurchaseItems(Base):
     """ Модель с историей покупок в магазине """
@@ -84,7 +89,8 @@ class HistoryPurchaseItems(Base):
 
 class AmuletRarity(Base):
     """ Модель с редкостью амулетов.
-        Используется для расчета шанса выпадения при битвах и усилениях амулетов
+        Используется для расчета шанса выпадения при битвах и усилениях амулетов.
+        Не изменяется системой, загружается через заполнение модели
     """
 
     __tablename__ = 'amulet_rarities'
@@ -99,7 +105,9 @@ class AmuletRarity(Base):
 
 
 class AmuletType(Base):
-    """ Модель со всеми существующими типами амулетов """
+    """ Модель со всеми существующими типами амулетов.
+        Не изменяется системой, загружается через заполнение модели
+    """
 
     __tablename__ = 'amulet_types'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -135,7 +143,9 @@ class AmuletItem(Base):
 
 
 class UpgradeItemsType(Base):
-    """ Модель типов предметов, позволяющих усиливать карты (ее параметры) """
+    """ Модель типов предметов, позволяющих усиливать карты (ее параметры).
+        Не изменяется системой, загружается через заполнение модели
+    """
 
     __tablename__ = 'upgrade_items_types'
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -56,7 +56,7 @@
                     <img src="{{ url_for('static', path=profile_dto.card.class_card_pic) }}" alt="Карта">
                 </div>
                 <div class="card-info">
-                    <div class="card-name"><a href="#">{{ profile_dto.card.class_card_name }} ({{ profile_dto.card.type_card_name }})</a></div>
+                    <div class="card-name"><a href="{{ url_for('view_card', card_id=profile_dto.card.id) }}">{{ profile_dto.card.class_card_name }} ({{ profile_dto.card.type_card_name }})</a></div>
                     <div class="card-stats">
                         <div class="card-stat">Уровень: {{ profile_dto.card.level }} / {{ profile_dto.card.max_level }}</div>
                         <div class="card-stat">Редкость: {{ profile_dto.card.rarity_card_name }}</div>

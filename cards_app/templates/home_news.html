@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Новости{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: var(--primary-dark);">📰 Новости</h1>
+
+{% if news.items %}
+<div class="news-list">
+    {% for item in news.items %}
+    <div class="news-card">
+        <div class="news-card__header">
+            <div class="news-card__title">{{ item.title }}</div>
+            <div class="news-card__meta">
+                <span class="news-card__theme">{{ item.theme }}</span>
+                <span class="news-card__date">📅 {{ item.date_and_time.strftime('%d.%m.%Y %H:%M') if item.date_and_time else '—' }}</span>
+            </div>
+        </div>
+        <div class="news-card__body">
+            {{ item.text | replace('\n', '<br>') | safe }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Пагинация -->
+{% if news.total_pages > 1 %}
+<div class="pagination">
+    {% if news.page > 1 %}
+        <a href="?page=1&size={{ news.size }}">⏮</a>
+        <a href="?page={{ news.page - 1 }}&size={{ news.size }}">←</a>
+    {% else %}
+        <span class="disabled">⏮</span>
+        <span class="disabled">←</span>
+    {% endif %}
+
+    {% set start = [news.page - 2, 1] | max %}
+    {% set end = [news.page + 2, news.total_pages] | min %}
+
+    {% if start > 1 %}
+        <span>…</span>
+    {% endif %}
+
+    {% for p in range(start, end + 1) %}
+        {% if p == news.page %}
+            <span class="current">{{ p }}</span>
+        {% else %}
+            <a href="?page={{ p }}&size={{ news.size }}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if end < news.total_pages %}
+        <span class="dots">…</span>
+    {% endif %}
+
+    {% if news.page < news.total_pages %}
+        <a href="?page={{ news.page + 1 }}&size={{ news.size }}">→</a>
+        <a href="?page={{ news.total_pages }}&size={{ news.size }}">⏭</a>
+    {% else %}
+        <span class="disabled">→</span>
+        <span class="disabled">⏭</span>
+    {% endif %}
+</div>
+<div class="pagination-info">
+    Страница {{ news.page }} из {{ news.total_pages }} • Всего новостей: {{ news.total }}
+</div>
+{% endif %}
+
+{% else %}
+<div style="background: white; border-radius: 20px; padding: 2rem; text-align: center; box-shadow: var(--shadow);">
+    😢 Пока нет новостей. Загляните позже!
+</div>
+{% endif %}
+{% endblock %}
