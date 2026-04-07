@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
-
 {% block title %}Карта: {{ card_dto.card.class_card_name }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_view.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="card-view-wrapper">

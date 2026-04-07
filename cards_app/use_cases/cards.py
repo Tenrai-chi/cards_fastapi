@@ -2,8 +2,8 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import CardNotFoundError
-from cards_app.services.cards import get_card_with_details
-from cards_app.schemas.cards import AmuletDTO, CardInfoDTO, CardDTO
+from cards_app.services.cards import get_card_with_details, get_drop_chance_card
+from cards_app.schemas.cards import AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard
 from cards_app.utils.common import calculate_need_exp
 from cards_app.models.users import User
 
@@ -14,15 +14,15 @@ class ViewCardUseCase:
         Если карты нет, то выбрасывает CardNotFoundError
     """
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
 
     async def execute(self,
                       card_id: int,
                       current_user: User
                       ) -> CardInfoDTO:
 
-        card = await get_card_with_details(self.session, card_id)
+        card = await get_card_with_details(self.session_db, card_id)
         if not card:
             raise CardNotFoundError()
 
@@ -59,3 +59,29 @@ class ViewCardUseCase:
                            amulet=amulet_dto,
                            is_owner=is_owner
                            )
+
+
+class ViewGetFreeCard:
+    """ Use case для просмотра страницы с получением бесплатной карты """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self) -> GetFreeCardDTO:
+        data_for_page: dict = await get_drop_chance_card(self.session_db)
+        all_classes = data_for_page['classes']
+        all_rarities = data_for_page['rarities']
+
+        classes_card = []
+        rarities_card = []
+        for class_card in all_classes:
+            classes_card.append(ClassCard(name=class_card.name,
+                                          skill_description=class_card.description))
+
+        for rarity_card in all_rarities:
+            rarities_card.append(RarityCard(name=rarity_card.name,
+                                            chance_drop=rarity_card.drop_chance))
+
+        return GetFreeCardDTO(all_classes=classes_card,
+                              all_rarities=rarities_card)
+

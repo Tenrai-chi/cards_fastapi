@@ -2,6 +2,11 @@
 
 {% block title %}{{ current_user.username }}{% endblock %}
 
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/profile.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="profile-container">
     <!-- Левая колонка: информация о пользователе -->

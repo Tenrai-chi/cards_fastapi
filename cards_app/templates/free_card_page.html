@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}{{ current_user.username }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/free_card.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="main-content free-card-page">
+    <h1 class="page-title">🎲 Получение бесплатной случайной карты</h1>
+    <p class="page-subtitle">Ознакомьтесь с шансами выпадения редкостей и возможными классами карт</p>
+
+    <!-- Таблица редкостей -->
+    <section class="card-section">
+        <h2 class="section-title">📊 Редкости и шанс выпадения</h2>
+        <div class="table-responsive">
+            <table class="info-table fight-table">
+                <thead>
+                    <tr>
+                        <th>Редкость</th>
+                        <th>Шанс выпадения (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rarity in info_dto.all_rarities %}
+                    <tr>
+                        <td>{{ rarity.name }}</td>
+                        <td>{{ rarity.chance_drop }}%</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2">Нет данных о редкостях</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Таблица классов -->
+    <section class="card-section">
+        <h2 class="section-title">⚔️ Классы карт и их способности</h2>
+        <div class="table-responsive">
+            <table class="info-table fight-table">
+                <thead>
+                    <tr>
+                        <th>Название класса</th>
+                        <th>Описание способности</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class_card in info_dto.all_classes %}
+                    <tr>
+                        <td>{{ class_card.name }}</td>
+                        <td>{{ class_card.skill_description }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2">Нет данных о классах</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Кнопка получения -->
+    <div class="action-button">
+        <form action="/get_free_card" method="post">
+            <button type="submit" class="btn btn-get-card">🃏 Получить случайную карту</button>
+        </form>
+        <p class="hint">* Карта будет добавлена в вашу коллекцию. Шансы выпадения указаны выше.</p>
+    </div>
+</div>
+{% endblock %}

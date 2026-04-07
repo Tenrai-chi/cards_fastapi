@@ -2,6 +2,11 @@
 
 {% block title %}Новости{% endblock %}
 
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/news.css') }}">
+{% endblock %}
+
 {% block content %}
 <h1 style="margin-bottom: 1.5rem; color: var(--primary-dark);">📰 Новости</h1>
 
