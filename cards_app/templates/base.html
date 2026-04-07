@@ -21,13 +21,13 @@
                 <a href="#">Карты</a>
                 <a href="#">Магазин<br>карт</a>
                 <a href="#">Магазин<br>предметов</a>
-                <a href="#">Получить<br>бесплатно</a>
+                <a href="{{ url_for('view_free_card') }}">Получить<br>бесплатно</a>
                 <a href="#">Торговая<br>площадка</a>
             </nav>
             <div class="user-area">
                 {% if current_user %}
                 <div class="user-info">
-                    <a href="/users/{{ current_user.id }}" style="color: white; text-decoration: none;">
+                    <a href="{{ url_for('view_user_profile', user_id=current_user.id)  }}" style="color: white; text-decoration: none;">
                         <span>{{ current_user.username }}</span>
                     </a>
                     <span class="gold">{{ current_user.gold }}</span>
@@ -50,6 +50,60 @@
     <footer style="text-align: center; padding: 1rem; background: var(--primary-light); margin-top: auto;">
         &copy; 2025 Cards App
     </footer>
+
+    <div class="toast-container"></div>
+
+    <script>
+        // Функция показа уведомления
+        function showToast(message, type = 'error') {
+            const container = document.querySelector('.toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">${escapeHtml(message)}</div>
+                <button class="toast-close">&times;</button>
+            `;
+            container.appendChild(toast);
+
+            // Анимация появления
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Закрытие по кнопке
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            });
+
+            // Автоматическое закрытие через 5 секунд
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Простая защита от XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // При загрузке страницы проверяем параметр error в URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorMsg = urlParams.get('error');
+            if (errorMsg) {
+                showToast(decodeURIComponent(errorMsg), 'error');
+                // Опционально: удалить параметр из URL без перезагрузки
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        });
+    </script>
 
     <script>
     </script>

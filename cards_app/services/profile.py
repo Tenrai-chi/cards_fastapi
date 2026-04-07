@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 from sqlalchemy import func, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -56,11 +57,19 @@ async def get_fight_history_user(session_db: AsyncSession, profile_id: int, limi
     return result.scalars().all()
 
 
-async def is_favorite(db: AsyncSession, current_profile_id: int, target_profile_id: int) -> bool:
+async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_profile_id: int) -> bool:
     """ Возвращает флаг о том, находится ли выбранный пользователь в списке избранных у текущего """
+
     query = select(FavoriteUsers).where(
         FavoriteUsers.user_id == current_profile_id,
         FavoriteUsers.favorite_user_id == target_profile_id
     )
-    result = await db.execute(query)
+    result = await session_db.execute(query)
     return result.scalar_one_or_none() is not None
+
+
+async def update_user_receiving_timer(session_db: AsyncSession, current_user: User):
+    """ Обновление таймера при получении бесплатной карты """
+
+    current_user.profile.receiving_timer = datetime.now()
+    session_db.add(current_user.profile)

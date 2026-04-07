@@ -2,10 +2,13 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import CardNotFoundError
-from cards_app.services.cards import get_card_with_details, get_drop_chance_card
+from cards_app.services.cards import get_card_with_details, get_drop_chance_card, create_new_card, get_all_cards_user, \
+    create_record_in_gistory_receiving_card
 from cards_app.schemas.cards import AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard
+from cards_app.services.profile import update_user_receiving_timer
 from cards_app.utils.common import calculate_need_exp
 from cards_app.models.users import User
+from cards_app.utils.common import time_difference_check
 
 
 class ViewCardUseCase:
@@ -84,4 +87,48 @@ class ViewGetFreeCard:
 
         return GetFreeCardDTO(all_classes=classes_card,
                               all_rarities=rarities_card)
+
+
+class GetFreeCardUseCase:
+    """ Use case для получения случайной бесплатной карты.
+    """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self,
+                      current_user: User
+                      ) -> dict:
+
+        hours_for_get_free_card = 6
+        answer_data = {'new_card_id': None,
+                       'error_message': None}
+
+        if current_user is None:
+            answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
+            return answer_data
+
+        if current_user.profile.receiving_timer is not None:
+            check_time, hours = time_difference_check(current_user.profile.receiving_timer, hours_for_get_free_card)
+            if not check_time:
+                answer_data['error_message'] = f'Для получения бесплатной карты осталось: {hours_for_get_free_card - hours}'
+                return answer_data
+
+        all_cards = await get_all_cards_user(self.session_db, current_user.profile.id)
+        if len(all_cards) >= current_user.profile.card_slots:
+            answer_data['error_message'] = f'У вас недостаточно места для получения новой карты'
+            return answer_data
+
+        try:
+            await update_user_receiving_timer(self.session_db, current_user)
+            new_card_id = await create_new_card(self.session_db, current_user.profile.id)
+            await create_record_in_gistory_receiving_card(self.session_db, new_card_id, current_user.profile.id, 'Генерация')
+            answer_data['new_card_id'] = new_card_id
+            await self.session_db.commit()
+
+        except Exception as error:
+            await self.session_db.rollback()
+            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {error}'
+
+        return answer_data
 

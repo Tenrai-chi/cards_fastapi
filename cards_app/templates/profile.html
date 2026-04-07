@@ -25,7 +25,7 @@
             {% endif %}
             <p><strong>Гильдия:</strong>
                 {% if profile_dto.guild %}
-                <a href="/guilds/{{ profile_dto.guild.id }}">{{ profile_dto.guild.name }}</a>
+                <a href="#">{{ profile_dto.guild.name }}</a>
                 {% else %}
                 Нет гильдии
                 {% endif %}
@@ -42,7 +42,7 @@
                 <a href="#" class="btn-action">Избранные</a>
                 <a href="#" class="btn-action">Транзакции</a>
                 <a href="#" class="btn-action">Редактировать</a>
-                <a href="/auth/logout" class="btn-action">Выйти</a>
+                <a href="{{ url_for('logout') }}" class="btn-action">Выйти</a>
             </div>
         {% endif %}
 

@@ -68,7 +68,7 @@
 
     <!-- Кнопка получения -->
     <div class="action-button">
-        <form action="/get_free_card" method="post">
+        <form action="{{ url_for('get_free_card') }}" method="post">
             <button type="submit" class="btn btn-get-card">🃏 Получить случайную карту</button>
         </form>
         <p class="hint">* Карта будет добавлена в вашу коллекцию. Шансы выпадения указаны выше.</p>
