@@ -3,12 +3,12 @@ from datetime import datetime
 from random import choice
 from typing import List
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards
-from cards_app.models.exchange import AmuletItem
+from cards_app.config.exceptions import CardInStoreNotFoundError, CardNotOnSaleError
+from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore
 
 
 async def get_card_with_details(session_db: AsyncSession,
@@ -50,7 +50,7 @@ async def get_drop_chance_card(session_db: AsyncSession) -> dict:
     return answer_data
 
 
-async def create_new_card(session_db: AsyncSession, owner_id: int) -> int:
+async def generate_random_card(session_db: AsyncSession, owner_id: int) -> int:
     """ Генерация случайной карты """
 
     stmt_classes = select(ClassCard)
@@ -86,6 +86,44 @@ async def create_new_card(session_db: AsyncSession, owner_id: int) -> int:
     return new_card.id
 
 
+async def create_new_card_from_template(session_db: AsyncSession,
+                                        owner_id: int,
+                                        card_temp: CardStore) -> int | None:
+    """ Создает новую карту пользователя по карте-шаблону из магазина """
+
+    new_card = Card(owner_id=owner_id,
+                    class_card_id=card_temp.class_card_id,
+                    type_id=card_temp.type_id,
+                    rarity_id=card_temp.rarity_id,
+                    level=1,
+                    hp=card_temp.hp,
+                    damage=card_temp.damage)
+
+    session_db.add(new_card)
+    await session_db.flush()
+
+    return new_card.id
+
+
+async def get_temp_card_in_store(session_db: AsyncSession, card_temp_id) -> CardStore:
+    """ Получает карту из магазина.
+        Если такой карты нет, то поднимает ошибку CardInStoreNotFoundError
+        Если карта есть, но она не продается, то поднимает ошибку CardNotOnSaleError
+    """
+
+    stmt_temp_card = select(CardStore).where(CardStore.id == card_temp_id)
+    result_temp_card = await session_db.execute(stmt_temp_card)
+    temp_card = result_temp_card.scalars().one_or_none()
+
+    if temp_card is None:
+        raise CardInStoreNotFoundError(card_id=card_temp_id)
+
+    if temp_card.sale_now is False:
+        raise CardNotOnSaleError()
+
+    return temp_card
+
+
 async def get_all_cards_user(session_db: AsyncSession, owner_id: int) -> List[Card]:
     """ Возвращает все карты пользователя """
 
@@ -95,7 +133,7 @@ async def get_all_cards_user(session_db: AsyncSession, owner_id: int) -> List[Ca
     return cards
 
 
-async def create_record_in_gistory_receiving_card(session_db: AsyncSession,
+async def create_record_in_history_receiving_card(session_db: AsyncSession,
                                                   card_id: int,
                                                   user_id: int,
                                                   method_receiving: str) -> None:

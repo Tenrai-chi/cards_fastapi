@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="home-tabs-container">
+    <div class="home-tabs">
+        <a href="{{ url_for('news') }}" class="tab {% if active_tab == 'news' %}active{% endif %}">📰 Новости</a>
+        <a href="#" class="tab {% if active_tab == 'battle_event' %}active{% endif %}">⚔️ Боевое событие</a>
+        <a href="#" class="tab {% if active_tab == 'start_event' %}active{% endif %}">🚀 Стартовое событие</a>
+    </div>
+</div>
+<div class="home-content">
+    {% block home_content %}{% endblock %}
+</div>
+{% endblock %}

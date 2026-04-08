@@ -1,0 +1,142 @@
+/* ========== МАГАЗИН КАРТ ========== */
+.store-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+@media (min-width: 900px) {
+    .store-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.store-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.store-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.store-card .card-image {
+    background: var(--primary-light);
+    text-align: center;
+    padding: 1rem;
+    height: auto;
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.store-card .card-image img {
+    max-width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+}
+
+.store-card .card-info {
+    padding: 1rem;
+    flex: 1;
+}
+
+.store-card .card-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-dark);
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.store-card .card-type {
+    text-align: center;
+    color: var(--text-dark);
+    opacity: 0.7;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.store-card .card-stats {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.store-card .card-stat {
+    background: var(--primary-light);
+    padding: 0.4rem;
+    border-radius: 8px;
+    text-align: center;
+    flex: 1;
+    font-size: 0.85rem;
+}
+
+.btn-buy {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-main));
+    color: white;
+    border: none;
+    padding: 0.6rem;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: calc(100% - 2rem);
+    margin: 0 1rem 1rem 1rem;
+    text-align: center;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.btn-buy:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    filter: brightness(1.05);
+}
+
+.empty-store {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+}
+.card-price {
+    text-align: center;
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+.old-price {
+    text-decoration: line-through;
+    color: #999;
+    margin-right: 0.5rem;
+}
+.new-price {
+    color: #e91e63;
+    font-size: 1.2rem;
+}
+.price {
+    color: var(--primary-dark);
+}
+.btn-buy.disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+.btn-buy.disabled:hover {
+    transform: none;
+    filter: none;
+}

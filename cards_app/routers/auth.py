@@ -4,9 +4,9 @@ from fastapi.templating import Jinja2Templates
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cards_app.auth.db_utils import delete_refresh_token
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
-from cards_app.auth.db_utils import delete_refresh_token
 from cards_app.services.auth import create_user_and_profile, authenticate_and_create_tokens
 
 router = APIRouter(prefix='/auth', tags=['auth'])
@@ -14,14 +14,14 @@ router = APIRouter(prefix='/auth', tags=['auth'])
 templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
 
 
-@router.get('/register')
+@router.get(path='/register', name='register_page')
 async def register_page(request: Request):
     """ Отображает страницу регистрации """
 
     return templates.TemplateResponse(request=request, name='register.html', context={'request': request})
 
 
-@router.post('/register')
+@router.post(path='/register', name='register')
 async def register(request: Request,
                    username: str = Form(...),
                    email: str = Form(...),
@@ -41,14 +41,14 @@ async def register(request: Request,
     return RedirectResponse(url='/auth/login', status_code=303)
 
 
-@router.get('/login')
+@router.get(path='/login', name='login_page')
 async def login_page(request: Request):
     """ Отображает форму входа """
 
     return templates.TemplateResponse(request=request, name='login.html', context={'request': request})
 
 
-@router.post('/login')
+@router.post(path='/login', name='login')
 async def login(request: Request,
                 username: str = Form(...),
                 password: str = Form(...),
@@ -79,7 +79,7 @@ async def login(request: Request,
     return response
 
 
-@router.get('/logout')
+@router.get(path='/logout', name='logout')
 async def logout(request: Request, db_session: AsyncSession = Depends(get_db_session)):
     """ Выполняет выход пользователя из системы и удаляет куки с токенами """
 

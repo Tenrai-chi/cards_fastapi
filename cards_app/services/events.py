@@ -12,7 +12,7 @@ async def get_paginated_news(session: AsyncSession, limit: int, offset: int) -> 
             .limit(limit)
             .offset(offset))
     result = await session.execute(stmt)
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def get_total_news_count(session: AsyncSession) -> int:

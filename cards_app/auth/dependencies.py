@@ -1,11 +1,12 @@
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from cards_app.config.security import decode_token
 from cards_app.config.database import get_db_session
+from cards_app.config.security import decode_token
 from cards_app.models.users import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login', auto_error=False)
@@ -23,11 +24,6 @@ async def get_current_user_with_profile(request: Request,
     payload = decode_token(token, expected_type='access')
     if not payload:
         return None
-        # raise HTTPException(
-        #     status_code=status.HTTP_401_UNAUTHORIZED,
-        #     detail='Invalid or expired token',
-        #     headers={'WWW-Authenticate': 'Bearer'},
-        # )
     user_id = payload.get('sub')
     if not user_id:
         return None
@@ -39,5 +35,5 @@ async def get_current_user_with_profile(request: Request,
     if not user:
         return None
     if not user.is_active:
-        raise HTTPException(status_code=403, detail='User is blocked')
+        raise HTTPException(status_code=403, detail='Пользователь заблокирован')
     return user

@@ -33,3 +33,43 @@ class CardNotFoundError(AppException):
         message = f'Карта с id={card_id} не найдена' if card_id else 'Карта не найдена'
         super().__init__(message, status_code=404)
 
+
+class CardInStoreNotFoundError(AppException):
+    """ Исключение, возникающее при попытке получить несуществующую карту в магазине """
+
+    def __init__(self, card_id: int | None = None):
+        """ Формирует сообщение об ошибке """
+
+        message = f'Карта с id={card_id} не найдена в магазине'
+        super().__init__(message, status_code=404)
+
+
+class InsufficientFundsUserError(AppException):
+    """ Исключение, возникающее при недостатке средств у пользователя для действия """
+
+    def __init__(self, need_gold: int | None = None):
+        """ Формирует сообщение об ошибке """
+
+        message = f'У вас недостаточно средств: необходимо {need_gold}'
+        super().__init__(message, status_code=404)
+
+
+class NotEnoughSlotsError(AppException):
+    """ Исключение, возникающее при недостатке слотов в инвентаре.
+        Применимо к картам, амулетам, гильдиям, избранным пользователям
+    """
+
+    def __init__(self, message: str | None = None):
+        """ Формирует сообщение об ошибке """
+
+        super().__init__(message, status_code=404)
+
+
+class CardNotOnSaleError(AppException):
+    """ Исключение, возникающее при попытке купить карту не в продаже """
+
+    def __init__(self):
+        """ Формирует сообщение об ошибке """
+        message = f'Вы не можете купить эту карту'
+        super().__init__(message, status_code=404)
+

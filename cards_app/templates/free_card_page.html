@@ -10,7 +10,7 @@
 {% block content %}
 <div class="main-content free-card-page">
     <h1 class="page-title">🎲 Получение бесплатной случайной карты</h1>
-    <p class="page-subtitle">Ознакомьтесь с шансами выпадения редкостей и возможными классами карт</p>
+    <p class="page-subtitle">Новую карту можно получить каждые 6 часов</p>
 
     <!-- Таблица редкостей -->
     <section class="card-section">
@@ -67,11 +67,13 @@
     </section>
 
     <!-- Кнопка получения -->
+    {% if info_dto.can_get_free_card %}
     <div class="action-button">
-        <form action="{{ url_for('get_free_card') }}" method="post">
+        <form action="{{ url_for('create_card') }}" method="post">
             <button type="submit" class="btn btn-get-card">🃏 Получить случайную карту</button>
         </form>
         <p class="hint">* Карта будет добавлена в вашу коллекцию. Шансы выпадения указаны выше.</p>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

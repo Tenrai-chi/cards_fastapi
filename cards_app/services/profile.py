@@ -1,12 +1,15 @@
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 from sqlalchemy import func, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from cards_app.models import User, Profile, FavoriteUsers, Card, FightHistory
+
+from cards_app.config.exceptions import InsufficientFundsUserError, NotEnoughSlotsError
+from cards_app.models import User, Profile, FavoriteUsers, Card, FightHistory, Transactions
+from cards_app.services.cards import get_all_cards_user
 
 
-async def get_base_info_profile(session: AsyncSession,
+async def get_base_info_profile(session_db: AsyncSession,
                                 user_id: int
                                 ) -> Optional[User]:
     """ Возвращает базовую информацию профиля с подгруженной гильдией """
@@ -18,7 +21,7 @@ async def get_base_info_profile(session: AsyncSession,
             selectinload(User.profile).selectinload(Profile.guild)
         )
     )
-    result = await session.execute(stmt)
+    result = await session_db.execute(stmt)
     return result.scalar_one_or_none()
 
 
@@ -73,3 +76,50 @@ async def update_user_receiving_timer(session_db: AsyncSession, current_user: Us
 
     current_user.profile.receiving_timer = datetime.now()
     session_db.add(current_user.profile)
+
+
+async def check_can_user_receive_card(session_db: AsyncSession, current_user: User, need_slots: int) -> None:
+    """ Проверяет, хватит ли у пользователя места в инвентаре для новых карт.
+        Если не хватает, то выбрасывает исключение
+    """
+
+    all_cards = await get_all_cards_user(session_db, current_user.profile.id)
+    if need_slots > current_user.profile.card_slots - len(all_cards):
+        raise NotEnoughSlotsError('У вас недостаточно места для новых карт')
+
+
+async def charge_user_gold(session_db: AsyncSession, current_user: User, need_gold: int) -> dict:
+    """ Списывает золото у пользователя.
+        Если золота недостаточно поднимает ошибку
+    """
+
+    answer_data = {'gold_before': None,
+                   'gold_after': None}
+
+    if current_user.profile.gold < need_gold:
+        raise InsufficientFundsUserError(current_user.profile.gold - need_gold)
+
+    gold_after_buy = current_user.profile.gold - need_gold
+    answer_data['gold_before'] = current_user.profile.gold
+    answer_data['gold_after'] = gold_after_buy
+    current_user.profile.gold = gold_after_buy
+
+    session_db.add(current_user)
+
+    return answer_data
+
+
+async def create_transaction(session_db: AsyncSession,
+                             user_id: int,
+                             gold_before: int,
+                             gold_after: int,
+                             comment: str
+                             ) -> None:
+    """ Создает транзакцию пользователя """
+
+    new_transaction = Transactions(date_and_time=datetime.now(),
+                                   user_id=user_id,
+                                   before=gold_before,
+                                   after=gold_after,
+                                   comment=comment)
+    session_db.add(new_transaction)

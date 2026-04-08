@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Магазин карт{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_store.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: var(--primary-dark); text-align: center;">🃏 Магазин карт</h1>
+
+{% if card_store_dto.cards %}
+<div class="store-grid">
+    {% for card in card_store_dto.cards %}
+    <div class="store-card">
+        <div class="card-image">
+            <img src="{{ url_for('static', path=card.class_card_pic) }}" alt="{{ card.class_card_name }}">
+        </div>
+        <div class="card-info">
+            <div class="card-name">{{ card.class_card_name }} {{ card.rarity_card_name }} ({{ card.type_card_name }})</div>
+            <div class="card-stats">
+                <div class="card-stat">❤️ Здоровье: {{ card.hp }}</div>
+                <div class="card-stat">⚔️ Урон: {{ card.damage }}</div>
+            </div>
+            <div class="card-price">
+                <span class="price">Цена:</span>
+                {% if card.discount_now and card.discount > 0 %}
+                    {% set final_price = (card.price * (100 - card.discount) / 100) | round(0, 'floor') | int %}
+                    <span class="old-price">{{ card.price }}💰</span>
+                    <span class="new-price">{{ final_price }}💰</span>
+                {% else %}
+                    <span class="price">{{ card.price }}💰</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if current_user %}
+            {% if card.discount_now and card.discount > 0 %}
+                {% set final_price = (card.price * (100 - card.discount) / 100) | round(0, 'floor') | int %}
+            {% else %}
+                {% set final_price = card.price %}
+            {% endif %}
+            {% if current_user.gold >= final_price %}
+            <form method="post" action="{{ url_for('buy_card_in_store', card_id=card.id) }}" style="margin: 0 1rem 1rem 1rem;">
+                <button type="submit" class="btn-buy">Купить</button>
+            </form>
+            {% else %}
+            <button class="btn-buy disabled" disabled>Купить</button>
+            {% endif %}
+        {% else %}
+            <button class="btn-buy disabled" disabled>🔒 Купить</button>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-store">
+    😢 В магазине пока нет карт. Загляните позже!
+</div>
+{% endif %}
+{% endblock %}

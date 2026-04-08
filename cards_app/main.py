@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from cards_app.config.settings import settings
 from cards_app.config.logging import setup_logging
 
-from cards_app.routers import auth, users, cards, events
+from cards_app.routers import auth, users, cards, events, store
 
 setup_logging(settings.LOG_LEVEL)
 
@@ -23,11 +23,7 @@ app.include_router(cards.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(events.router)
-
-
-@app.get('/')
-async def root():
-    return {'message': '/class-cards /users/1'}
+app.include_router(store.router)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
+from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
 
 from cards_app.schemas.cards import AmuletDTO, CardDTO
 

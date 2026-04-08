@@ -15,32 +15,31 @@
         <img src="{{ url_for('static', path=card_dto.card.class_card_pic) }}" alt="Карта">
     </div>
     <div class="card-info">
-        <div class="card-name"><a href="#">{{ card_dto.card.class_card_name }} ({{ card_dto.card.type_card_name }})</a>
-        </div>
+        <div class="card-name">{{ card_dto.card.class_card_name }} ({{ card_dto.card.type_card_name }})</div>
         <div class="card-stats">
-            <div class="card-stat">Уровень: {{ card_dto.card.level }} / {{ card_dto.card.max_level }}</div>
-            <div class="card-stat">Редкость: {{ card_dto.card.rarity_card_name }}</div>
+            <div class="card-stat">💪Уровень: {{ card_dto.card.level }} / {{ card_dto.card.max_level }}</div>
+            <div class="card-stat">✨Редкость: {{ card_dto.card.rarity_card_name }}</div>
 
             {% if card_dto.amulet %}
             {% if card_dto.amulet.bonus_hp > 0%}
-            <div class="card-stat">Здоровье: {{ card_dto.card.hp }} +{{ card_dto.amulet.bonus_hp }}</div>
+            <div class="card-stat">❤️ Здоровье: {{ card_dto.card.hp }} +{{ card_dto.amulet.bonus_hp }}</div>
             {% else %}
-            <div class="card-stat">Здоровье: {{ card_dto.card.hp }} {{ card_dto.amulet.bonus_hp }}</div>
+            <div class="card-stat">❤️ Здоровье: {{ card_dto.card.hp }} {{ card_dto.amulet.bonus_hp }}</div>
             {% endif %}
 
             {% if card_dto.amulet.bonus_damage > 0%}
-            <div class="card-stat">Урон: {{ card_dto.card.damage }} +{{ card_dto.amulet.bonus_damage }}</div>
+            <div class="card-stat">⚔️ Урон: {{ card_dto.card.damage }} +{{ card_dto.amulet.bonus_damage }}</div>
             {% else %}
-            <div class="card-stat">Урон: {{ card_dto.card.damage }} {{ card_dto.amulet.bonus_damage }}</div>
+            <div class="card-stat">⚔️ Урон: {{ card_dto.card.damage }} {{ card_dto.amulet.bonus_damage }}</div>
             {% endif %}
 
 
             {% else %}
-            <div class="card-stat">Здоровье: {{ card_dto.card.hp }}</div>
-            <div class="card-stat">Урон: {{ card_dto.card.damage }}</div>
+            <div class="card-stat">❤️ Здоровье: {{ card_dto.card.hp }}</div>
+            <div class="card-stat">⚔️ Урон: {{ card_dto.card.damage }}</div>
             {% endif %}
-            <div class="card-stat">Усилений: {{ card_dto.card.enhancement }}/{{ card_dto.card.max_enhancement }}</div>
-            <div class="card-stat">Слияний: {{ card_dto.card.merger }}/{{ card_dto.card.max_merger }}</div>
+            <div class="card-stat">🛠️Усилений: {{ card_dto.card.enhancement }}/{{ card_dto.card.max_enhancement }}</div>
+            <div class="card-stat">🧬Слияний: {{ card_dto.card.merger }}/{{ card_dto.card.max_merger }}</div>
         </div>
         {% if card_dto.amulet %}
         <div class="amulet-info">
@@ -49,10 +48,10 @@
         {% endif %}
         {% if card_dto.is_owner %}
         <div class="card-actions-column">
-            <button class="card-action-btn">Усиление</button>
-            <button class="card-action-btn">Улучшение</button>
-            <button class="card-action-btn">Слияние</button>
-            <button class="card-action-btn">Амулет</button>
+            <button class="card-action-btn">🛠️Усиление</button>
+            <button class="card-action-btn">💪Улучшение</button>
+            <button class="card-action-btn">🧬Слияние</button>
+            <button class="card-action-btn">🔮Амулет</button>
         </div>
         {% endif %}
     </div>

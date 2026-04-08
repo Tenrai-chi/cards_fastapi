@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
 
 
 class AmuletDTO(BaseModel):
@@ -60,3 +59,4 @@ class GetFreeCardDTO(BaseModel):
 
     all_classes: List[ClassCard]
     all_rarities: List[RarityCard]
+    can_get_free_card: bool = False

@@ -25,7 +25,8 @@ class ViewProfileUseCase:
                       target_user_id: int
                       ) -> ProfileResponseDTO:
 
-        target_user = await get_base_info_profile(self.session, target_user_id)
+        target_user = await get_base_info_profile(session_db=self.session,
+                                                  user_id=target_user_id)
         if not target_user or not target_user.profile:
             raise UserNotFoundError()
 
@@ -45,7 +46,8 @@ class ViewProfileUseCase:
         card_dto = None
         amulet_dto = None
         if target_user.profile.current_card_id:
-            card = await get_card_with_details(self.session, target_user.profile.current_card_id)
+            card = await get_card_with_details(session_db=self.session,
+                                               card_id=target_user.profile.current_card_id)
             if card:
                 card_dto = CardDTO(id=card.id,
                                    class_card_name=card.class_card.name,
@@ -81,7 +83,9 @@ class ViewProfileUseCase:
         if is_owner:
             role = 'owner'
             user_email = target_user.email
-            fights = await get_fight_history_user(self.session, target_user.profile.id, limit=50)
+            fights = await get_fight_history_user(session_db=self.session,
+                                                  profile_id=target_user.profile.id,
+                                                  limit=50)
             battle_history = []
             for fight in fights:
                 is_win = (fight.winner_id == target_user.profile.id)
@@ -107,14 +111,14 @@ class ViewProfileUseCase:
         elif current_user is not None:
             role = 'guest'
             if current_user.profile:
-                stats = await get_battle_stats(self.session,
-                                               current_user.profile.id,
-                                               target_user.profile.id
+                stats = await get_battle_stats(session_db=self.session,
+                                               profile1_id=current_user.profile.id,
+                                               profile2_id=target_user.profile.id
                                                )
                 win_vs, lose_vs = stats
-                is_fav = await is_favorite(self.session,
-                                           current_user.profile.id,
-                                           target_user.profile.id
+                is_fav = await is_favorite(session_db=self.session,
+                                           current_profile_id=current_user.profile.id,
+                                           target_profile_id=target_user.profile.id
                                            )
 
         return ProfileResponseDTO(profile=base_dto,
