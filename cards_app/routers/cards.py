@@ -30,27 +30,29 @@ async def view_card(request: Request,
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewCardUseCase(session_db)
     try:
-        card_dto = await use_case.execute(card_id, current_user)
-    except CardNotFoundError:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': 'Карта не найдена', 'error_code': 404},
-            status_code=404
-        )
-    except Exception as error:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': error, 'error_code': 500},
-            status_code=500
-        )
+        card_info: dict = await use_case.execute(card_id, current_user)
+        if card_info['error_message']:
+            return templates.TemplateResponse(request=request,
+                                              name='error_page.html',
+                                              context={'error': 'Карта не найдена', 'error_code': 404},
+                                              status_code=404
+                                              )
+        else:
+            context = {'request': request,
+                       'current_user': current_user_dto,
+                       'card_dto': card_info['card_info_dto'],
+                       }
+            return templates.TemplateResponse(request=request,
+                                              name='card.html',
+                                              context=context,
+                                              status_code=200)
 
-    context = {'request': request,
-               'current_user': current_user_dto,
-               'card_dto': card_dto,
-               }
-    return templates.TemplateResponse(request, 'card.html', context)
+    except Exception as error:
+        return templates.TemplateResponse(request=request,
+                                          name='error_page.html',
+                                          context={'error': error, 'error_code': 500},
+                                          status_code=500
+                                          )
 
 
 @router.get(path='/free_card', name='get_card')
@@ -66,12 +68,11 @@ async def view_free_card(request: Request,
     try:
         info_dto = await use_case.execute(current_user)
     except Exception as error:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': error, 'error_code': 500},
-            status_code=500
-        )
+        return templates.TemplateResponse(request=request,
+                                          name='error_page.html',
+                                          context={'error': error, 'error_code': 500},
+                                          status_code=500
+                                          )
 
     context = {'request': request,
                'current_user': current_user_dto,
@@ -79,7 +80,10 @@ async def view_free_card(request: Request,
                'error_message': error
                }
 
-    return templates.TemplateResponse(request, 'free_card_page.html', context)
+    return templates.TemplateResponse(request=request,
+                                      name='free_card_page.html',
+                                      context=context,
+                                      status_code=200)
 
 
 @router.post(path='/generate_new_card', name='create_card')
@@ -102,10 +106,10 @@ async def get_free_card(request: Request,
             new_card_id = data['new_card_id']
             url = request.url_for('view_card', card_id=new_card_id)
             return RedirectResponse(url, status_code=303)
+
     except Exception as error:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': error, 'error_code': 500},
-            status_code=500
-        )
+        return templates.TemplateResponse(request=request,
+                                          name='error_page.html',
+                                          context={'error': error, 'error_code': 500},
+                                          status_code=500
+                                          )

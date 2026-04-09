@@ -23,12 +23,17 @@ class ViewProfileUseCase:
     async def execute(self,
                       current_user: Optional[User],
                       target_user_id: int
-                      ) -> ProfileResponseDTO:
+                      ) -> dict:
 
-        target_user = await get_base_info_profile(session_db=self.session,
-                                                  user_id=target_user_id)
-        if not target_user or not target_user.profile:
-            raise UserNotFoundError()
+        answer_data = {'user_info': None,
+                       'error_message': None}
+
+        try:
+            target_user = await get_base_info_profile(session_db=self.session,
+                                                      user_id=target_user_id)
+        except UserNotFoundError as error:
+            answer_data['error_message'] = str(error)
+            return answer_data
 
         base_dto = ProfileBaseDTO(about_user=target_user.profile.about_user,
                                   profile_pic=target_user.profile.profile_pic,
@@ -78,7 +83,7 @@ class ViewProfileUseCase:
         win_vs = None
         lose_vs = None
         is_fav = None
-        role = 'anonim'
+        role = 'anonymous'
 
         if is_owner:
             role = 'owner'
@@ -121,14 +126,16 @@ class ViewProfileUseCase:
                                            target_profile_id=target_user.profile.id
                                            )
 
-        return ProfileResponseDTO(profile=base_dto,
-                                  guild=guild_dto,
-                                  card=card_dto,
-                                  amulet=amulet_dto,
-                                  user_email=user_email,
-                                  battle_history=battle_history,
-                                  win_vs=win_vs,
-                                  lose_vs=lose_vs,
-                                  is_favorite=is_fav,
-                                  role=role
-                                  )
+        user_info = ProfileResponseDTO(profile=base_dto,
+                                       guild=guild_dto,
+                                       card=card_dto,
+                                       amulet=amulet_dto,
+                                       user_email=user_email,
+                                       battle_history=battle_history,
+                                       win_vs=win_vs,
+                                       lose_vs=lose_vs,
+                                       is_favorite=is_fav,
+                                       role=role
+                                       )
+        answer_data['user_info'] = user_info
+        return answer_data

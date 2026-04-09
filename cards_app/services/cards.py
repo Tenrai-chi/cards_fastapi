@@ -7,16 +7,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from cards_app.config.exceptions import CardInStoreNotFoundError, CardNotOnSaleError
+from cards_app.config.exceptions import CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError
 from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore
 
 
 async def get_card_with_details(session_db: AsyncSession,
                                 card_id: int
-                                ) -> Card | None:
+                                ) -> Card:
     """ Возвращает карту с подгруженными амулетом, классом, типом и редкостью """
 
-    stmt = (
+    stmt_card = (
         select(Card)
         .where(Card.id == card_id)
         .options(
@@ -26,8 +26,11 @@ async def get_card_with_details(session_db: AsyncSession,
             selectinload(Card.amulet).selectinload(AmuletItem.amulet_type)
         )
     )
-    result = await session_db.execute(stmt)
-    return result.scalar_one_or_none()
+    result_card = await session_db.execute(stmt_card)
+    card = result_card.scalar_one_or_none()
+    if card is None:
+        raise CardNotFoundError(card_id)
+    return card
 
 
 async def get_drop_chance_card(session_db: AsyncSession) -> dict:

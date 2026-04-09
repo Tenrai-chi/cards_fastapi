@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 from sqlalchemy import func, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -7,22 +6,26 @@ from sqlalchemy.orm import selectinload
 from cards_app.config.exceptions import InsufficientFundsUserError, NotEnoughSlotsError
 from cards_app.models import User, Profile, FavoriteUsers, Card, FightHistory, Transactions
 from cards_app.services.cards import get_all_cards_user
+from cards_app.config.exceptions import UserNotFoundError
 
 
 async def get_base_info_profile(session_db: AsyncSession,
                                 user_id: int
-                                ) -> Optional[User]:
+                                ) -> User:
     """ Возвращает базовую информацию профиля с подгруженной гильдией """
 
-    stmt = (
+    stmt_user = (
         select(User)
         .where(User.id == user_id)
         .options(
             selectinload(User.profile).selectinload(Profile.guild)
         )
     )
-    result = await session_db.execute(stmt)
-    return result.scalar_one_or_none()
+    result_user = await session_db.execute(stmt_user)
+    user = result_user.scalar_one_or_none()
+    if user is None:
+        raise UserNotFoundError(user_id)
+    return user
 
 
 async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_id: int):

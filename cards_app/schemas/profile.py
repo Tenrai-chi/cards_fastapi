@@ -46,7 +46,7 @@ class ProfileResponseDTO(BaseModel):
     guild: Optional[GuildDTO] = None
     card: Optional[CardDTO] = None
     amulet: Optional[AmuletDTO] = None
-    role: Optional[str] = 'Anonim'
+    role: Optional[str] = 'anonymous'
 
     # Владелец
     user_email: Optional[str] = None

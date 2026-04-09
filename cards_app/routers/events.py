@@ -19,7 +19,7 @@ templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
 @router.get(path='/', name='home')
 async def root(request: Request):
     url = request.url_for('news')
-    return RedirectResponse(url, status_code=303)
+    return RedirectResponse(url=url, status_code=303)
 
 
 @router.get(path='/news', name='news')
@@ -40,11 +40,13 @@ async def view_news(request: Request,
                    'current_user': current_user_dto,
                    'news': news_dto
                    }
-        return templates.TemplateResponse(request, 'home_news.html', context)
+        return templates.TemplateResponse(request=request,
+                                          name='home_news.html',
+                                          context=context,
+                                          status_code=200)
     except Exception as error:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': error, 'error_code': 500},
-            status_code=500
-        )
+        return templates.TemplateResponse(request=request,
+                                          name='error_page.html',
+                                          context={'error': error, 'error_code': 500},
+                                          status_code=500
+                                          )

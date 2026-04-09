@@ -27,23 +27,25 @@ async def view_user_profile(request: Request,
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewProfileUseCase(session_db)
     try:
-        profile_dto = await use_case.execute(current_user, user_id)
-    except UserNotFoundError:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': 'Пользователь не найден', 'error_code': 404},
-            status_code=404
-        )
-    except Exception as error:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': error, 'error_code': 500},
-            status_code=500)
+        profile_info = await use_case.execute(current_user, user_id)
+        if profile_info['error_message']:
+            return templates.TemplateResponse(request=request,
+                                              name='error_page.html',
+                                              context={'error': 'Пользователь не найден', 'error_code': 404},
+                                              status_code=404
+                                              )
+        else:
+            context = {'request': request,
+                       'current_user': current_user_dto,
+                       'profile_dto': profile_info['user_info'],
+                       }
+            return templates.TemplateResponse(request=request,
+                                              name='profile.html',
+                                              context=context,
+                                              status_code=200)
 
-    context = {'request': request,
-               'current_user': current_user_dto,
-               'profile_dto': profile_dto,
-               }
-    return templates.TemplateResponse(request, 'profile.html', context)
+    except Exception as error:
+        return templates.TemplateResponse(request=request,
+                                          name='error_page.html',
+                                          context={'error': error, 'error_code': 500},
+                                          status_code=500)

@@ -23,12 +23,16 @@ class ViewCardUseCase:
     async def execute(self,
                       card_id: int,
                       current_user: User
-                      ) -> CardInfoDTO:
+                      ) -> dict:
 
-        card = await get_card_with_details(session_db=self.session_db,
-                                           card_id=card_id)
-        if not card:
-            raise CardNotFoundError()
+        answer_data = {'card_dto': None,
+                       'error_message': None}
+        try:
+            card = await get_card_with_details(session_db=self.session_db,
+                                               card_id=card_id)
+        except CardNotFoundError as error:
+            answer_data['error_message'] = str(error)
+            return answer_data
 
         need_exp = calculate_need_exp(level=card.level)
         amulet_dto = None
@@ -59,10 +63,12 @@ class ViewCardUseCase:
         else:
             is_owner = False
 
-        return CardInfoDTO(card=card_dto,
-                           amulet=amulet_dto,
-                           is_owner=is_owner
-                           )
+        card_info_dto = CardInfoDTO(card=card_dto,
+                                    amulet=amulet_dto,
+                                    is_owner=is_owner
+                                    )
+        answer_data['card_info_dto'] = card_info_dto
+        return answer_data
 
 
 class ViewGetFreeCard:

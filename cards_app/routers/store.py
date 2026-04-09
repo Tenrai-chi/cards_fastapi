@@ -31,12 +31,11 @@ async def view_card_store(request: Request,
     try:
         card_store_dto = await use_case.execute()
     except Exception as error:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': error, 'error_code': 500},
-            status_code=500
-        )
+        return templates.TemplateResponse(request=request,
+                                          name='error_page.html',
+                                          context={'error': error, 'error_code': 500},
+                                          status_code=500
+                                          )
 
     context = {'request': request,
                'current_user': current_user_dto,
@@ -44,7 +43,10 @@ async def view_card_store(request: Request,
                'error_message': error
                }
 
-    return templates.TemplateResponse(request, 'card_store.html', context)
+    return templates.TemplateResponse(request=request,
+                                      name='card_store.html',
+                                      context=context,
+                                      status_code=200)
 
 
 @router.post(path='/cards/buy-{card_id}', name='buy_card_in_store')
@@ -69,9 +71,8 @@ async def buy_card_in_store(request: Request,
             url = request.url_for('view_card', card_id=new_card_id)
             return RedirectResponse(url, status_code=303)
     except Exception as error:
-        return templates.TemplateResponse(
-            request=request,
-            name='error_page.html',
-            context={'error': error, 'error_code': 500},
-            status_code=500
-        )
+        return templates.TemplateResponse(request=request,
+                                          name='error_page.html',
+                                          context={'error': error, 'error_code': 500},
+                                          status_code=500
+                                          )

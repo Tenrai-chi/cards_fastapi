@@ -18,7 +18,10 @@ templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
 async def register_page(request: Request):
     """ Отображает страницу регистрации """
 
-    return templates.TemplateResponse(request=request, name='register.html', context={'request': request})
+    return templates.TemplateResponse(request=request,
+                                      name='register.html',
+                                      context={'request': request},
+                                      status_code=200)
 
 
 @router.post(path='/register', name='register')
@@ -35,17 +38,22 @@ async def register(request: Request,
     if result['error_message']:
         return templates.TemplateResponse(request=request,
                                           name='register.html',
-                                          context={'request': request, 'error': result['error_message']}
+                                          context={'request': request, 'error': result['error_message']},
+                                          status_code=200
                                           )
 
-    return RedirectResponse(url='/auth/login', status_code=303)
+    url = request.url_for('login_page')
+    return RedirectResponse(url, status_code=303)
 
 
 @router.get(path='/login', name='login_page')
 async def login_page(request: Request):
     """ Отображает форму входа """
 
-    return templates.TemplateResponse(request=request, name='login.html', context={'request': request})
+    return templates.TemplateResponse(request=request,
+                                      name='login.html',
+                                      context={'request': request},
+                                      status_code=200)
 
 
 @router.post(path='/login', name='login')
@@ -62,10 +70,12 @@ async def login(request: Request,
     if result['error_message']:
         return templates.TemplateResponse(request=request,
                                           name='login.html',
-                                          context={'request': request, 'error': result['error_message']})
+                                          context={'request': request, 'error': result['error_message']},
+                                          status_code=200)
 
     user = result['user']
-    response = RedirectResponse(url=f'/users/{user.id}', status_code=303)
+    url = request.url_for('user_profile', user_id=user.id)
+    response = RedirectResponse(url=url, status_code=303)
     response.set_cookie(key='access_token',
                         value=result['access_token'],
                         httponly=True,
@@ -86,7 +96,10 @@ async def logout(request: Request, db_session: AsyncSession = Depends(get_db_ses
     refresh_token = request.cookies.get('refresh_token')
     if refresh_token:
         await delete_refresh_token(db_session, refresh_token)
-    response = RedirectResponse(url='/auth/login', status_code=303)
-    response.delete_cookie('access_token')
-    response.delete_cookie('refresh_token')
+
+    url = request.url_for('login_page')
+    response = RedirectResponse(url=url, status_code=303)
+    response.delete_cookie(key='access_token', secure=False, samesite='lax')
+    response.delete_cookie(key='refresh_token', secure=False, samesite='lax')
+
     return response
