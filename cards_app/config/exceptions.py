@@ -20,8 +20,48 @@ class UserNotFoundError(AppException):
     def __init__(self, user_id: int | None = None):
         """ Формирует сообщение об ошибке в зависимости от наличия user_id """
 
-        message = f'Пользователь с id={user_id} не найден' if user_id else 'Пользователь не найден'
+        message = f'Пользователь ID: {user_id} не найден' if user_id else 'Пользователь не найден'
         super().__init__(message, status_code=404)
+
+
+class SelfFavoriteError(AppException):
+    """ Исключение, возникающее при попытке добавить в избранное самого себя """
+
+    def __init__(self):
+        """ Формирует сообщение об ошибке """
+
+        message = f'Вы не можете добавить в избранное самого себя'
+        super().__init__(message, status_code=400)
+
+
+class SelfFavoriteRemoveError(AppException):
+    """ Исключение, возникающее при попытке удалить из избранного самого себя """
+
+    def __init__(self):
+        """ Формирует сообщение об ошибке """
+
+        message = f'Вы не можете удалить из избранного самого себя'
+        super().__init__(message, status_code=400)
+
+
+class DuplicateFavoriteError(AppException):
+    """ Исключение, возникающее при попытке добавить в избранное пользователя, который уже в избранном """
+
+    def __init__(self):
+        """ Формирует сообщение об ошибке """
+
+        message = f'Этот пользователь уже находится в списке избранных'
+        super().__init__(message, status_code=400)
+
+
+class FavoriteNotFoundError(AppException):
+    """ Исключение, возникающее при попытке удалить из избранного пользователя, которого там не было """
+
+    def __init__(self):
+        """ Формирует сообщение об ошибке """
+
+        message = f'Этот пользователь уже находится в списке избранных'
+        super().__init__(message, status_code=400)
 
 
 class CardNotFoundError(AppException):

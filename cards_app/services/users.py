@@ -4,7 +4,7 @@ from cards_app.models.users import User
 
 async def user_info_to_dto(user_orm: User | None) -> CurrentUserForMenuDTO | None:
     """ Преобразует данные полученные из depends в DTO
-        Пока что использую во всех роутах, пока не придумаю куда деть
+        Пока что использую во всех эндпоинтах, пока не придумаю куда деть
     """
 
     if user_orm:

@@ -30,6 +30,7 @@ class FightHistoryRecordDTO(BaseModel):
 class ProfileBaseDTO(BaseModel):
     """ Базовая информация профиля (доступна всем) """
 
+    id: int
     about_user: Optional[str] = None
     profile_pic: str
     win: int

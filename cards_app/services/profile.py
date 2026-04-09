@@ -3,10 +3,11 @@ from sqlalchemy import func, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from cards_app.config.exceptions import InsufficientFundsUserError, NotEnoughSlotsError
-from cards_app.models import User, Profile, FavoriteUsers, Card, FightHistory, Transactions
+from cards_app.config.exceptions import (InsufficientFundsUserError, NotEnoughSlotsError, SelfFavoriteError,
+                                         DuplicateFavoriteError, UserNotFoundError, SelfFavoriteRemoveError,
+                                         FavoriteNotFoundError)
+from cards_app.models import User, Profile, FavoriteUsers, Card, FightHistory, Transactions, FavoriteUsers
 from cards_app.services.cards import get_all_cards_user
-from cards_app.config.exceptions import UserNotFoundError
 
 
 async def get_base_info_profile(session_db: AsyncSession,
@@ -126,3 +127,54 @@ async def create_transaction(session_db: AsyncSession,
                                    after=gold_after,
                                    comment=comment)
     session_db.add(new_transaction)
+
+
+async def add_user_to_favorite(session_db: AsyncSession,
+                               current_user_id: int,
+                               target_user_id: int
+                               ) -> None:
+    """ Добавляет выбранного пользователя в список избранных текущего пользователя """
+
+    if current_user_id == target_user_id:
+        raise SelfFavoriteError()
+
+    target_user = await session_db.get(Profile, target_user_id)
+    if target_user is None:
+        raise UserNotFoundError()
+
+    stmt_check = select(FavoriteUsers).where(
+        FavoriteUsers.user_id == current_user_id,
+        FavoriteUsers.favorite_user_id == target_user_id
+    )
+    result = await session_db.execute(stmt_check)
+    existing = result.scalar_one_or_none()
+    if existing:
+        raise DuplicateFavoriteError()
+    new_favorite = FavoriteUsers(user_id=current_user_id, favorite_user_id=target_user_id)
+
+    session_db.add(new_favorite)
+
+
+async def remove_user_from_favorite(session_db: AsyncSession,
+                                    current_user_id: int,
+                                    target_user_id: int
+                                    ) -> None:
+    """ Удаляет выбранного пользователя из списка избранных текущего пользователя """
+
+    if current_user_id == target_user_id:
+        raise SelfFavoriteRemoveError()
+
+    target_user = await session_db.get(Profile, target_user_id)
+    if target_user is None:
+        raise UserNotFoundError()
+
+    stmt_check = select(FavoriteUsers).where(
+        FavoriteUsers.user_id == current_user_id,
+        FavoriteUsers.favorite_user_id == target_user_id
+    )
+    result = await session_db.execute(stmt_check)
+    favorite = result.scalar_one_or_none()
+    if not favorite:
+        raise FavoriteNotFoundError()
+    await session_db.delete(favorite)
+

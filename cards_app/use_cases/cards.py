@@ -26,7 +26,8 @@ class ViewCardUseCase:
                       ) -> dict:
 
         answer_data = {'card_dto': None,
-                       'error_message': None}
+                       'error_message': None,
+                       'status_code': None}
         try:
             card = await get_card_with_details(session_db=self.session_db,
                                                card_id=card_id)

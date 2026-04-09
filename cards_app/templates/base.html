@@ -95,10 +95,18 @@
         // При загрузке страницы проверяем параметр error в URL
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
+            // Обработка ошибок
             const errorMsg = urlParams.get('error');
             if (errorMsg) {
                 showToast(decodeURIComponent(errorMsg), 'error');
                 // Опционально: удалить параметр из URL без перезагрузки
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+            // НОВЫЙ БЛОК: обработка успеха
+            const successMsg = urlParams.get('success');
+            if (successMsg) {
+                showToast(decodeURIComponent(successMsg), 'success');
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, document.title, newUrl);
             }

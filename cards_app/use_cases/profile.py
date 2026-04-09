@@ -2,13 +2,15 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
-                                        get_fight_history_user, is_favorite)
+                                        get_fight_history_user, is_favorite, add_user_to_favorite,
+                                        remove_user_from_favorite)
 from cards_app.services.cards import get_card_with_details
 from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, GuildDTO,
                                        CardDTO, AmuletDTO, FightHistoryRecordDTO, CardBriefDTO
                                        )
 from cards_app.models.users import User
-from cards_app.config.exceptions import UserNotFoundError
+from cards_app.config.exceptions import UserNotFoundError, DuplicateFavoriteError, SelfFavoriteError, \
+    FavoriteNotFoundError, SelfFavoriteRemoveError
 
 
 class ViewProfileUseCase:
@@ -17,8 +19,8 @@ class ViewProfileUseCase:
         Возможны 3 случая: аноним, гость, хозяин
     """
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
 
     async def execute(self,
                       current_user: Optional[User],
@@ -26,16 +28,19 @@ class ViewProfileUseCase:
                       ) -> dict:
 
         answer_data = {'user_info': None,
-                       'error_message': None}
+                       'error_message': None,
+                       'status_code': None}
 
         try:
-            target_user = await get_base_info_profile(session_db=self.session,
+            target_user = await get_base_info_profile(session_db=self.session_db,
                                                       user_id=target_user_id)
         except UserNotFoundError as error:
             answer_data['error_message'] = str(error)
+            answer_data['status_code'] = error.status_code
             return answer_data
 
-        base_dto = ProfileBaseDTO(about_user=target_user.profile.about_user,
+        base_dto = ProfileBaseDTO(id=target_user.profile.id,
+                                  about_user=target_user.profile.about_user,
                                   profile_pic=target_user.profile.profile_pic,
                                   win=target_user.profile.win,
                                   lose=target_user.profile.lose,
@@ -51,7 +56,7 @@ class ViewProfileUseCase:
         card_dto = None
         amulet_dto = None
         if target_user.profile.current_card_id:
-            card = await get_card_with_details(session_db=self.session,
+            card = await get_card_with_details(session_db=self.session_db,
                                                card_id=target_user.profile.current_card_id)
             if card:
                 card_dto = CardDTO(id=card.id,
@@ -88,7 +93,7 @@ class ViewProfileUseCase:
         if is_owner:
             role = 'owner'
             user_email = target_user.email
-            fights = await get_fight_history_user(session_db=self.session,
+            fights = await get_fight_history_user(session_db=self.session_db,
                                                   profile_id=target_user.profile.id,
                                                   limit=50)
             battle_history = []
@@ -116,12 +121,12 @@ class ViewProfileUseCase:
         elif current_user is not None:
             role = 'guest'
             if current_user.profile:
-                stats = await get_battle_stats(session_db=self.session,
+                stats = await get_battle_stats(session_db=self.session_db,
                                                profile1_id=current_user.profile.id,
                                                profile2_id=target_user.profile.id
                                                )
                 win_vs, lose_vs = stats
-                is_fav = await is_favorite(session_db=self.session,
+                is_fav = await is_favorite(session_db=self.session_db,
                                            current_profile_id=current_user.profile.id,
                                            target_profile_id=target_user.profile.id
                                            )
@@ -138,4 +143,106 @@ class ViewProfileUseCase:
                                        role=role
                                        )
         answer_data['user_info'] = user_info
+        answer_data['status_code'] = 200
         return answer_data
+
+
+class AddFavoriteUserUseCase:
+    """ Use case для добавления пользователя в список избранных """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self,
+                      current_user: Optional[User],
+                      target_user_id: int
+                      ) -> dict:
+
+        answer_data = {'success': None,
+                       'error_message': None,
+                       'status_code': None,
+                       'success_message': None}
+
+        if current_user is None:
+            answer_data['success'] = False
+            answer_data['error_message'] = 'Для данного действия необходимо авторизоваться'
+            answer_data['status_code'] = 400
+            return answer_data
+
+        try:
+            await add_user_to_favorite(session_db=self.session_db,
+                                       current_user_id=current_user.profile.id,
+                                       target_user_id=target_user_id)
+
+            await self.session_db.commit()
+            answer_data['success'] = True
+            answer_data['status_code'] = 303
+            answer_data['success_message'] = 'Пользователь добавлен в избранное'
+            return answer_data
+
+        except (SelfFavoriteError, UserNotFoundError, DuplicateFavoriteError) as error:
+            await self.session_db.rollback()
+            answer_data['success'] = False
+            answer_data['error_message'] = str(error)
+            answer_data['status_code'] = error.status_code
+
+            return answer_data
+
+        except Exception as error:
+            await self.session_db.rollback()
+            answer_data['success'] = False
+            answer_data['error_message'] = str(error)
+            answer_data['status_code'] = 500
+
+            return answer_data
+
+
+class RemoveFavoriteUserUseCase:
+    """ Use case для удаления пользователя из списка избранных """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self,
+                      current_user: Optional[User],
+                      target_user_id: int
+                      ) -> dict:
+
+        answer_data = {'success': None,
+                       'error_message': None,
+                       'status_code': None,
+                       'success_message': None}
+
+        if current_user is None:
+            answer_data['success'] = False
+            answer_data['error_message'] = 'Для данного действия необходимо авторизоваться'
+            answer_data['status_code'] = 400
+            return answer_data
+
+        try:
+            await remove_user_from_favorite(session_db=self.session_db,
+                                            current_user_id=current_user.profile.id,
+                                            target_user_id=target_user_id)
+
+            await self.session_db.commit()
+            answer_data['success'] = True
+            answer_data['status_code'] = 303
+            answer_data['success_message'] = 'Пользователь удален из избранного'
+            return answer_data
+
+        except (SelfFavoriteRemoveError, UserNotFoundError, FavoriteNotFoundError) as error:
+            await self.session_db.rollback()
+            answer_data['success'] = False
+            answer_data['error_message'] = str(error)
+            answer_data['status_code'] = error.status_code
+
+            return answer_data
+
+        except Exception as error:
+            await self.session_db.rollback()
+            answer_data['success'] = False
+            answer_data['error_message'] = str(error)
+            answer_data['status_code'] = 500
+
+            return answer_data
+

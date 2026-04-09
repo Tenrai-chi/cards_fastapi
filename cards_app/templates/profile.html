@@ -47,10 +47,21 @@
         {% endif %}
 
         {% if profile_dto.role == 'guest' %}
-            <button class="btn-favorite" data-user-id="{{ profile_dto.id }}" data-favorite="{{ 'true' if is_favorite else 'false' }}">
-                {% if is_favorite %}Удалить из избранного{% else %}В избранное{% endif %}
-            </button>
+            {% if profile_dto.is_favorite == False%}
+            <form method="post"
+                  action="{{ url_for('add_favorite_user', user_id=profile_dto.profile.id) }}">
+                <button type="submit" class="btn-favorite">❤️ В избранное
+                </button>
+            </form>
+            {% else %}
+            <form method="post"
+                  action="{{ url_for('remove_favorite_user', user_id=profile_dto.profile.id) }}">
+                <button type="submit" class="btn-favorite">💔Удалить из избранного
+                </button>
+            </form>
+            {% endif %}
         {% endif %}
+
     </div>
 
     <!-- Правая колонка: избранная карта и дополнительные действия -->
