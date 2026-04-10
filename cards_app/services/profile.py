@@ -178,3 +178,34 @@ async def remove_user_from_favorite(session_db: AsyncSession,
         raise FavoriteNotFoundError()
     await session_db.delete(favorite)
 
+
+async def ensure_favorite_slot_available(session_db: AsyncSession,
+                                         current_user: User
+                                         ) -> None:
+    """ Проверяет, что у пользователя есть место для добавления нового пользователя в избранное """
+
+    stmt = select(func.count()).select_from(FavoriteUsers).where(
+        FavoriteUsers.user_id == current_user.profile.id
+    )
+    result = await session_db.execute(stmt)
+    favorites_count = result.scalar_one()
+
+    if favorites_count >= current_user.profile.max_favorite:
+        raise NotEnoughSlotsError('У вас недостаточно места в списке избранных для добавления нового пользователя')
+
+
+async def get_favorite_user(session_db: AsyncSession,
+                            current_user: User
+                            ) -> list[FavoriteUsers]:
+    """ Возвращает список избранных пользователей """
+
+    stmt = (
+        select(FavoriteUsers)
+        .where(FavoriteUsers.user_id == current_user.profile.id)
+        .options(
+            selectinload(FavoriteUsers.favorite_user).selectinload(Profile.user)
+        )
+    )
+    result = await session_db.execute(stmt)
+
+    return list(result.scalars().all())

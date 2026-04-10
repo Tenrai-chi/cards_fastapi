@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Мои избранные пользователи{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
+    <div style="width: 100%; max-width: 800px; margin: 0 auto;">
+        <h1 style="text-align: center; color: var(--primary-dark); margin-bottom: 1.5rem;">Избранные пользователи</h1>
+
+        <!-- Информация о количестве -->
+        <div style="text-align: center; margin-bottom: 1.5rem; font-size: 1.1rem;">
+            <span style="background: var(--primary-light); padding: 0.5rem 1rem; border-radius: 30px;">
+                👥 {{ favorite_users_dto.amount_users }} / {{ favorite_users_dto.max_amount_users }} избранных
+            </span>
+        </div>
+
+        <!-- Таблица избранных -->
+        <div class="table-responsive">
+            <table class="fight-table" style="margin: 0 auto; width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">#</th>
+                        <th style="text-align: center;">Пользователь</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if favorite_users_dto.favorite_users %}
+                        {% for user in favorite_users_dto.favorite_users %}
+                        <tr>
+                            <td style="text-align: center; width: 80px;">{{ loop.index }}</td>
+                            <td style="text-align: center;">
+                                <a href="{{ url_for('user_profile', user_id=user.id) }}" style="color: var(--primary-dark); text-decoration: none; font-weight: 500;">
+                                    {{ user.username }}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="2" style="text-align: center; padding: 2rem;">
+                                😔 У вас пока нет избранных пользователей
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
