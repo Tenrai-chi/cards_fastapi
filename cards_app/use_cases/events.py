@@ -15,7 +15,10 @@ class ViewNewsUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def execute(self, page: int, size: int) -> NewsDTO:
+    async def execute(self, page: int, size: int) -> dict:
+        answer_data = {'news_dto': None,
+                       'status_code': None}
+
         offset = (page - 1) * size
         news_models = await get_paginated_news(self.session, limit=size, offset=offset)
 
@@ -31,9 +34,12 @@ class ViewNewsUseCase:
             for item in news_models
         ]
 
-        return NewsDTO(items=news_records,
-                       total=total,
-                       page=page,
-                       size=size,
-                       total_pages=total_pages
-                       )
+        news_dto = NewsDTO(items=news_records,
+                           total=total,
+                           page=page,
+                           size=size,
+                           total_pages=total_pages
+                           )
+        answer_data['status_code'] = 200
+        answer_data['news_dto'] = news_dto
+        return answer_data

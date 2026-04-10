@@ -23,35 +23,34 @@ async def view_card(request: Request,
                     card_id: int,
                     session_db: AsyncSession = Depends(get_db_session),
                     current_user: User | None = Depends(get_current_user_with_profile),
+                    error: str = None,
+                    success: str = None
                     ):
     """ Просмотр карты """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewCardUseCase(session_db)
-    try:
-        card_info: dict = await use_case.execute(card_id, current_user)
-        if card_info['error_message']:
+    data: dict = await use_case.execute(card_id, current_user)
+    if data.get('card_info_dto') is not None:
+        context = {'request': request,
+                   'current_user': current_user_dto,
+                   'card_dto': data.get('card_info_dto'),
+                   'error_message': error,
+                   'success_message': success
+                   }
+        return templates.TemplateResponse(request=request,
+                                          name='card.html',
+                                          context=context,
+                                          status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') in (404, 500):
+            context = {'error': data.get('error_message'),
+                       'error_code': data.get('status_code')}
             return templates.TemplateResponse(request=request,
                                               name='error_page.html',
-                                              context={'error': 'Карта не найдена', 'error_code': 404},
-                                              status_code=404
-                                              )
-        else:
-            context = {'request': request,
-                       'current_user': current_user_dto,
-                       'card_dto': card_info['card_info_dto'],
-                       }
-            return templates.TemplateResponse(request=request,
-                                              name='card.html',
                                               context=context,
-                                              status_code=200)
-
-    except Exception as error:
-        return templates.TemplateResponse(request=request,
-                                          name='error_page.html',
-                                          context={'error': error, 'error_code': 500},
-                                          status_code=500
-                                          )
+                                              status_code=data.get('status_code')
+                                              )
 
 
 @router.get(path='/free_card', name='get_card')
@@ -64,25 +63,17 @@ async def view_free_card(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewGetFreeCard(session_db)
-    try:
-        info_dto = await use_case.execute(current_user)
-    except Exception as error:
-        return templates.TemplateResponse(request=request,
-                                          name='error_page.html',
-                                          context={'error': error, 'error_code': 500},
-                                          status_code=500
-                                          )
+    data: dict = await use_case.execute(current_user)
 
     context = {'request': request,
                'current_user': current_user_dto,
-               'info_dto': info_dto,
+               'info_dto': data.get('get_free_card_dto'),
                'error_message': error
                }
-
     return templates.TemplateResponse(request=request,
                                       name='free_card_page.html',
                                       context=context,
-                                      status_code=200)
+                                      status_code=data.get('status_code'))
 
 
 @router.post(path='/generate_new_card', name='create_card')
@@ -92,23 +83,27 @@ async def get_free_card(request: Request,
                         ):
     """ Обработка запроса получения бесплатной карты """
 
+    current_user_dto = await user_info_to_dto(current_user)
     use_case = GetFreeCardUseCase(session_db)
-    try:
-        data: dict = await use_case.execute(current_user)
-        if data.get('error_message'):
+    data: dict = await use_case.execute(current_user)
+
+    if data.get('success') is True:
+        new_card_id = data.get('new_card_id')
+        url = request.url_for('view_card', card_id=new_card_id)
+        return RedirectResponse(url, status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') in (404, 500):
+            context = {'error': data.get('error_message'),
+                       'status_code': data.get('status_code'),
+                       'current_user': current_user_dto}
+            return templates.TemplateResponse(request=request,
+                                              name='error_page.html',
+                                              context=context,
+                                              status_code=data.get('status_code')
+                                              )
+        else:
             error_msg = data['error_message']
             encoded_error = quote(error_msg)
             url = request.url_for('get_card')
             full_url = f'{url}?error={encoded_error}'
             return RedirectResponse(full_url, status_code=303)
-        else:
-            new_card_id = data['new_card_id']
-            url = request.url_for('view_card', card_id=new_card_id)
-            return RedirectResponse(url, status_code=303)
-
-    except Exception as error:
-        return templates.TemplateResponse(request=request,
-                                          name='error_page.html',
-                                          context={'error': error, 'error_code': 500},
-                                          status_code=500
-                                          )

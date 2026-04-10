@@ -13,12 +13,16 @@ class GuildDTO(BaseModel):
 
 
 class CardBriefDTO(BaseModel):
+    """ Информация о карте в истории боев """
+
     id: int
     class_name: str
     type_name: str
 
 
 class FightHistoryRecordDTO(BaseModel):
+    """ История боев """
+
     date_and_time: datetime
     result: str
     user_card: CardBriefDTO
@@ -31,6 +35,7 @@ class ProfileBaseDTO(BaseModel):
     """ Базовая информация профиля (доступна всем) """
 
     id: int
+    username: str
     about_user: Optional[str] = None
     profile_pic: str
     win: int
@@ -57,3 +62,18 @@ class ProfileResponseDTO(BaseModel):
     win_vs: Optional[int] = None
     lose_vs: Optional[int] = None
     is_favorite: Optional[bool] = None
+
+
+class FavoriteUserDTO(BaseModel):
+    """ Избранный пользователь """
+
+    id: int
+    username: str
+
+
+class FavoriteUsersPageDTO(BaseModel):
+    """ Информация для страницы просмотра избранных пользователей """
+
+    amount_users: int
+    max_amount_users: int
+    favorite_users: Optional[List[FavoriteUserDTO]]

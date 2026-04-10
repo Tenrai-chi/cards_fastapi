@@ -2,19 +2,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import *
 from cards_app.services.cards import (get_card_with_details, get_drop_chance_card, generate_random_card,
-                                      create_record_in_history_receiving_card, get_temp_card_in_store,
-                                      create_new_card_from_template)
+                                      create_record_in_history_receiving_card)
+
 from cards_app.schemas.cards import AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard
-from cards_app.services.profile import (update_user_receiving_timer, check_can_user_receive_card, charge_user_gold,
-                                        create_transaction)
-from cards_app.utils.common import calculate_need_exp, calculate_final_price, time_difference_check
+from cards_app.services.profile import update_user_receiving_timer, check_can_user_receive_card
+
+from cards_app.utils.common import calculate_need_exp, time_difference_check
 from cards_app.models.users import User
 
 
 class ViewCardUseCase:
     """ Use case для просмотра карты.
         Преобразовывает данные для вывода информации о карте
-        Если карты нет, то выбрасывает CardNotFoundError
     """
 
     def __init__(self, session_db: AsyncSession):
@@ -25,7 +24,7 @@ class ViewCardUseCase:
                       current_user: User
                       ) -> dict:
 
-        answer_data = {'card_dto': None,
+        answer_data = {'card_info_dto': None,
                        'error_message': None,
                        'status_code': None}
         try:
@@ -33,6 +32,7 @@ class ViewCardUseCase:
                                                card_id=card_id)
         except CardNotFoundError as error:
             answer_data['error_message'] = str(error)
+            answer_data['status_code'] = error.status_code
             return answer_data
 
         need_exp = calculate_need_exp(level=card.level)
@@ -69,6 +69,7 @@ class ViewCardUseCase:
                                     is_owner=is_owner
                                     )
         answer_data['card_info_dto'] = card_info_dto
+        answer_data['status_code'] = 200
         return answer_data
 
 
@@ -78,7 +79,9 @@ class ViewGetFreeCard:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User) -> GetFreeCardDTO:
+    async def execute(self, current_user: User) -> dict:
+        answer_data = {'get_free_card_dto': None,
+                       'status_code': None}
         data_for_page: dict = await get_drop_chance_card(session_db=self.session_db)
         all_classes = data_for_page['classes']
         all_rarities = data_for_page['rarities']
@@ -102,9 +105,12 @@ class ViewGetFreeCard:
             can_get_card = True
         else:
             can_get_card = False
-        return GetFreeCardDTO(all_classes=classes_card,
-                              all_rarities=rarities_card,
-                              can_get_free_card=can_get_card)
+
+        answer_data['status_code'] = 200
+        answer_data['get_free_card_dto'] = GetFreeCardDTO(all_classes=classes_card,
+                                                          all_rarities=rarities_card,
+                                                          can_get_free_card=can_get_card)
+        return answer_data
 
 
 class GetFreeCardUseCase:
@@ -119,17 +125,22 @@ class GetFreeCardUseCase:
 
         hours_for_get_free_card = 6
         answer_data = {'new_card_id': None,
-                       'error_message': None}
+                       'error_message': None,
+                       'status_code': None}
 
         if current_user is None:
+            answer_data['success'] = False
             answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
+            answer_data['status_code'] = 400
             return answer_data
 
         if current_user.profile.receiving_timer is not None:
             check_time, hours = time_difference_check(check_time=current_user.profile.receiving_timer,
                                                       need_hours=hours_for_get_free_card)
             if not check_time:
+                answer_data['success'] = False
                 answer_data['error_message'] = f'Для получения бесплатной карты осталось: {hours_for_get_free_card - hours}'
+                answer_data['status_code'] = 400
                 return answer_data
 
         try:
@@ -144,89 +155,21 @@ class GetFreeCardUseCase:
                                                           card_id=new_card_id,
                                                           user_id=current_user.profile.id,
                                                           method_receiving='Генерация')
-            answer_data['new_card_id'] = new_card_id
             await self.session_db.commit()
+            answer_data['success'] = True
+            answer_data['new_card_id'] = new_card_id
+            answer_data['status_code'] = 303
 
         except NotEnoughSlotsError as error:
             await self.session_db.rollback()
             answer_data['success'] = False
             answer_data['error_message'] = str(error)
+            answer_data['status_code'] = error.status_code
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {error}'
-
-        return answer_data
-
-
-class BuyStoreCardUseCase:
-    """ Use case для покупки карты в магазине """
-
-    def __init__(self, session_db: AsyncSession):
-        self.session_db = session_db
-
-    async def execute(self,
-                      current_user: User,
-                      temp_card_id: int,
-                      ) -> dict:
-
-        answer_data = {'success': None,
-                       'error_message': None,
-                       'new_card_id': int}
-
-        # Проверка, что пользователь авторизован
-        if current_user is None:
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
-            return answer_data
-        try:
-            # Проверка, что у пользователя хватает места
-            await check_can_user_receive_card(session_db=self.session_db,
-                                              current_user=current_user,
-                                              need_slots=1)
-
-            # Взятие карты из магазина
-            card_temp = await get_temp_card_in_store(session_db=self.session_db,
-                                                     card_temp_id=temp_card_id)
-            if card_temp.discount_now:
-                final_price_card = calculate_final_price(price=card_temp.price,
-                                                         discount=card_temp.discount)
-            else:
-                final_price_card = card_temp.price
-
-            # Снятие денег
-            gold_transaction = await charge_user_gold(session_db=self.session_db,
-                                                      current_user=current_user,
-                                                      need_gold=final_price_card)
-
-            # Создание карты
-            new_card_id = await create_new_card_from_template(session_db=self.session_db,
-                                                              owner_id=current_user.profile.id,
-                                                              card_temp=card_temp)
-
-            # Создание транзакции
-            await create_transaction(session_db=self.session_db,
-                                     user_id=current_user.id,
-                                     gold_before=gold_transaction['gold_before'],
-                                     gold_after=gold_transaction['gold_after'],
-                                     comment='Покупка в магазине карт')
-
-            # Создание записи о получении карты
-            await create_record_in_history_receiving_card(session_db=self.session_db,
-                                                          card_id=new_card_id,
-                                                          user_id=current_user.profile.id,
-                                                          method_receiving='Покупка в магазине')
-            answer_data['success'] = True
-            answer_data['new_card_id'] = new_card_id
-            await self.session_db.commit()
-
-        except (NotEnoughSlotsError, InsufficientFundsUserError, CardNotOnSaleError, CardInStoreNotFoundError) as error:
-            await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-
-        except Exception as error:
             answer_data['success'] = False
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['status_code'] = 500
 
         return answer_data

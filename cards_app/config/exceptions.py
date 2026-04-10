@@ -60,7 +60,7 @@ class FavoriteNotFoundError(AppException):
     def __init__(self):
         """ Формирует сообщение об ошибке """
 
-        message = f'Этот пользователь уже находится в списке избранных'
+        message = f'Этот пользователь не находится в вашем списке избранных'
         super().__init__(message, status_code=400)
 
 
@@ -91,7 +91,7 @@ class InsufficientFundsUserError(AppException):
         """ Формирует сообщение об ошибке """
 
         message = f'У вас недостаточно средств: необходимо {need_gold}'
-        super().__init__(message, status_code=404)
+        super().__init__(message, status_code=400)
 
 
 class NotEnoughSlotsError(AppException):
@@ -99,10 +99,10 @@ class NotEnoughSlotsError(AppException):
         Применимо к картам, амулетам, гильдиям, избранным пользователям
     """
 
-    def __init__(self, message: str | None = None):
+    def __init__(self, message: str):
         """ Формирует сообщение об ошибке """
 
-        super().__init__(message, status_code=404)
+        super().__init__(message, status_code=400)
 
 
 class CardNotOnSaleError(AppException):
@@ -110,6 +110,7 @@ class CardNotOnSaleError(AppException):
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
+
         message = f'Вы не можете купить эту карту'
-        super().__init__(message, status_code=404)
+        super().__init__(message, status_code=400)
 

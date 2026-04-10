@@ -31,22 +31,15 @@ async def view_news(request: Request,
                     ):
     """ Просмотр новостей """
 
-    try:
-        current_user_dto = await user_info_to_dto(current_user)
-        use_case = ViewNewsUseCase(session_db)
-        news_dto = await use_case.execute(page, size)
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = ViewNewsUseCase(session_db)
+    data: dict = await use_case.execute(page, size)
 
-        context = {'request': request,
-                   'current_user': current_user_dto,
-                   'news': news_dto
-                   }
-        return templates.TemplateResponse(request=request,
-                                          name='home_news.html',
-                                          context=context,
-                                          status_code=200)
-    except Exception as error:
-        return templates.TemplateResponse(request=request,
-                                          name='error_page.html',
-                                          context={'error': error, 'error_code': 500},
-                                          status_code=500
-                                          )
+    context = {'request': request,
+               'current_user': current_user_dto,
+               'news': data.get('news_dto')
+               }
+    return templates.TemplateResponse(request=request,
+                                      name='home_news.html',
+                                      context=context,
+                                      status_code=data.get('status_code'))

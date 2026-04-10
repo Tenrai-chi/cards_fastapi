@@ -11,6 +11,7 @@
 <div class="profile-container">
     <!-- Левая колонка: информация о пользователе -->
     <div class="profile-left">
+        <h2 class="profile-username">{{ profile_dto.profile.username }}</h2>
         <div class="avatar">
             {% if profile_dto.profile.profile_pic and profile_dto.profile.profile_pic != 'image/profile/avatar.jpg' %}
                 <img src="{{ url_for('media', path=profile_dto.profile.profile_pic) }}" alt="Аватар">
@@ -39,7 +40,7 @@
 
         {% if profile_dto.role == 'owner' %}
             <div class="profile-actions">
-                <a href="#" class="btn-action">Избранные</a>
+                <a href="{{ url_for('favorite_users') }}" class="btn-action">Избранные</a>
                 <a href="#" class="btn-action">Транзакции</a>
                 <a href="#" class="btn-action">Редактировать</a>
                 <a href="{{ url_for('logout') }}" class="btn-action">Выйти</a>

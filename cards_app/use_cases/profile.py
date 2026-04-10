@@ -3,14 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
                                         get_fight_history_user, is_favorite, add_user_to_favorite,
-                                        remove_user_from_favorite)
+                                        remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user)
 from cards_app.services.cards import get_card_with_details
 from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, GuildDTO,
-                                       CardDTO, AmuletDTO, FightHistoryRecordDTO, CardBriefDTO
-                                       )
+                                       CardDTO, AmuletDTO, FightHistoryRecordDTO, CardBriefDTO, FavoriteUserDTO,
+                                       FavoriteUsersPageDTO)
 from cards_app.models.users import User
-from cards_app.config.exceptions import UserNotFoundError, DuplicateFavoriteError, SelfFavoriteError, \
-    FavoriteNotFoundError, SelfFavoriteRemoveError
+from cards_app.config.exceptions import (UserNotFoundError, DuplicateFavoriteError, SelfFavoriteError,
+                                         FavoriteNotFoundError, SelfFavoriteRemoveError, NotEnoughSlotsError)
 
 
 class ViewProfileUseCase:
@@ -40,6 +40,7 @@ class ViewProfileUseCase:
             return answer_data
 
         base_dto = ProfileBaseDTO(id=target_user.profile.id,
+                                  username=target_user.username,
                                   about_user=target_user.profile.about_user,
                                   profile_pic=target_user.profile.profile_pic,
                                   win=target_user.profile.win,
@@ -170,6 +171,7 @@ class AddFavoriteUserUseCase:
             return answer_data
 
         try:
+            await ensure_favorite_slot_available(self.session_db, current_user)
             await add_user_to_favorite(session_db=self.session_db,
                                        current_user_id=current_user.profile.id,
                                        target_user_id=target_user_id)
@@ -180,7 +182,7 @@ class AddFavoriteUserUseCase:
             answer_data['success_message'] = 'Пользователь добавлен в избранное'
             return answer_data
 
-        except (SelfFavoriteError, UserNotFoundError, DuplicateFavoriteError) as error:
+        except (SelfFavoriteError, UserNotFoundError, DuplicateFavoriteError, NotEnoughSlotsError) as error:
             await self.session_db.rollback()
             answer_data['success'] = False
             answer_data['error_message'] = str(error)
@@ -191,7 +193,7 @@ class AddFavoriteUserUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = str(error)
+            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
 
             return answer_data
@@ -241,8 +243,39 @@ class RemoveFavoriteUserUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = str(error)
+            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
 
             return answer_data
 
+
+class FavoriteUsersUseCase:
+    """ Use case для просмотра списка избранных """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self,
+                      current_user: Optional[User],
+                      ) -> dict:
+        answer_data = {'favorite_users_dto': None,
+                       'status_code': None,
+                       'error_message': None}
+
+        if current_user is None:
+            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            answer_data['status_code'] = 404
+            return answer_data
+        all_favorite_users: list = await get_favorite_user(self.session_db,
+                                                           current_user=current_user)
+        favorite_users = []
+        for user in all_favorite_users:
+            favorite_users.append(FavoriteUserDTO(id=user.favorite_user.id,
+                                                  username=user.favorite_user.user.username))
+        favorite_users_dto = FavoriteUsersPageDTO(amount_users=len(all_favorite_users),
+                                                  max_amount_users=current_user.profile.max_favorite,
+                                                  favorite_users=favorite_users)
+        answer_data['status_code'] = 200
+        answer_data['favorite_users_dto'] = favorite_users_dto
+
+        return answer_data

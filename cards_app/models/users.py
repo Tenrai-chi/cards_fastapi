@@ -61,6 +61,7 @@ class Profile(Base):
     event_visit: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     date_event_visit: Mapped[Date] = mapped_column(Date, nullable=True)
     rating: Mapped[int] = mapped_column(Integer, default=500, nullable=False)
+    max_favorite: Mapped[int] = mapped_column(Integer, default=50)
 
     user = relationship('User', foreign_keys=[user_id], back_populates='profile')
     current_card = relationship('Card', foreign_keys=[current_card_id], back_populates='selected_by')

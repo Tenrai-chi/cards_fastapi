@@ -9,11 +9,43 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
 from cards_app.models.users import User
-from cards_app.use_cases.profile import ViewProfileUseCase, AddFavoriteUserUseCase, RemoveFavoriteUserUseCase
+from cards_app.use_cases.profile import ViewProfileUseCase, AddFavoriteUserUseCase, RemoveFavoriteUserUseCase, \
+    FavoriteUsersUseCase
 
 router = APIRouter(prefix='/users', tags=['users'])
 
 templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
+
+
+@router.get(path='/favorite_users', name='favorite_users')
+async def view_favorite_users(request: Request,
+                              session_db: AsyncSession = Depends(get_db_session),
+                              current_user: User | None = Depends(get_current_user_with_profile),
+                              ):
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = FavoriteUsersUseCase(session_db)
+    data: dict = await use_case.execute(current_user=current_user)
+
+    if data.get('favorite_users_dto'):
+        context = {'request': request,
+                   'current_user': current_user_dto,
+                   'favorite_users_dto': data.get('favorite_users_dto'),
+                   }
+
+        return templates.TemplateResponse(request=request,
+                                          name='favorite_users.html',
+                                          context=context,
+                                          status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') == 404:
+            return templates.TemplateResponse(request=request,
+                                              name='error_page.html',
+                                              context={'error': data.get('error_message'),
+                                                       'status_code': data.get('status_code'),
+                                                       'current_user': current_user_dto},
+                                              status_code=data.get('status_code')
+                                              )
 
 
 @router.get(path='/{user_id}', name='user_profile')
@@ -23,7 +55,9 @@ async def view_user_profile(request: Request,
                             current_user: User | None = Depends(get_current_user_with_profile),
                             error: str = None,
                             success: str = None):
-    """ Просмотр профиля пользователя """
+    """ Просмотр профиля пользователя.
+        Принимает редиректы с сообщениями об успехе или ошибке.
+    """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewProfileUseCase(session_db)
@@ -35,6 +69,7 @@ async def view_user_profile(request: Request,
                    'error_message': error,
                    'success_message': success
                    }
+
         return templates.TemplateResponse(request=request,
                                           name='profile.html',
                                           context=context,
@@ -43,7 +78,9 @@ async def view_user_profile(request: Request,
         if data.get('status_code') in (404, 500):
             return templates.TemplateResponse(request=request,
                                               name='error_page.html',
-                                              context={'error': data.get('error_message')},
+                                              context={'error': data.get('error_message'),
+                                                       'status_code': data.get('status_code'),
+                                                       'current_user': current_user_dto},
                                               status_code=data.get('status_code')
                                               )
 
@@ -58,19 +95,29 @@ async def add_user_favorite(request: Request,
         Редиректит на другие станицы в зависимости от успеха или неудачи.
     """
 
+    current_user_dto = await user_info_to_dto(current_user)
     use_case = AddFavoriteUserUseCase(session_db)
     data: dict = await use_case.execute(current_user=current_user,
                                         target_user_id=user_id)
     if data.get('success') is True:
         url = request.url_for('user_profile', user_id=user_id)
-        full_url = f'{url}?error={data.get("success_message")}'
+        full_url = f'{url}?success={data.get("success_message")}'
         return RedirectResponse(full_url, status_code=data.get('status_code'))
     else:
-        error_msg = data.get('error_message')
-        encoded_error = quote(error_msg)
-        url = request.url_for('user_profile', user_id=user_id)
-        full_url = f'{url}?error={encoded_error}'
-        return RedirectResponse(full_url, status_code=data.get('status_code'))
+        if data.get('status_code') in (404, 500):
+            return templates.TemplateResponse(request=request,
+                                              name='error_page.html',
+                                              context={'error': data.get('error_message'),
+                                                       'status_code': data.get('status_code'),
+                                                       'current_user': current_user_dto},
+                                              status_code=data.get('status_code')
+                                              )
+        else:
+            error_msg = data.get('error_message')
+            encoded_error = quote(error_msg)
+            url = request.url_for('user_profile', user_id=user_id)
+            full_url = f'{url}?error={encoded_error}'
+            return RedirectResponse(full_url, status_code=303)
 
 
 @router.post(path='/remove_{user_id}', name='remove_favorite_user')
@@ -83,16 +130,32 @@ async def remove_user_favorite(request: Request,
         Редиректит на другие станицы в зависимости от успеха или неудачи.
     """
 
+    current_user_dto = await user_info_to_dto(current_user)
     use_case = RemoveFavoriteUserUseCase(session_db)
     data: dict = await use_case.execute(current_user=current_user,
                                         target_user_id=user_id)
+
     if data.get('success') is True:
         url = request.url_for('user_profile', user_id=user_id)
-        full_url = f'{url}?error={data.get("success_message")}'
+        full_url = f'{url}?success={data.get("success_message")}'
         return RedirectResponse(full_url, status_code=data.get('status_code'))
     else:
-        error_msg = data['error_message']
-        encoded_error = quote(error_msg)
-        url = request.url_for('user_profile', user_id=user_id)
-        full_url = f'{url}?error={encoded_error}'
-        return RedirectResponse(full_url, status_code=data.get('status_code'))
+        if data.get('status_code') in (404, 500):
+            context = {'error': data.get('error_message'),
+                       'status_code': data.get('status_code'),
+                       'current_user': current_user_dto}
+            return templates.TemplateResponse(request=request,
+                                              name='error_page.html',
+                                              context=context,
+                                              status_code=data.get('status_code')
+                                              )
+        else:
+            error_msg = data.get('error_message')
+            encoded_error = quote(error_msg)
+            url = request.url_for('user_profile', user_id=user_id)
+            full_url = f'{url}?error={encoded_error}'
+            return RedirectResponse(full_url, status_code=303)
+
+
+
+
