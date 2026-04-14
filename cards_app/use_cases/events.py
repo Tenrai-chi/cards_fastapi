@@ -1,21 +1,28 @@
-from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.config.exceptions import CardNotFoundError
 from cards_app.services.events import get_total_news_count, get_paginated_news
 from cards_app.schemas.news import NewsRecordDTO, NewsDTO
-from cards_app.utils.common import calculate_need_exp
 
 
 class ViewNewsUseCase:
     """ Use case для просмотра новостей.
-        Преобразовывает новости с пагинацией
+        Преобразует список новостей в DTO с информацией о страницах.
     """
 
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def execute(self, page: int, size: int) -> dict:
+        """ Выполняет получение новостей и формирует DTO для отображения.
+            Args:
+                page (int): Номер страницы (начиная с 1).
+                size (int): Количество новостей на странице.
+            Returns:
+                dict: Словарь с полями:
+                    - news_dto (NewsDTO | None): DTO с новостями и пагинацией (при успехе).
+                    - status_code (int):  HTTP статус-код всегда 200
+        """
+
         answer_data = {'news_dto': None,
                        'status_code': None}
 

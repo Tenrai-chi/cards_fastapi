@@ -1,7 +1,9 @@
 from pydantic import BaseModel, EmailStr
 
 
+# todo почитать как лучше использовать при регистрации и тд
 class UserRegister(BaseModel):
+
     username: str
     email: EmailStr
     password: str

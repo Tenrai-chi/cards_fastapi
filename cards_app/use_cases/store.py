@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
@@ -10,6 +11,8 @@ from cards_app.services.profile import check_can_user_receive_card, charge_user_
 from cards_app.services.store import get_cards_in_store
 from cards_app.utils.common import calculate_final_price
 
+logger = logging.getLogger(__name__)
+
 
 class ViewCardStoreUseCase:
     """ Use case для просмотра магазина карт.
@@ -20,6 +23,16 @@ class ViewCardStoreUseCase:
         self.session_db = session_db
 
     async def execute(self) -> dict:
+        """ Выполняет получение списка карт, доступных в магазине, и формирует DTO.
+            Returns:
+                dict:
+                    - status_code (int): HTTP статус-код.
+                    - card_store_dto (CardStoreDTO | None): DTO со списком карт в магазине.
+            Note:
+                - 200: успешное получение данных.
+                - 500: непредвиденная ошибка.
+        """
+
         answer_data = {'status_code': None,
                        'card_store_dto': None}
 
@@ -55,6 +68,22 @@ class BuyStoreCardUseCase:
                       current_user: User,
                       temp_card_id: int,
                       ) -> dict:
+        """ Выполняет покупку карты в магазине.
+           Args:
+               current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
+               temp_card_id (int): ID карты-шаблона в магазине
+
+           Returns:
+               dict:
+                   - success (bool): True при успешной покупке.
+                   - error_message (str | None): сообщение об ошибке.
+                   - new_card_id (int | None): ID созданной карты (при успехе).
+                   - status_code (int): HTTP статус-код.
+           Note:
+               - 303: успешная покупка (перенаправление).
+               - 400: ошибка доступа
+               - 500: непредвиденная ошибка.
+           """
 
         answer_data = {'success': None,
                        'error_message': None,
@@ -119,5 +148,6 @@ class BuyStoreCardUseCase:
             answer_data['success'] = False
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в GetFreeCardUseCase: {error}', exc_info=True)
 
         return answer_data

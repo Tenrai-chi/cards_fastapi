@@ -1,4 +1,5 @@
 import random
+import logging
 from datetime import datetime
 from random import choice
 from typing import List
@@ -10,11 +11,25 @@ from sqlalchemy.orm import selectinload
 from cards_app.config.exceptions import CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError
 from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore
 
+logger = logging.getLogger(__name__)
+
 
 async def get_card_with_details(session_db: AsyncSession,
                                 card_id: int
                                 ) -> Card:
-    """ Возвращает карту с подгруженными амулетом, классом, типом и редкостью """
+    """ Возвращает карту с подгруженными амулетом, классом, типом и редкостью.
+         Args:
+            session_db: сессия базы данных
+            card_id: ID карты, которую нужно получить.
+        Returns:
+            Card: Объект карты с подгруженными атрибутами:
+                - class_card (ClassCard)
+                - rarity_card (Rarity)
+                - type_card (Type)
+                - amulet (AmuletItem) с подгруженным amulet_type (AmuletType)
+        Raises:
+            CardNotFoundError: Если карта с указанным ID не найдена в БД.
+    """
 
     stmt_card = (
         select(Card)
@@ -29,12 +44,21 @@ async def get_card_with_details(session_db: AsyncSession,
     result_card = await session_db.execute(stmt_card)
     card = result_card.scalar_one_or_none()
     if card is None:
+        logger.warning(f'Карта с id={card_id} не найдена в БД')
         raise CardNotFoundError(card_id)
     return card
 
 
 async def get_drop_chance_card(session_db: AsyncSession) -> dict:
-    """ Получение данных о шансе выпадения редкости карты """
+    """ Получает из БД все классы карт и редкости для расчёта шанса выпадения.
+        Args:
+            session_db: сессия базы данных
+
+        Returns:
+            dict:
+                - rarities (list[Rarity]): список всех редкостей
+                - classes (list[ClassCard]): список всех классов карт.
+    """
 
     answer_data = {'rarities': None,
                    'classes': None}
@@ -54,7 +78,14 @@ async def get_drop_chance_card(session_db: AsyncSession) -> dict:
 
 
 async def generate_random_card(session_db: AsyncSession, owner_id: int) -> int:
-    """ Генерация случайной карты """
+    """ Генерирует случайную карту для указанного владельца.
+        Args:
+            session_db: сессия базы данных
+            owner_id: ID профиля пользователя
+
+        Returns:
+            int: ID созданной карты
+    """
 
     stmt_classes = select(ClassCard)
     result_classes = await session_db.execute(stmt_classes)
@@ -85,14 +116,23 @@ async def generate_random_card(session_db: AsyncSession, owner_id: int) -> int:
 
     session_db.add(new_card)
     await session_db.flush()
+    logger.info(f'Сгенерирована случайная карта: id={new_card.id}, владелец={owner_id}')
 
     return new_card.id
 
 
 async def create_new_card_from_template(session_db: AsyncSession,
                                         owner_id: int,
-                                        card_temp: CardStore) -> int | None:
-    """ Создает новую карту пользователя по карте-шаблону из магазина """
+                                        card_temp: CardStore
+                                        ) -> int:
+    """ Создает новую карту пользователя по карте-шаблону из магазина.
+       Args:
+            session_db: сессия базы данных
+            owner_id: ID профиля владельца карты
+            card_temp: Объект CardStore — шаблон карты из магазина.
+        Returns:
+            int: ID созданной карты
+    """
 
     new_card = Card(owner_id=owner_id,
                     class_card_id=card_temp.class_card_id,
@@ -104,14 +144,23 @@ async def create_new_card_from_template(session_db: AsyncSession,
 
     session_db.add(new_card)
     await session_db.flush()
+    logger.info(f'Создана карта: id={new_card.id}, владелец={owner_id}')
 
     return new_card.id
 
 
 async def get_temp_card_in_store(session_db: AsyncSession, card_temp_id) -> CardStore:
-    """ Получает карту из магазина.
-        Если такой карты нет, то поднимает ошибку CardInStoreNotFoundError
-        Если карта есть, но она не продается, то поднимает ошибку CardNotOnSaleError
+    """ Получает карту из магазина по ее ID.
+        Args:
+            session_db: сессия базы данных
+            card_temp_id: ID карты в магазине
+
+        Returns:
+            CardStore: объект карты-шаблона, доступной для покупки
+
+        Raises:
+            CardInStoreNotFoundError: если карта с указанным ID не найдена в магазине.
+            CardNotOnSaleError: если карта найдена, но поле sale_now == False (не продаётся в данный момент).
     """
 
     stmt_temp_card = select(CardStore).where(CardStore.id == card_temp_id)
@@ -119,16 +168,25 @@ async def get_temp_card_in_store(session_db: AsyncSession, card_temp_id) -> Card
     temp_card = result_temp_card.scalars().one_or_none()
 
     if temp_card is None:
+        logger.warning(f'Карта в магазине с id={card_temp_id} не найдена')
         raise CardInStoreNotFoundError(card_id=card_temp_id)
 
     if temp_card.sale_now is False:
+        logger.warning(f'Карта в магазине с id={card_temp_id} на данный момент не продается')
         raise CardNotOnSaleError()
 
     return temp_card
 
 
 async def get_all_cards_user(session_db: AsyncSession, owner_id: int) -> List[Card]:
-    """ Возвращает все карты пользователя """
+    """ Возвращает список всех карт пользователя.
+        Args:
+            session_db: сессия базы данных
+            owner_id: ID профиля владельца
+
+        Returns:
+            List[Card]: список карт, принадлежащих пользователю
+    """
 
     stmt = select(Card).where(Card.owner_id == owner_id).order_by(Card.id)
     result = await session_db.execute(stmt)
@@ -139,11 +197,20 @@ async def get_all_cards_user(session_db: AsyncSession, owner_id: int) -> List[Ca
 async def create_record_in_history_receiving_card(session_db: AsyncSession,
                                                   card_id: int,
                                                   user_id: int,
-                                                  method_receiving: str) -> None:
-    """ Создает запись в таблице с историей получения карт """
+                                                  method_receiving: str
+                                                  ) -> None:
+    """ Создает запись в таблице с историей получения карт.
+        Args:
+            session_db: сессия базы данных
+            card_id: ID полученной карты
+            user_id: ID профиля пользователя, получившего карту.
+            method_receiving: Способ получения (покупка, генерация)
+    """
 
     new_record = HistoryReceivingCards(card_id=card_id,
                                        date_and_time=datetime.now(),
                                        user_id=user_id,
                                        method_receiving=method_receiving)
     session_db.add(new_record)
+    logger.info(f'Создана запись в истории получения карт: карта ID: {card_id} '
+                f'получена пользователем ID {user_id} способом "{method_receiving}"')

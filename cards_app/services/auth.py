@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,13 +8,25 @@ from cards_app.config.security import verify_password, create_access_token, crea
 from cards_app.config.settings import settings
 from cards_app.models import User, Profile
 
+logger = logging.getLogger(__name__)
+
 
 async def create_user_and_profile(db_session: AsyncSession,
                                   username: str,
                                   email: str,
-                                  password: str) -> dict:
-    """ Создаёт нового пользователя и профиль.
-        Возвращает словарь с user: user | None и error str | None.
+                                  password: str
+                                  ) -> dict:
+    """ Создаёт нового пользователя и связанный с ним профиль.
+        Args:
+            db_session: сессия базы данных
+            username: имя пользователя (уникальный)
+            email: email пользователя (уникальный)
+            password: пароль (будет хэширован)
+
+    Returns:
+        dict:
+            - user (User | None): Объект созданного пользователя или None при ошибке.
+            - error_message (str | None): Текст ошибки, если она произошла, иначе None.
     """
 
     answer_data = {'user': None,
@@ -21,10 +34,12 @@ async def create_user_and_profile(db_session: AsyncSession,
     result = await db_session.execute(select(User).where(User.username == username))
     if result.scalar_one_or_none():
         answer_data['error_message'] = 'Пользователь с таким именем уже существует'
+        logger.warning(f'Регистрация отклонена: имя пользователя "{username}" уже занято')
         return answer_data
 
     result = await db_session.execute(select(User).where(User.email == email))
     if result.scalar_one_or_none():
+        logger.warning(f'Регистрация отклонена: email "{email}" уже используется')
         answer_data['error_message'] = 'Пользователь с таким email уже существует'
         return answer_data
 
@@ -41,19 +56,27 @@ async def create_user_and_profile(db_session: AsyncSession,
     await db_session.commit()
     await db_session.refresh(user)
     answer_data['user'] = User
+    logger.info(f'Создан новый пользователь: ID {user.id} {username}')
     return answer_data
 
 
 async def authenticate_and_create_tokens(db_session: AsyncSession,
                                          username: str,
-                                         password: str) -> dict:
-    """ Аутентифицирует пользователя по переданным данным.
-        При успехе обновляет last_login и генерирует пару токенов.
-        Возвращает словарь с полями:
-            - user: User | None
-            - access_token: str | None
-            - refresh_token: str | None
-            - error_message: str | None (При ошибке)
+                                         password: str
+                                         ) -> dict:
+    """ Аутентифицирует пользователя по login/email и паролю.
+        При успехе обновляет поле last_login и генерирует пару success и refresh токенов
+        Args:
+            db_session: Асинхронная сессия SQLAlchemy.
+            username: Логин или email пользователя.
+            password: Пароль в открытом виде.
+
+        Returns:
+            dict:
+                - user (User | None): объект пользователя при успехе
+                - access_token (str | None): JWT access токен при успехе
+                - refresh_token (str | None): JWT refresh токен при успехе
+                - error_message (str | None): текст ошибки
     """
 
     answer_data = {'user': None,
@@ -66,9 +89,11 @@ async def authenticate_and_create_tokens(db_session: AsyncSession,
 
     if not user or not verify_password(password, user.hashed_password):
         answer_data['error_message'] = 'Неверный логин или пароль'
+        logger.warning(f'Неудачная попытка входа для "{username}": неверные учётные данные')
         return answer_data
     if not user.is_active:
         answer_data['error_message'] = 'Аккаунт заблокирован, обратитесь в поддержку'
+        logger.warning(f'Вход отклонён для пользователя ID {user.id} "{user.username}": аккаунт заблокирован')
         return answer_data
 
     user.last_login = datetime.now()

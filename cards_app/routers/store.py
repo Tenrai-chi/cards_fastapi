@@ -37,7 +37,7 @@ async def view_card_store(request: Request,
                }
 
     return templates.TemplateResponse(request=request,
-                                      name='card_store.html',
+                                      name='store/card_store.html',
                                       context=context,
                                       status_code=data.get('status_code'))
 
@@ -64,7 +64,7 @@ async def buy_card_in_store(request: Request,
                        'status_code': data.get('status_code'),
                        'current_user': current_user_dto}
             return templates.TemplateResponse(request=request,
-                                              name='error_page.html',
+                                              name='errors/error_page.html',
                                               context=context,
                                               status_code=data.get('status_code')
                                               )
@@ -74,22 +74,3 @@ async def buy_card_in_store(request: Request,
             url = request.url_for('card_store')
             full_url = f'{url}?error={encoded_error}'
             return RedirectResponse(full_url, status_code=303)
-
-    # try:
-    #     data: dict = await use_case.execute(current_user, card_id)
-    #     if data.get('error_message'):
-    #         error_msg = data['error_message']
-    #         encoded_error = quote(error_msg)
-    #         url = request.url_for('card_store')
-    #         full_url = f'{url}?error={encoded_error}'
-    #         return RedirectResponse(full_url, status_code=303)
-    #     else:
-    #         new_card_id = data['new_card_id']
-    #         url = request.url_for('view_card', card_id=new_card_id)
-    #         return RedirectResponse(url, status_code=303)
-    # except Exception as error:
-    #     return templates.TemplateResponse(request=request,
-    #                                       name='error_page.html',
-    #                                       context={'error': error, 'error_code': 500},
-    #                                       status_code=500
-    #                                       )

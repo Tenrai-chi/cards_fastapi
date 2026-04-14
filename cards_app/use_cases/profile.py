@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,8 @@ from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, Guild
 from cards_app.models.users import User
 from cards_app.config.exceptions import (UserNotFoundError, DuplicateFavoriteError, SelfFavoriteError,
                                          FavoriteNotFoundError, SelfFavoriteRemoveError, NotEnoughSlotsError)
+
+logger = logging.getLogger(__name__)
 
 
 class ViewProfileUseCase:
@@ -26,6 +29,21 @@ class ViewProfileUseCase:
                       current_user: Optional[User],
                       target_user_id: int
                       ) -> dict:
+        """ Выполняет получение и подготовку данных профиля для отображения
+            Args:
+                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем
+                target_user_id (int): ID пользователя, чей профиль просматривается
+
+            Returns:
+                dict:
+                    - user_info (ProfileResponseDTO | None): DTO с полной информацией профиля
+                    - error_message (str | None): сообщение об ошибке
+                    - status_code (int): HTTP статус-код
+            Note:
+                - 200: успешное получение данных
+                - 404: пользователь не найден
+                - 500: непредвиденная ошибка
+        """
 
         answer_data = {'user_info': None,
                        'error_message': None,
@@ -37,6 +55,11 @@ class ViewProfileUseCase:
         except UserNotFoundError as error:
             answer_data['error_message'] = str(error)
             answer_data['status_code'] = error.status_code
+            return answer_data
+        except Exception as error:
+            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в ViewCardUseCase: {error}', exc_info=True)
             return answer_data
 
         base_dto = ProfileBaseDTO(id=target_user.profile.id,
@@ -158,6 +181,21 @@ class AddFavoriteUserUseCase:
                       current_user: Optional[User],
                       target_user_id: int
                       ) -> dict:
+        """ Добавляет целевого пользователя в избранное текущего.
+            Args:
+                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
+                target_user_id (int): ID профиля пользователя, которого нужно добавить в избранное.
+            Returns:
+                dict:
+                    - success (bool): True при успешном добавлении.
+                    - error_message (str | None): сообщение об ошибке.
+                    - status_code (int): HTTP статус-код.
+                    - success_message (str | None): сообщение об успехе.
+            Note:
+                - 303: успешное добавление и перенаправление
+                - 400: ошибка доступа
+                - 500: непредвиденная ошибка
+        """
 
         answer_data = {'success': None,
                        'error_message': None,
@@ -195,6 +233,7 @@ class AddFavoriteUserUseCase:
             answer_data['success'] = False
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в AddFavoriteUserUseCase: {error}', exc_info=True)
 
             return answer_data
 
@@ -209,6 +248,21 @@ class RemoveFavoriteUserUseCase:
                       current_user: Optional[User],
                       target_user_id: int
                       ) -> dict:
+        """ Удаляет целевого пользователя из избранного текущего.
+            Args:
+                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
+                target_user_id (int): ID профиля пользователя, которого нужно удалить из избранного.
+            Returns:
+                dict:
+                    - success (bool): True при успешном удалении.
+                    - error_message (str | None): сообщение об ошибке.
+                    - status_code (int): HTTP статус-код.
+                    - success_message (str | None): сообщение об успехе.
+            Note:
+                - 303: успешное удаление и перенаправление
+                - 400: ошибка доступа
+                - 500: непредвиденная ошибка
+        """
 
         answer_data = {'success': None,
                        'error_message': None,

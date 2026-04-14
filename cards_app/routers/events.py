@@ -40,6 +40,6 @@ async def view_news(request: Request,
                'news': data.get('news_dto')
                }
     return templates.TemplateResponse(request=request,
-                                      name='home_news.html',
+                                      name='home/home_news.html',
                                       context=context,
                                       status_code=data.get('status_code'))

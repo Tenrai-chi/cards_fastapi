@@ -39,7 +39,7 @@ async def view_card(request: Request,
                    'success_message': success
                    }
         return templates.TemplateResponse(request=request,
-                                          name='card.html',
+                                          name='cards/card.html',
                                           context=context,
                                           status_code=data.get('status_code'))
     else:
@@ -47,7 +47,7 @@ async def view_card(request: Request,
             context = {'error': data.get('error_message'),
                        'error_code': data.get('status_code')}
             return templates.TemplateResponse(request=request,
-                                              name='error_page.html',
+                                              name='errors/error_page.html',
                                               context=context,
                                               status_code=data.get('status_code')
                                               )
@@ -71,7 +71,7 @@ async def view_free_card(request: Request,
                'error_message': error
                }
     return templates.TemplateResponse(request=request,
-                                      name='free_card_page.html',
+                                      name='cards/free_card_page.html',
                                       context=context,
                                       status_code=data.get('status_code'))
 
@@ -97,7 +97,7 @@ async def get_free_card(request: Request,
                        'status_code': data.get('status_code'),
                        'current_user': current_user_dto}
             return templates.TemplateResponse(request=request,
-                                              name='error_page.html',
+                                              name='errors/error_page.html',
                                               context=context,
                                               status_code=data.get('status_code')
                                               )

@@ -34,13 +34,13 @@ async def view_favorite_users(request: Request,
                    }
 
         return templates.TemplateResponse(request=request,
-                                          name='favorite_users.html',
+                                          name='users/favorite_users.html',
                                           context=context,
                                           status_code=data.get('status_code'))
     else:
         if data.get('status_code') == 404:
             return templates.TemplateResponse(request=request,
-                                              name='error_page.html',
+                                              name='errors/error_page.html',
                                               context={'error': data.get('error_message'),
                                                        'status_code': data.get('status_code'),
                                                        'current_user': current_user_dto},
@@ -54,7 +54,8 @@ async def view_user_profile(request: Request,
                             session_db: AsyncSession = Depends(get_db_session),
                             current_user: User | None = Depends(get_current_user_with_profile),
                             error: str = None,
-                            success: str = None):
+                            success: str = None
+                            ):
     """ Просмотр профиля пользователя.
         Принимает редиректы с сообщениями об успехе или ошибке.
     """
@@ -71,13 +72,13 @@ async def view_user_profile(request: Request,
                    }
 
         return templates.TemplateResponse(request=request,
-                                          name='profile.html',
+                                          name='users/profile.html',
                                           context=context,
                                           status_code=data.get('status_code'))
     else:
         if data.get('status_code') in (404, 500):
             return templates.TemplateResponse(request=request,
-                                              name='error_page.html',
+                                              name='errors/error_page.html',
                                               context={'error': data.get('error_message'),
                                                        'status_code': data.get('status_code'),
                                                        'current_user': current_user_dto},
@@ -106,7 +107,7 @@ async def add_user_favorite(request: Request,
     else:
         if data.get('status_code') in (404, 500):
             return templates.TemplateResponse(request=request,
-                                              name='error_page.html',
+                                              name='errors/error_page.html',
                                               context={'error': data.get('error_message'),
                                                        'status_code': data.get('status_code'),
                                                        'current_user': current_user_dto},
@@ -145,7 +146,7 @@ async def remove_user_favorite(request: Request,
                        'status_code': data.get('status_code'),
                        'current_user': current_user_dto}
             return templates.TemplateResponse(request=request,
-                                              name='error_page.html',
+                                              name='errors/error_page.html',
                                               context=context,
                                               status_code=data.get('status_code')
                                               )

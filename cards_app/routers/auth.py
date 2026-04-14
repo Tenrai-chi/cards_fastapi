@@ -19,7 +19,7 @@ async def register_page(request: Request):
     """ Отображает страницу регистрации """
 
     return templates.TemplateResponse(request=request,
-                                      name='register.html',
+                                      name='auth/register.html',
                                       context={'request': request},
                                       status_code=200)
 
@@ -29,7 +29,8 @@ async def register(request: Request,
                    username: str = Form(...),
                    email: str = Form(...),
                    password: str = Form(...),
-                   db_session: AsyncSession = Depends(get_db_session)):
+                   db_session: AsyncSession = Depends(get_db_session)
+                   ):
     """ Обрабатывает форму регистрации.
         При успехе перенаправляет на страницу входа, при ошибке возвращает форму с сообщением об ошибке.
     """
@@ -37,7 +38,7 @@ async def register(request: Request,
     result: dict = await create_user_and_profile(db_session, username, email, password)
     if result['error_message']:
         return templates.TemplateResponse(request=request,
-                                          name='register.html',
+                                          name='auth/register.html',
                                           context={'request': request, 'error': result['error_message']},
                                           status_code=200
                                           )
@@ -51,7 +52,7 @@ async def login_page(request: Request):
     """ Отображает форму входа """
 
     return templates.TemplateResponse(request=request,
-                                      name='login.html',
+                                      name='auth/login.html',
                                       context={'request': request},
                                       status_code=200)
 
@@ -60,7 +61,8 @@ async def login_page(request: Request):
 async def login(request: Request,
                 username: str = Form(...),
                 password: str = Form(...),
-                db_session: AsyncSession = Depends(get_db_session)):
+                db_session: AsyncSession = Depends(get_db_session)
+                ):
     """ Обрабатывает форму входа в систему.
         При успехе устанавливает refresh_token и перенаправляет на страницу входа
         При ошибке возвращает форму с сообщением об ошибке.
@@ -69,7 +71,7 @@ async def login(request: Request,
     result: dict = await authenticate_and_create_tokens(db_session, username, password)
     if result['error_message']:
         return templates.TemplateResponse(request=request,
-                                          name='login.html',
+                                          name='auth/login.html',
                                           context={'request': request, 'error': result['error_message']},
                                           status_code=200)
 

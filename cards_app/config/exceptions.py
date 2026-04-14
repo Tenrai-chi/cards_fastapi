@@ -15,7 +15,9 @@ class AppException(Exception):
 
 
 class UserNotFoundError(AppException):
-    """ Исключение, возникающее при попытке получить несуществующего пользователя """
+    """ Исключение, возникающее при попытке получить несуществующего пользователя.
+        Возвращает HTTP статус 404 (Not Found)
+    """
 
     def __init__(self, user_id: int | None = None):
         """ Формирует сообщение об ошибке в зависимости от наличия user_id """
@@ -25,7 +27,9 @@ class UserNotFoundError(AppException):
 
 
 class SelfFavoriteError(AppException):
-    """ Исключение, возникающее при попытке добавить в избранное самого себя """
+    """ Исключение, возникающее при попытке пользователя добавить в избранное самого себя.
+        Возвращает HTTP статус 400 (Bad Request)
+    """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
@@ -35,7 +39,9 @@ class SelfFavoriteError(AppException):
 
 
 class SelfFavoriteRemoveError(AppException):
-    """ Исключение, возникающее при попытке удалить из избранного самого себя """
+    """ Исключение, возникающее при попытке пользователя удалить из избранного самого себя.
+        Возвращает HTTP статус 400 (Bad Request)
+    """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
@@ -45,7 +51,10 @@ class SelfFavoriteRemoveError(AppException):
 
 
 class DuplicateFavoriteError(AppException):
-    """ Исключение, возникающее при попытке добавить в избранное пользователя, который уже в избранном """
+    """ Исключение, возникающее при попытке добавить в избранное пользователя,
+        который уже присутствует в списке избранных текущего пользователя.
+        Возвращает HTTP статус 400 (Bad Request)
+    """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
@@ -55,7 +64,9 @@ class DuplicateFavoriteError(AppException):
 
 
 class FavoriteNotFoundError(AppException):
-    """ Исключение, возникающее при попытке удалить из избранного пользователя, которого там не было """
+    """ Исключение, возникающее при попытке удалить из избранного пользователя, которого там не было.
+        Возвращает HTTP статус 400 (Bad Request)
+    """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
@@ -65,7 +76,9 @@ class FavoriteNotFoundError(AppException):
 
 
 class CardNotFoundError(AppException):
-    """ Исключение, возникающее при попытке получить несуществующую карту """
+    """ Исключение, возникающее при попытке получить несуществующую карту.
+        Возвращает HTTP статус 404 (Not Found)
+    """
 
     def __init__(self, card_id: int | None = None):
         """ Формирует сообщение об ошибке в зависимости от наличия card_id """
@@ -75,7 +88,9 @@ class CardNotFoundError(AppException):
 
 
 class CardInStoreNotFoundError(AppException):
-    """ Исключение, возникающее при попытке получить несуществующую карту в магазине """
+    """ Исключение, возникающее при попытке получить несуществующую карту в магазине.
+        Возвращает HTTP статус 404 (Not Found)
+    """
 
     def __init__(self, card_id: int | None = None):
         """ Формирует сообщение об ошибке """
@@ -85,7 +100,9 @@ class CardInStoreNotFoundError(AppException):
 
 
 class InsufficientFundsUserError(AppException):
-    """ Исключение, возникающее при недостатке средств у пользователя для действия """
+    """ Исключение, возникающее при недостатке средств у пользователя для действия.
+        Возвращает HTTP статус 400 (Bad Request)
+    """
 
     def __init__(self, need_gold: int | None = None):
         """ Формирует сообщение об ошибке """
@@ -96,7 +113,8 @@ class InsufficientFundsUserError(AppException):
 
 class NotEnoughSlotsError(AppException):
     """ Исключение, возникающее при недостатке слотов в инвентаре.
-        Применимо к картам, амулетам, гильдиям, избранным пользователям
+        Применимо к картам, амулетам, гильдиям, избранным пользователям.
+        Возвращает HTTP статус 400 (Bad Request)
     """
 
     def __init__(self, message: str):
@@ -106,7 +124,9 @@ class NotEnoughSlotsError(AppException):
 
 
 class CardNotOnSaleError(AppException):
-    """ Исключение, возникающее при попытке купить карту не в продаже """
+    """ Исключение, возникающее при попытке купить карту не в продаже.
+        Возвращает HTTP статус 400 (Bad Request)
+    """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """

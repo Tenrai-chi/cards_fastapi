@@ -14,19 +14,19 @@ def get_moscow_time() -> datetime:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """ Проверка соответствия пароля после хэширования и хэш-пароля в бд """
+    """ Проверяет соответствие пароля после хэширования и хэш-пароля в бд """
 
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """ Хеширование пароля """
+    """ Возвращает хешированный пароль """
 
     return pwd_context.hash(password)
 
 
 def create_access_token(user_id: int) -> str:
-    """ Создание JWT access-токена с маленьким сроком жизни. """
+    """ Создает и возвращает JWT access-токен с маленьким сроком жизни. """
 
     expire = datetime.now() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
@@ -38,7 +38,7 @@ def create_access_token(user_id: int) -> str:
 
 
 def create_refresh_token(user_id: int) -> str:
-    """ Создание JWT refresh-токена с большим сроком жизни.
+    """ Создает и возвращает JWT refresh-токен с большим сроком жизни.
         Используется для получения новой пары токенов (access+refresh) без повторного ввода пароля.
     """
 
@@ -52,7 +52,7 @@ def create_refresh_token(user_id: int) -> str:
 
 
 def decode_token(token: str, expected_type: str) -> dict | None:
-    """  Декодирует и проверяет JWT токен.
+    """ Декодирует и проверяет JWT токен.
         Расшифровывает токен, проверяет подпись, срок действия и тип.
         Используется в защищенных эндпоинтах.
     """

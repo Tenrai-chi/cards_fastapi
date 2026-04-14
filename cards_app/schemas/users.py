@@ -21,6 +21,8 @@ class UserOut(BaseModel):
 
 
 class CurrentUserForMenuDTO(BaseModel):
+    """ Данные для вывода информации в шапке профиля """
+
     id: Optional[int] = None
     username: Optional[str] = None
     gold: Optional[int] = None

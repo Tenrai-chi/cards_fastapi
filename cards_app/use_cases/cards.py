@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import *
@@ -9,6 +10,8 @@ from cards_app.services.profile import update_user_receiving_timer, check_can_us
 
 from cards_app.utils.common import calculate_need_exp, time_difference_check
 from cards_app.models.users import User
+
+logger = logging.getLogger(__name__)
 
 
 class ViewCardUseCase:
@@ -23,6 +26,23 @@ class ViewCardUseCase:
                       card_id: int,
                       current_user: User
                       ) -> dict:
+        """ Выполняет получение карты и формирует DTO для отображения.
+               Args:
+                   card_id: ID карты для просмотра.
+                   current_user: Объект текущего пользователя (User) с подгруженным профилем.
+                       Может быть None, если пользователь не авторизован.
+
+               Returns:
+                   dict: Словарь с полями:
+                       - card_info_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
+                       - error_message (str | None): текст ошибки, если произошла.
+                       - status_code (int): HTTP статус-код (200, 404, 500).
+
+               Note:
+                   - 200: успешное получение данных.
+                   - 404: карта не найдена (CardNotFoundError).
+                   - 500: любая другая непредвиденная ошибка.
+               """
 
         answer_data = {'card_info_dto': None,
                        'error_message': None,
@@ -33,6 +53,11 @@ class ViewCardUseCase:
         except CardNotFoundError as error:
             answer_data['error_message'] = str(error)
             answer_data['status_code'] = error.status_code
+            return answer_data
+        except Exception as error:
+            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в ViewCardUseCase: {error}', exc_info=True)
             return answer_data
 
         need_exp = calculate_need_exp(level=card.level)
@@ -74,12 +99,24 @@ class ViewCardUseCase:
 
 
 class ViewGetFreeCard:
-    """ Use case для просмотра страницы с получением бесплатной карты """
+    """ Use case для просмотра страницы с получением бесплатной карты.
+        Показывает списки всех классов и редкостей, а также флаг возможности получить карту сейчас.
+    """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
     async def execute(self, current_user: User) -> dict:
+        """ Формирует DTO для страницы получения бесплатной карты.
+            Args:
+                current_user: Объект текущего пользователя (User) с подгруженным профилем.
+                    Может быть None, если пользователь не авторизован.
+            Returns:
+                dict:
+                    - get_free_card_dto (GetFreeCardDTO): DTO со списками классов, редкостей и флагом can_get_free_card.
+                    - status_code (int): HTTP статус-код всегда 200
+        """
+
         answer_data = {'get_free_card_dto': None,
                        'status_code': None}
         data_for_page: dict = await get_drop_chance_card(session_db=self.session_db)
@@ -114,17 +151,34 @@ class ViewGetFreeCard:
 
 
 class GetFreeCardUseCase:
-    """ Use case для получения случайной бесплатной карты """
+    """ Use case для получения случайной бесплатной карты.
+        Проверяет авторизацию, таймер ожидания, наличие слотов, генерирует карту и записывает историю.
+    """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User
+                      current_user: User | None
                       ) -> dict:
+        """ Выполняет получение бесплатной карты для авторизованного пользователя.
+            Args:
+                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
+            Returns:
+                dict:
+                    - success (bool): True при успешном получении карты.
+                    - new_card_id (int | None): ID новой карты (при успехе).
+                    - error_message (str | None): сообщение об ошибке.
+                    - status_code (int): HTTP статус-код
+           Note:
+               - 303: успешное получение данных и перенаправление
+               - 400: ошибка доступа
+               - 500: любая другая непредвиденная ошибка.
+        """
 
         hours_for_get_free_card = 6
-        answer_data = {'new_card_id': None,
+        answer_data = {'success': None,
+                       'new_card_id': None,
                        'error_message': None,
                        'status_code': None}
 
@@ -171,5 +225,6 @@ class GetFreeCardUseCase:
             answer_data['success'] = False
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в GetFreeCardUseCase: {error}', exc_info=True)
 
         return answer_data
