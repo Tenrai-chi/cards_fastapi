@@ -65,7 +65,7 @@ class BuyStoreCardUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User,
+                      current_user: User | None,
                       temp_card_id: int,
                       ) -> dict:
         """ Выполняет покупку карты в магазине.
@@ -148,6 +148,6 @@ class BuyStoreCardUseCase:
             answer_data['success'] = False
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
-            logger.error(f'Непредвиденная ошибка в GetFreeCardUseCase: {error}', exc_info=True)
+            logger.error(f'Непредвиденная ошибка в BuyStoreCardUseCase: {error}', exc_info=True)
 
         return answer_data

@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
-                                        get_fight_history_user, is_favorite, add_user_to_favorite,
+                                        get_user_fight_history, is_favorite, add_user_to_favorite,
                                         remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user)
 from cards_app.services.cards import get_card_with_details
 from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, GuildDTO,
@@ -59,7 +59,7 @@ class ViewProfileUseCase:
         except Exception as error:
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
-            logger.error(f'Непредвиденная ошибка в ViewCardUseCase: {error}', exc_info=True)
+            logger.error(f'Непредвиденная ошибка в ViewProfileUseCase: {error}', exc_info=True)
             return answer_data
 
         base_dto = ProfileBaseDTO(id=target_user.profile.id,
@@ -117,7 +117,7 @@ class ViewProfileUseCase:
         if is_owner:
             role = 'owner'
             user_email = target_user.email
-            fights = await get_fight_history_user(session_db=self.session_db,
+            fights = await get_user_fight_history(session_db=self.session_db,
                                                   profile_id=target_user.profile.id,
                                                   limit=50)
             battle_history = []

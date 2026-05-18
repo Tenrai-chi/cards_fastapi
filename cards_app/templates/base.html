@@ -103,7 +103,7 @@
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, document.title, newUrl);
             }
-            // НОВЫЙ БЛОК: обработка успеха
+            // Обработка успеха
             const successMsg = urlParams.get('success');
             if (successMsg) {
                 showToast(decodeURIComponent(successMsg), 'success');

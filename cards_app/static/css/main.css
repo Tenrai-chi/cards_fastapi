@@ -1,4 +1,12 @@
-/* ========== ПЕРЕМЕННЫЕ ========== */
+/* =================================================
+   ГЛОБАЛЬНЫЕ СТИЛИ – ПОДКЛЮЧАЕТСЯ НА ВСЕХ СТРАНИЦАХ
+   Содержит: переменные, сброс, анимации, шапку, навигацию,
+   универсальную карточку карты (.selected-card и внутренности),
+   пагинацию, тосты, таблицы, базовую кнопку .btn,
+   сообщение об ошибке .error-message.
+   ================================================= */
+
+/* ---------- ПЕРЕМЕННЫЕ ---------- */
 :root {
     --primary-dark: #6a1b9a;
     --primary-main: #8e24aa;
@@ -10,7 +18,7 @@
     --shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-/* ========== СБРОС И ОБЩИЕ СТИЛИ ========== */
+/* ---------- СБРОС И ОБЩИЕ СТИЛИ ---------- */
 * {
     margin: 0;
     padding: 0;
@@ -26,7 +34,7 @@ body {
     flex-direction: column;
 }
 
-/* ========== АНИМАЦИИ ========== */
+/* ---------- АНИМАЦИИ (переиспользуемые) ---------- */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -42,7 +50,7 @@ body {
     to { transform: translateY(0); }
 }
 
-/* ========== ОСНОВНОЙ КОНТЕЙНЕР ========== */
+/* ---------- ОСНОВНОЙ КОНТЕЙНЕР (все страницы) ---------- */
 .main-content {
     flex: 1;
     padding: 2rem;
@@ -52,7 +60,7 @@ body {
     animation: fadeIn 0.6s ease-out;
 }
 
-/* ========== ШАПКА ========== */
+/* ---------- ШАПКА С НАВИГАЦИЕЙ (общая) ---------- */
 .header {
     background: linear-gradient(135deg, var(--primary-dark), var(--primary-main));
     color: white;
@@ -177,7 +185,6 @@ body {
     transform: translateY(-2px);
 }
 
-/* Адаптивность шапки */
 @media (max-width: 768px) {
     .nav-container {
         flex-direction: column;
@@ -191,17 +198,69 @@ body {
     }
 }
 
-.error-message {
-    background: #ffebee;
-    color: #c62828;
-    padding: 0.8rem;
-    border-radius: 10px;
+/* ---------- УНИВЕРСАЛЬНАЯ КАРТОЧКА КАРТЫ ----------
+   Используется на странице просмотра карты (с доработками в card_view.css)
+   и в профиле (через main.css). Не дублировать в других файлах!
+   ================================================= */
+.selected-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
     margin-bottom: 1.5rem;
-    text-align: center;
-    border-left: 5px solid #c62828;
+    max-width: 450px;
+    width: 100%;
 }
 
-/* ========== ОБЩИЕ ТАБЛИЦЫ (для истории боёв и др.) ========== */
+.card-image {
+    background: var(--primary-light);
+    text-align: center;
+    padding: 1rem;
+}
+
+.card-image img {
+    max-width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+}
+
+.card-info {
+    padding: 1.5rem;
+}
+
+.card-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-dark);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.card-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.card-stat {
+    background: var(--primary-light);
+    padding: 0.5rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.amulet-info {
+    background: #fff3e0;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+/* ---------- ОБЩИЕ ТАБЛИЦЫ (для истории боёв и др.) ---------- */
 .table-responsive {
     overflow-x: auto;
     border-radius: 12px;
@@ -243,7 +302,7 @@ body {
     font-weight: bold;
 }
 
-/* ========== ПАГИНАЦИЯ (универсальная) ========== */
+/* ---------- ПАГИНАЦИЯ (универсальная) ---------- */
 .pagination {
     display: flex;
     justify-content: center;
@@ -332,66 +391,7 @@ body {
     }
 }
 
-/* ========== ОБЩАЯ КАРТОЧКА КАРТЫ (используется в профиле и на странице карты) ========== */
-.selected-card {
-    background: white;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    margin-bottom: 1.5rem;
-    max-width: 450px;
-    width: 100%;
-}
-
-.card-image {
-    background: var(--primary-light);
-    text-align: center;
-    padding: 1rem;
-}
-
-.card-image img {
-    max-width: 100%;
-    height: auto;
-    max-height: 300px;
-    object-fit: contain;
-}
-
-.card-info {
-    padding: 1.5rem;
-}
-
-.card-name {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--primary-dark);
-    margin-bottom: 1rem;
-    text-align: center;
-}
-
-.card-stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.card-stat {
-    background: var(--primary-light);
-    padding: 0.5rem;
-    border-radius: 8px;
-    text-align: center;
-}
-
-.amulet-info {
-    background: #fff3e0;
-    padding: 0.5rem;
-    border-radius: 8px;
-    border-left: 4px solid var(--accent);
-    font-size: 0.9rem;
-    margin-top: 1rem;
-}
-
-/* ========== ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ (TOAST) ========== */
+/* ---------- ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ (TOAST) ---------- */
 .toast-container {
     position: fixed;
     bottom: 20px;
@@ -413,9 +413,8 @@ body {
     justify-content: space-between;
     padding: 12px 16px;
     transform: translateX(400px);
-    transition: transform 0.3s ease;
-    opacity: 0;
     transition: all 0.3s ease;
+    opacity: 0;
 }
 
 .toast.show {
@@ -443,7 +442,6 @@ body {
     color: #333;
 }
 
-/* Типы уведомлений */
 .toast-error {
     border-left: 4px solid #f44336;
     background: #fff5f5;
@@ -462,4 +460,35 @@ body {
 .toast-warning {
     border-left: 4px solid #ff9800;
     background: #fff8e7;
+}
+
+/* ---------- БАЗОВАЯ КНОПКА .btn ---------- */
+.btn {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-main));
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    filter: brightness(1.05);
+}
+
+/* ---------- СООБЩЕНИЕ ОБ ОШИБКЕ (общее) ---------- */
+.error-message {
+    background: #ffebee;
+    color: #c62828;
+    padding: 0.8rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    border-left: 5px solid #c62828;
 }

@@ -24,7 +24,7 @@ async def get_base_info_profile(session_db: AsyncSession,
         Returns:
             User: orm объект пользователя
         Raises:
-            UserNotFoundError: Если пользователь с указанным ID не найден в БД.
+            UserNotFoundError: если пользователь с указанным ID не найден в БД.
     """
 
     stmt_user = (
@@ -63,15 +63,15 @@ async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_
     return wins or 0, loses or 0
 
 
-async def get_fight_history_user(session_db: AsyncSession, profile_id: int, limit: int = 50):
+async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limit: int = 50):
     """ Возвращает список боёв, где профиль был участником, с подгрузкой соперника и карт.
          Args:
             session_db: сессия базы данных
             profile_id: ID профиля, историю боёв которого нужно получить
-            limit: Максимальное количество возвращаемых записей. По умолчанию 50
+            limit: максимальное количество возвращаемых записей. По умолчанию 50
 
         Returns:
-            list[FightHistory]: Список объектов FightHistory, отсортированных по дате
+            list[FightHistory]: список объектов FightHistory, отсортированных по дате
             от новых к старым. Каждый объект содержит подгруженные связи
     """
 
@@ -149,10 +149,10 @@ async def charge_user_gold(session_db: AsyncSession, current_user: User, need_go
             need_gold: Количество золота для списания.
         Returns:
             dict:
-                - gold_before (int): Количество золота до списания.
-                - gold_after (int): Количество золота после списания.
+                - gold_before (int): количество золота до списания.
+                - gold_after (int): количество золота после списания.
         Raises:
-            InsufficientFundsUserError: Если у пользователя недостаточно золота.
+            InsufficientFundsUserError: если у пользователя недостаточно золота.
     """
 
     answer_data = {'gold_before': None,
@@ -161,7 +161,7 @@ async def charge_user_gold(session_db: AsyncSession, current_user: User, need_go
     if current_user.profile.gold < need_gold:
         logger.warning(f'Попытка пользователя ID {current_user.profile.id} списать {need_gold} золота, '
                        f'но у него только {current_user.profile.gold}')
-        raise InsufficientFundsUserError(current_user.profile.gold - need_gold)
+        raise InsufficientFundsUserError(need_gold - current_user.profile.gold)
 
     gold_after_buy = current_user.profile.gold - need_gold
     answer_data['gold_before'] = current_user.profile.gold
@@ -171,6 +171,34 @@ async def charge_user_gold(session_db: AsyncSession, current_user: User, need_go
     session_db.add(current_user)
     logger.info(f'Списано {need_gold} золота у пользователя ID {current_user.profile.id}: '
                 f'{answer_data["gold_before"]} → {gold_after_buy}')
+
+    return answer_data
+
+
+async def add_user_gold(session_db: AsyncSession, current_user: User, add_gold: int) -> dict:
+    """ Добавляет пользователю золото.
+        Args:
+            session_db: Асинхронная сессия SQLAlchemy.
+            current_user: Объект текущего пользователя (User) с подгруженным профилем.
+            add_gold: Количество полученного золота
+        Returns:
+            dict:
+                - gold_before (int): количество золота до списания.
+                - gold_after (int): количество золота после списания.
+        Raises:
+            InsufficientFundsUserError: если у пользователя недостаточно золота.
+    """
+
+    answer_data = {'gold_before': None,
+                   'gold_after': None}
+
+    answer_data['gold_before'] = current_user.profile.gold
+    gold_after = current_user.profile.gold + add_gold
+    answer_data['gold_after'] = gold_after
+    current_user.profile.gold = gold_after
+
+    session_db.add(current_user)
+    logger.info(f'Пользователь ID {current_user.id} получил {add_gold} золота')
 
     return answer_data
 

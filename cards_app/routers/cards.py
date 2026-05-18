@@ -8,7 +8,7 @@ from cards_app.auth.dependencies import get_current_user_with_profile
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
-from cards_app.use_cases.cards import ViewCardUseCase, ViewGetFreeCard, GetFreeCardUseCase
+from cards_app.use_cases.cards import ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase
 
 
 from cards_app.models.users import User
@@ -62,7 +62,7 @@ async def view_free_card(request: Request,
     """ Просмотр страницы получения бесплатной случайной карты """
 
     current_user_dto = await user_info_to_dto(current_user)
-    use_case = ViewGetFreeCard(session_db)
+    use_case = ViewGetFreeCardUseCase(session_db)
     data: dict = await use_case.execute(current_user)
 
     context = {'request': request,

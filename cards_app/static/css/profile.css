@@ -1,4 +1,8 @@
-/* ========== СТРАНИЦА ПРОФИЛЯ ========== */
+/* =================================================
+   СТРАНИЦА ПРОФИЛЯ (только специфичные стили)
+   Карточка пользователя (.selected-card) берётся из main.css
+   ================================================= */
+
 .profile-container {
     display: flex;
     gap: 2rem;
@@ -13,6 +17,16 @@
     border-radius: 20px;
     padding: 1.5rem;
     box-shadow: var(--shadow);
+}
+
+.profile-username {
+    text-align: center;
+    color: var(--primary-dark);
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+    font-weight: bold;
+    border-bottom: 2px solid var(--primary-light);
+    padding-bottom: 0.5rem;
 }
 
 .avatar img {
@@ -84,7 +98,6 @@
     align-items: center;
 }
 
-/* Кнопки для гостя под картой в профиле */
 .guest-actions {
     display: flex;
     gap: 1rem;
@@ -108,7 +121,7 @@
     background: var(--primary-dark);
 }
 
-/* История боёв (владелец профиля) */
+/* История боёв (только для владельца) */
 .fight-history-wrapper {
     width: 100%;
     max-width: 1200px;
@@ -120,13 +133,4 @@
 .fight-history {
     margin-top: 0;
     overflow-x: auto;
-}
-.profile-username {
-    text-align: center;
-    color: var(--primary-dark);
-    margin-bottom: 1rem;
-    font-size: 1.8rem;
-    font-weight: bold;
-    border-bottom: 2px solid var(--primary-light);
-    padding-bottom: 0.5rem;
 }

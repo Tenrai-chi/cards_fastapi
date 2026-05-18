@@ -49,8 +49,9 @@ async def get_card_with_details(session_db: AsyncSession,
     return card
 
 
-async def get_drop_chance_card(session_db: AsyncSession) -> dict:
-    """ Получает из БД все классы карт и редкости для расчёта шанса выпадения.
+async def get_rarities_and_classes(session_db: AsyncSession) -> dict:
+    """ Получает из БД все классы карт и редкости для расчёта шанса выпадения
+        и вывода полученной информации на страницу получения случайной карты
         Args:
             session_db: сессия базы данных
 
@@ -117,6 +118,50 @@ async def generate_random_card(session_db: AsyncSession, owner_id: int) -> int:
     session_db.add(new_card)
     await session_db.flush()
     logger.info(f'Сгенерирована случайная карта: id={new_card.id}, владелец={owner_id}')
+
+    return new_card.id
+
+
+async def generate_card_start_event(session_db: AsyncSession,
+                                    user_id: int,
+                                    rarity_name: str
+                                    ) -> int:
+    """ Создает случайную карту заданной редкости с максимальными характеристиками.
+        Args:
+            session_db: сессия базы данных
+            user_id: ID профиля пользователя
+            rarity_name: название редкости карты для получения ее ID
+        Returns:
+            int: ID созданной карты
+    """
+
+    stmt_classes = select(ClassCard)
+    result_classes = await session_db.execute(stmt_classes)
+    class_card = choice(result_classes.scalars().all())
+
+    stmt_types = select(Type)
+    result_types = await session_db.execute(stmt_types)
+    type_card = choice(result_types.scalars().all())
+
+    stmt_rarity = select(Rarity).where(Rarity.name == rarity_name)
+    result_rarity = await session_db.execute(stmt_rarity)
+    rarity = result_rarity.scalar_one_or_none()
+
+    hp = rarity.max_hp
+    damage = rarity.max_damage
+
+    # Тут создание карты
+    new_card = Card(owner_id=user_id,
+                    class_card_id=class_card.id,
+                    type_id=type_card.id,
+                    rarity_id=rarity.id,
+                    level=1,
+                    hp=hp,
+                    damage=damage)
+
+    session_db.add(new_card)
+    await session_db.flush()
+    logger.info(f'Сгенерирована карта в стартовом событии: id={new_card.id}, владелец={user_id}')
 
     return new_card.id
 

@@ -2,7 +2,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import *
-from cards_app.services.cards import (get_card_with_details, get_drop_chance_card, generate_random_card,
+from cards_app.services.cards import (get_card_with_details, get_rarities_and_classes, generate_random_card,
                                       create_record_in_history_receiving_card)
 
 from cards_app.schemas.cards import AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard
@@ -98,7 +98,7 @@ class ViewCardUseCase:
         return answer_data
 
 
-class ViewGetFreeCard:
+class ViewGetFreeCardUseCase:
     """ Use case для просмотра страницы с получением бесплатной карты.
         Показывает списки всех классов и редкостей, а также флаг возможности получить карту сейчас.
     """
@@ -119,7 +119,7 @@ class ViewGetFreeCard:
 
         answer_data = {'get_free_card_dto': None,
                        'status_code': None}
-        data_for_page: dict = await get_drop_chance_card(session_db=self.session_db)
+        data_for_page: dict = await get_rarities_and_classes(session_db=self.session_db)
         all_classes = data_for_page['classes']
         all_rarities = data_for_page['rarities']
 
