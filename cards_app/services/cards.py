@@ -1,13 +1,15 @@
-import random
 import logging
+import random
+
 from datetime import datetime
 from random import choice
-from typing import List, Any
+from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from cards_app.types import RaritiesAndClassesDict
 from cards_app.exeptions import CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError
 from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore
 
@@ -20,7 +22,7 @@ async def get_card_with_details(session_db: AsyncSession,
     """ Возвращает карту с подгруженными амулетом, классом, типом и редкостью.
          Args:
             session_db: сессия базы данных
-            card_id: ID карты, которую нужно получить.
+            card_id: ID карты, которую нужно получить
         Returns:
             Card: Объект карты с подгруженными атрибутами:
                 - class_card (ClassCard)
@@ -49,30 +51,29 @@ async def get_card_with_details(session_db: AsyncSession,
     return card
 
 
-async def get_rarities_and_classes(session_db: AsyncSession) -> dict[str, list[Any]]:
+async def get_rarities_and_classes(session_db: AsyncSession
+                                   ) -> RaritiesAndClassesDict:
     """ Получает из БД все классы карт и редкости для расчёта шанса выпадения
         и вывода полученной информации на страницу получения случайной карты
         Args:
             session_db: сессия базы данных
 
         Returns:
-            dict:
+            dict RaritiesAndClassesDict:
                 - rarities (list[Rarity]): список всех редкостей
-                - classes (list[ClassCard]): список всех классов карт.
+                - classes (list[ClassCard]): список всех классов
     """
 
-    answer_data = {'rarities': None,
-                   'classes': None}
-
-    stmt_classes = select(ClassCard)
-    result_classes = await session_db.execute(stmt_classes)
-    all_classes = result_classes.scalars().all()
+    answer_data: RaritiesAndClassesDict = {
+        'rarities': [],
+        'classes': []
+    }
+    result_classes = await session_db.execute(select(ClassCard))
+    all_classes = list(result_classes.scalars().all())
     answer_data['classes'] = all_classes
 
-    stmt_rarities = select(Rarity)
-    result_rarities = await session_db.execute(stmt_rarities)
-    all_rarities = result_rarities.scalars().all()
-
+    result_rarities = await session_db.execute(select(Rarity))
+    all_rarities = list(result_rarities.scalars().all())
     answer_data['rarities'] = all_rarities
 
     return answer_data
@@ -88,16 +89,13 @@ async def generate_random_card(session_db: AsyncSession, owner_id: int) -> int:
             int: ID созданной карты
     """
 
-    stmt_classes = select(ClassCard)
-    result_classes = await session_db.execute(stmt_classes)
+    result_classes = await session_db.execute(select(ClassCard))
     class_card = choice(result_classes.scalars().all())
 
-    stmt_types = select(Type)
-    result_types = await session_db.execute(stmt_types)
+    result_types = await session_db.execute(select(Type))
     type_card = choice(result_types.scalars().all())
 
-    stmt_rarities = select(Rarity)
-    result_rarities = await session_db.execute(stmt_rarities)
+    result_rarities = await session_db.execute(select(Rarity))
     all_rarities = result_rarities.scalars().all()
 
     weights = [rarity.drop_chance for rarity in all_rarities]
@@ -106,7 +104,7 @@ async def generate_random_card(session_db: AsyncSession, owner_id: int) -> int:
     hp = random.randint(chosen_rarity.min_hp, chosen_rarity.max_hp)
     damage = random.randint(chosen_rarity.min_damage, chosen_rarity.max_damage)
 
-    # Тут создание карты
+    # Создание карты
     new_card = Card(owner_id=owner_id,
                     class_card_id=class_card.id,
                     type_id=type_card.id,
@@ -123,13 +121,13 @@ async def generate_random_card(session_db: AsyncSession, owner_id: int) -> int:
 
 
 async def generate_card_start_event(session_db: AsyncSession,
-                                    user_id: int,
+                                    user_profile_id: int,
                                     rarity_name: str
                                     ) -> int:
     """ Создает случайную карту заданной редкости с максимальными характеристиками.
         Args:
             session_db: сессия базы данных
-            user_id: ID профиля пользователя
+            user_profile_id: ID профиля пользователя
             rarity_name: название редкости карты для получения ее ID
         Returns:
             int: ID созданной карты
@@ -151,7 +149,7 @@ async def generate_card_start_event(session_db: AsyncSession,
     damage = rarity.max_damage
 
     # Тут создание карты
-    new_card = Card(owner_id=user_id,
+    new_card = Card(owner_id=user_profile_id,
                     class_card_id=class_card.id,
                     type_id=type_card.id,
                     rarity_id=rarity.id,
@@ -161,7 +159,7 @@ async def generate_card_start_event(session_db: AsyncSession,
 
     session_db.add(new_card)
     await session_db.flush()
-    logger.info(f'Сгенерирована карта в стартовом событии: id={new_card.id}, владелец={user_id}')
+    logger.info(f'Сгенерирована карта в стартовом событии: id={new_card.id}, владелец={user_profile_id}')
 
     return new_card.id
 
@@ -170,7 +168,7 @@ async def create_new_card_from_template(session_db: AsyncSession,
                                         owner_id: int,
                                         card_temp: CardStore
                                         ) -> int:
-    """ Создает новую карту пользователя по карте-шаблону из магазина.
+    """ Создает новую карту пользователя по карте-шаблону из магазина при покупке.
        Args:
             session_db: сессия базы данных
             owner_id: ID профиля владельца карты
@@ -194,7 +192,7 @@ async def create_new_card_from_template(session_db: AsyncSession,
     return new_card.id
 
 
-async def get_temp_card_in_store(session_db: AsyncSession, card_temp_id) -> CardStore:
+async def get_temp_card_in_store(session_db: AsyncSession, card_temp_id: int) -> CardStore:
     """ Получает карту из магазина по ее ID.
         Args:
             session_db: сессия базы данных
@@ -233,29 +231,30 @@ async def get_all_cards_user(session_db: AsyncSession, owner_id: int) -> List[Ca
             List[Card]: список карт, принадлежащих пользователю
     """
 
-    stmt = select(Card).where(Card.owner_id == owner_id).order_by(Card.id)
-    result = await session_db.execute(stmt)
+    stmt_user_cards = (select(Card)
+                       .where(Card.owner_id == owner_id).order_by(Card.id))
+    result = await session_db.execute(stmt_user_cards)
     cards = list(result.scalars().all())
     return cards
 
 
 async def create_record_in_history_receiving_card(session_db: AsyncSession,
                                                   card_id: int,
-                                                  user_id: int,
+                                                  user_profile_id: int,
                                                   method_receiving: str
                                                   ) -> None:
     """ Создает запись в таблице с историей получения карт.
         Args:
             session_db: сессия базы данных
             card_id: ID полученной карты
-            user_id: ID профиля пользователя, получившего карту.
+            user_profile_id: ID профиля пользователя, получившего карту.
             method_receiving: Способ получения (покупка, генерация)
     """
 
     new_record = HistoryReceivingCards(card_id=card_id,
                                        date_and_time=datetime.now(),
-                                       user_id=user_id,
+                                       user_id=user_profile_id,
                                        method_receiving=method_receiving)
     session_db.add(new_record)
     logger.info(f'Создана запись в истории получения карт: карта ID: {card_id} '
-                f'получена пользователем ID {user_id} способом "{method_receiving}"')
+                f'получена пользователем ID {user_profile_id} способом "{method_receiving}"')

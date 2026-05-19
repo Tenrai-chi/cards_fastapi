@@ -206,7 +206,7 @@ class GetFreeCardUseCase:
                                                      owner_id=current_user.profile.id)
             await create_record_in_history_receiving_card(session_db=self.session_db,
                                                           card_id=new_card_id,
-                                                          user_id=current_user.profile.id,
+                                                          user_profile_id=current_user.profile.id,
                                                           method_receiving='Генерация')
             await self.session_db.commit()
             answer_data['success'] = True

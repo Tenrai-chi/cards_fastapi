@@ -17,15 +17,18 @@ async def get_paginated_news(session_db: AsyncSession, limit: int, offset: int) 
             offset: сдвиг для пагинации
 
         Returns:
-            list[News]: Список объектов News
+            list[News]: список объектов News
     """
 
-    stmt = (select(News)
-            .order_by(News.date_time_create.desc())
-            .limit(limit)
-            .offset(offset))
-    result = await session_db.execute(stmt)
-    return list(result.scalars().all())
+    stmt_news = (
+        select(News)
+        .order_by(News.date_time_create.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    result = await session_db.execute(stmt_news)
+    news = list(result.scalars().all())
+    return news
 
 
 async def get_total_news_count(session_db: AsyncSession) -> int:
@@ -37,9 +40,10 @@ async def get_total_news_count(session_db: AsyncSession) -> int:
             int: общее число записей в таблице News.
     """
 
-    stmt = select(func.count()).select_from(News)
-    result = await session_db.execute(stmt)
-    return result.scalar_one()
+    stmt_count = select(func.count()).select_from(News)
+    result = await session_db.execute(stmt_count)
+    count = result.scalar_one()
+    return count
 
 
 async def get_info_start_event_awards(session_db: AsyncSession) -> list[InitialEventAwards]:
@@ -47,19 +51,20 @@ async def get_info_start_event_awards(session_db: AsyncSession) -> list[InitialE
         Args:
             session_db: сессия базы данных
         Returns:
-            list[InitialEventAwards]: Список наград (объектов) InitialEventAwards
+            list[InitialEventAwards]: список наград (объектов) InitialEventAwards
     """
 
-    stmt = (select(InitialEventAwards)
-            .order_by(InitialEventAwards.day_event_visit.asc()))
-    result = await session_db.execute(stmt)
-    return list(result.scalars().all())
+    stmt_awards = (select(InitialEventAwards)
+                   .order_by(InitialEventAwards.day_event_visit.asc()))
+    result = await session_db.execute(stmt_awards)
+    awards = list(result.scalars().all())
+    return awards
 
 
 async def can_get_start_event_award(user: User) -> bool:
     """ Проверяет, что пользователь может получить награду стартового события.
         Args:
-            user: объект пользователя
+            user: объект пользователя с подгруженным profile из depends
         Returns:
             bool: True, если пользователь может получить награду
     """
@@ -71,8 +76,8 @@ async def can_get_start_event_award(user: User) -> bool:
         return True
 
     today = date.today()
-    day_passed = user.profile.date_event_visit < today
-    return bool(day_passed)
+    day_passed = bool(user.profile.date_event_visit < today)
+    return day_passed
 
 
 async def update_profile_event_award_received(session_db: AsyncSession,
@@ -81,7 +86,7 @@ async def update_profile_event_award_received(session_db: AsyncSession,
     """ Обновляет информацию в профиле пользователя при получении награды.
         Args:
             session_db: сессия базы данных
-            user: объект пользователя
+            user: с подгруженным profile из depends
     """
 
     user.profile.event_visit += 1
@@ -100,6 +105,8 @@ async def get_info_award(session_db: AsyncSession,
             InitialEventAwards: награда этого дня
     """
 
-    stmt = select(InitialEventAwards).where(InitialEventAwards.day_event_visit == day_visit)
-    result = await session_db.execute(stmt)
-    return result.scalar_one_or_none()
+    stmt_award = (select(InitialEventAwards)
+                  .where(InitialEventAwards.day_event_visit == day_visit))
+    result = await session_db.execute(stmt_award)
+    award = result.scalar_one_or_none()
+    return award

@@ -48,21 +48,23 @@ class ProcessFightUseCase:
         try:
             # 1. Проверка, что бой может состояться
             participants: dict = await validate_battle_preconditions(self.session_db,
-                                                                     attacker_id=user.id,
-                                                                     protector_id=enemy_id)
+                                                                     user_id=user.id,
+                                                                     enemy_id=enemy_id)
             user = participants.get('attacker')
             enemy = participants.get('protector')
 
             # 2. Подготовка карт и характеристик
             cards: dict = await get_cards_participants(session_db=self.session_db,
-                                                       attacker_card_id=user.profile.current_card_id,
-                                                       protector_card_id=enemy.profile.current_card_id)
+                                                       user_card_id=user.profile.current_card_id,
+                                                       enemy_card_id=enemy.profile.current_card_id)
             user_card = cards.get('attacker_card')
             enemy_card = cards.get('protector_card')
 
             # 3. Бой между участниками
-            data_fight: dict = await fight_now(user_card=user_card,
-                                               enemy_card=enemy_card)
+            data_fight: dict = fight_now(user=user,
+                                         enemy=enemy,
+                                         user_card=user_card,
+                                         enemy_card=enemy_card)
             is_victory = data_fight.get('is_victory')
             history_fight = data_fight.get('history_fight')
             winner = data_fight.get('winner')

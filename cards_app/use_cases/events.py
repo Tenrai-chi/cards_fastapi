@@ -195,11 +195,11 @@ class GetAwardStartEventUseCase:
                                                   current_user=current_user,
                                                   need_slots=1)
                 new_card_id = await generate_card_start_event(session_db=self.session_db,
-                                                              user_id=current_user.profile.id,
+                                                              user_profile_id=current_user.profile.id,
                                                               rarity_name=award_of_day.amount_or_rarity_award)
                 await create_record_in_history_receiving_card(session_db=self.session_db,
                                                               card_id=new_card_id,
-                                                              user_id=current_user.profile.id,
+                                                              user_profile_id=current_user.profile.id,
                                                               method_receiving='Стартовое событие')
                 answer_data['status_code'] = 303
                 answer_data['new_card_id'] = new_card_id

@@ -133,7 +133,7 @@ class BuyStoreCardUseCase:
             # Создание записи о получении карты
             await create_record_in_history_receiving_card(session_db=self.session_db,
                                                           card_id=new_card_id,
-                                                          user_id=current_user.profile.id,
+                                                          user_profile_id=current_user.profile.id,
                                                           method_receiving='Покупка в магазине')
             answer_data['success'] = True
             answer_data['new_card_id'] = new_card_id

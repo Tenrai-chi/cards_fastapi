@@ -1,5 +1,4 @@
 from random import randint
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -7,88 +6,95 @@ from sqlalchemy import select, or_, desc
 
 from cards_app.exeptions import SelfFightError, UserNotFoundError, CooldownNotElapsedError, NoCurrentCardError
 from cards_app.models import User, FightHistory, Card, AmuletItem, Profile
+from cards_app.types import FightNowDataDict
 from cards_app.utils.common import time_difference_check
 
 
 async def validate_battle_preconditions(session_db: AsyncSession,
-                                        attacker_id: int,
-                                        protector_id: int,
+                                        user_id: int,
+                                        enemy_id: int,
                                         ) -> dict[str, User]:
     """ Проверка на возможность проведения рейтингового боя между 2 участниками.
         Args:
             session_db: сессия базы данных
-            attacker_id: ID нападающего (текущего) пользователя
-            protector_id: ID противника
+            user_id: ID User нападающего (текущего) пользователя
+            enemy_id: ID User противника
         Returns:
             dict:
-                - attacker (User+Profile): текущий пользователь
-                - protector (User+Profile): противник
+                - user (User+Profile): текущий пользователь
+                - enemy (User+Profile): противник
         Raises:
             SelfFightError: если пользователь нападает сам на себя
+            UserNotFoundError: если противник не найден
+            NoCurrentCardError: если у участника/ов не выбраны карты для боя
+            CooldownNotElapsedError: из check_last_fight, если после последней битвы прошло недостаточно времени
     """
 
-    answer_data = {'attacker': None,
-                   'protector': None}
-    if attacker_id == protector_id:
+    answer_data = {'user': None,
+                   'enemy': None}
+    if user_id == enemy_id:
         raise SelfFightError()
 
-    # Получение профиля + user для нападения и защиты
-    attacker_result = await session_db.execute(
-        select(User)
-        .where(User.id == attacker_id)
+    # Получение user+profile участников битвы
+    stmt_user = (
+        select(User).where(User.id == user_id)
         .options(
             selectinload(User.profile).selectinload(Profile.guild)
         )
     )
-    attacker = attacker_result.scalar_one_or_none()
+    user_result = await session_db.execute(stmt_user)
+    user = user_result.scalar_one_or_none()
 
-    protector_result = await session_db.execute(
+    stmt_enemy = (
         select(User)
-        .where(User.id == protector_id)
+        .where(User.id == enemy_id)
         .options(
             selectinload(User.profile).selectinload(Profile.guild)
         )
     )
-    protector = protector_result.scalar_one_or_none()
+    enemy_result = await session_db.execute(stmt_enemy)
+    enemy = enemy_result.scalar_one_or_none()
 
-    if protector is None:
+    if enemy is None:
         raise UserNotFoundError()
-    if not attacker.profile.current_card_id:
-        raise NoCurrentCardError(attacker.username)
-    if not protector.profile.current_card_id:
-        raise NoCurrentCardError(protector.username)
+    if not user.profile.current_card_id:
+        raise NoCurrentCardError(user.username)
+    if not enemy.profile.current_card_id:
+        raise NoCurrentCardError(enemy.username)
 
     await check_last_fight(session_db=session_db,
-                           attacker_id=attacker_id,
-                           protector_id=protector_id)
+                           user_profile_id=user_id,
+                           enemy_profile_id=enemy_id)
 
-    answer_data['attacker'] = attacker
-    answer_data['protector'] = protector
+    answer_data['user'] = user
+    answer_data['enemy'] = enemy
     return answer_data
 
 
 async def check_last_fight(session_db: AsyncSession,
-                           attacker_id: int,
-                           protector_id: int
+                           user_profile_id: int,
+                           enemy_profile_id: int
                            ) -> None:
-    """ Получает последний бой между пользователями.
+    """ Получает последний бой между пользователями и проверяет, что прошло достаточно времени
         Если не прошло достаточно времени, то поднимает ошибку CooldownNotElapsedError
         Args:
             session_db: сессия базы данных
-            attacker_id: ID текущего пользователя
-            protector_id: ID противника
+            user_profile_id: ID профиля текущего пользователя
+            enemy_profile_id: ID профиля противника
         Raises:
             CooldownNotElapsedError: если не прошло достаточно времени после предыдущей битвы
     """
 
-    stmt = select(FightHistory).where(
-        or_(
-            (FightHistory.winner_id == protector_id) & (FightHistory.loser_id == attacker_id),
-            (FightHistory.winner_id == attacker_id) & (FightHistory.loser_id == protector_id)
-        )
-    ).order_by(desc(FightHistory.id)).limit(1)
+    stmt_last_fight = (
+        select(FightHistory).where(
+            or_(
+                (FightHistory.winner_id == enemy_profile_id) & (FightHistory.loser_id == user_profile_id),
+                (FightHistory.winner_id == user_profile_id) & (FightHistory.loser_id == enemy_profile_id)
+            )
+        ).order_by(desc(FightHistory.id)).limit(1)
+    )
 
-    result = await session_db.execute(stmt)
+    result = await session_db.execute(stmt_last_fight)
     last_fight = result.scalar_one_or_none()
 
     if last_fight is not None:
@@ -99,42 +105,44 @@ async def check_last_fight(session_db: AsyncSession,
 
 
 async def get_cards_participants(session_db: AsyncSession,
-                                 attacker_card_id: int,
-                                 protector_card_id: int
+                                 user_card_id: int,
+                                 enemy_card_id: int
                                  ) -> dict[str, Card]:
     """ Возвращает карты участников с подгруженными амулетами.
         Args:
             session_db: сессия базы данных
-            attacker_card_id: ID карты текущего пользователя
-            protector_card_id: ID карты противника
+            user_card_id: ID карты текущего пользователя
+            enemy_card_id: ID карты противника
         Returns:
             dict:
-                - attacker_card: Card текущего пользователя
-                - protector_card: Card противника
+                - user_card: карта текущего пользователя
+                - enemy_card: карта противника
     """
 
-    stmt = select(Card).where(
-        Card.id.in_([attacker_card_id, protector_card_id])
-    ).options(
-        selectinload(Card.amulet).selectinload(AmuletItem.amulet_type),
-        selectinload(Card.class_card),
-        selectinload(Card.type_card),
-        selectinload(Card.rarity_card)
+    stmt_cards = (
+        select(Card).where(
+            Card.id.in_([user_card_id, enemy_card_id])
+        ).options(
+            selectinload(Card.amulet).selectinload(AmuletItem.amulet_type),
+            selectinload(Card.class_card),
+            selectinload(Card.type_card),
+            selectinload(Card.rarity_card)
+        )
     )
 
-    result = await session_db.execute(stmt)
+    result = await session_db.execute(stmt_cards)
     cards = {card.id: card for card in result.scalars()}
 
-    attacker_card = cards.get(attacker_card_id)
-    protector_card = cards.get(protector_card_id)
+    user_card = cards.get(user_card_id)
+    enemy_card = cards.get(enemy_card_id)
 
-    return {'attacker_card': attacker_card,
-            'protector_card': protector_card}
+    return {'user_card': user_card,
+            'enemy_card': enemy_card}
 
 
-async def stats_calculation(user_card: Card,
-                            enemy_card: Card
-                            ) -> tuple[float, float, float, float]:
+def stats_calculation(user_card: Card,
+                      enemy_card: Card
+                      ) -> tuple[float, float, float, float]:
     """ Вычисляет конечные характеристики карт с учетом амулета и типов.
         Args:
             user_card: Card текущего пользователя
@@ -174,41 +182,44 @@ async def stats_calculation(user_card: Card,
     return user_card_hp, user_card_damage, enemy_card_hp, enemy_card_damage
 
 
-async def fight_now(user_card: Card,
-                    enemy_card: Card
-                    ) -> dict[str, Any]:
-    """ Принимает сущности соперников и их карт и проводит бой.
+def fight_now(user: User,
+              enemy: User,
+              user_card: Card,
+              enemy_card: Card
+              ) -> FightNowDataDict:
+    """ Принимает пользователей и их карты с подгруженными данными и проводит бой.
         Если в битве есть победитель, то возвращает winner и loser,
-        иначе user и enemy
+        иначе оба None
         Args:
+            user: User + Profile текущего пользователя
+            enemy: User + Profile противника
             user_card: Card текущего пользователя с амулетом, типом, классом и редкостью
             enemy_card: Card противника с амулетом, типом, классом и редкостью
         Returns:
-            dict:
+            dict FightNowDataDict:
                 - is_victory (bool): True, если есть победитель
                 - winner (User | None): User, если есть победитель
                 - loser (User | None): User, если есть победитель
                 - history_fight (list[str]): история боя
     """
 
-    answer_data = {'is_victory': None,
-                   'winner': None,
-                   'loser': None,
-                   'history_fight': None}
-    user_hp, user_damage, enemy_hp, enemy_damage = await stats_calculation(user_card, enemy_card)
+    answer_data: FightNowDataDict = {'is_victory': None,
+                                     'winner': None,
+                                     'loser': None,
+                                     'history_fight': None}
+    user_hp, user_damage, enemy_hp, enemy_damage = stats_calculation(user_card, enemy_card)
 
     history_fight = []
     turn = 0
-    winner = loser = None
 
     while True:
         # Ход пользователя
         user_hp, user_damage, enemy_hp, enemy_damage, history = process_turn(attacker_card=user_card,
                                                                              attacker_hp=user_hp,
                                                                              attacker_damage=user_damage,
-                                                                             protector_card=enemy_card,
-                                                                             protector_hp=enemy_hp,
-                                                                             protector_damage=enemy_damage,
+                                                                             defender_card=enemy_card,
+                                                                             defender_hp=enemy_hp,
+                                                                             defender_damage=enemy_damage,
                                                                              turn_number=turn + 1
                                                                              )
         history_fight.append(history)
@@ -219,9 +230,9 @@ async def fight_now(user_card: Card,
         enemy_hp, enemy_damage, user_hp, user_damage, history = process_turn(attacker_card=enemy_card,
                                                                              attacker_hp=enemy_hp,
                                                                              attacker_damage=enemy_damage,
-                                                                             protector_card=user_card,
-                                                                             protector_hp=user_hp,
-                                                                             protector_damage=user_damage,
+                                                                             defender_card=user_card,
+                                                                             defender_hp=user_hp,
+                                                                             defender_damage=user_damage,
                                                                              turn_number=turn + 2
                                                                              )
         history_fight.append(history)
@@ -236,12 +247,12 @@ async def fight_now(user_card: Card,
         loser = None
         is_victory = False
     elif user_hp <= 0:
-        winner = enemy_card.owner
-        loser = user_card.owner
-        is_victory = False
+        winner = enemy
+        loser = user
+        is_victory = True
     else:  # enemy_hp <= 0
-        winner = user_card.owner
-        loser = enemy_card.owner
+        winner = user
+        loser = enemy
         is_victory = True
 
     answer_data['is_victory'] = is_victory
@@ -254,39 +265,46 @@ async def fight_now(user_card: Card,
 def process_turn(attacker_card: Card,
                  attacker_hp: float,
                  attacker_damage: float,
-                 protector_card: Card,
-                 protector_hp: float,
-                 protector_damage: float,
+                 defender_card: Card,
+                 defender_hp: float,
+                 defender_damage: float,
                  turn_number: int
                  ) -> tuple[float, float, float, float, list[str]]:
     """ Обрабатывает один ход. Возвращает обновленные характеристики здоровья и урона,
         а также историю хода.
         Args:
-            attacker_card: объект карты текущего пользователя
-            attacker_hp: здоровье карты пользователя
-            attacker_damage: урон карты пользователя
-            protector_card: объект карты противника
-            protector_hp: здоровье карты противника
-            protector_damage: урон карты противника
+            attacker_card: объект атакующей карты
+            attacker_hp: здоровье атакующей карты
+            attacker_damage: урон атакующей карты
+            defender_card: объект обороняющейся карты
+            defender_hp: здоровье обороняющейся карты
+            defender_damage: урон обороняющейся карты
             turn_number: номер хода
+        Returns:
+            tuple:
+                - float: здоровье атакующей карты
+                - float: урон атакующей карты
+                - float: здоровье обороняющейся карты
+                - float: урон обороняющейся карты
+                - list[str]: запись истории хода
     """
     
     history = [f'Ход {turn_number} {attacker_card.owner.user.username}']
     # Способности защитника, срабатывающие до получения урона
     # Дриада (лечение защитника)
-    if protector_card.class_card.name == 'Дриада':
-        protector_hp, heal = use_spell_dryad(protector_card, protector_hp)
-        history.append(formation_of_history(protector_card, heal))
+    if defender_card.class_card.name == 'Дриада':
+        defender_hp, heal = use_spell_dryad(defender_card, defender_hp)
+        history.append(formation_of_history(defender_card, heal))
 
     # Жнец (изменение урона атакующего и защитника)
     if attacker_card.class_card.name == 'Жнец':
-        result = use_spell_reaper(attacker_card, attacker_damage, protector_damage)
+        result = use_spell_reaper(attacker_card, attacker_damage, defender_damage)
         if result:
-            attacker_damage, protector_damage, change = result
+            attacker_damage, defender_damage, change = result
             history.append(formation_of_history(attacker_card, change))
 
     # Атака
-    protector_hp = round(protector_hp - attacker_damage, 2)
+    defender_hp = round(defender_hp - attacker_damage, 2)
     history.append(f'{attacker_card.owner.user.username} наносит {attacker_damage} урона')
 
     # Способности атакующего, срабатывающие после атаки
@@ -295,9 +313,9 @@ def process_turn(attacker_card: Card,
         history.append(formation_of_history(attacker_card, change))
 
     if attacker_card.class_card.name == 'Демон':
-        result = use_spell_demon(attacker_card, attacker_damage, protector_hp)
+        result = use_spell_demon(attacker_card, attacker_damage, defender_hp)
         if result:
-            protector_hp, add_damage = result
+            defender_hp, add_damage = result
             history.append(formation_of_history(attacker_card, add_damage))
 
     if attacker_card.class_card.name == 'Оборотень':
@@ -306,26 +324,34 @@ def process_turn(attacker_card: Card,
             attacker_hp, regen_hp = result
             history.append(formation_of_history(attacker_card, regen_hp))
 
-    if protector_card.class_card.name == 'Призрак':  # Защитник уклоняется
-        result = use_spell_ghost(protector_card, protector_hp, attacker_damage)
+    if defender_card.class_card.name == 'Призрак':  # Защитник уклоняется
+        result = use_spell_ghost(defender_card, defender_hp, attacker_damage)
         if result:
-            protector_hp, evade_damage = result
-            history.append(formation_of_history(protector_card, evade_damage))
+            defender_hp, evade_damage = result
+            history.append(formation_of_history(defender_card, evade_damage))
 
-    if protector_card.class_card.name == 'Бог Император':  # Защитник отражает урон
-        attacker_hp, return_damage = use_spell_emperor_mankind(protector_card, attacker_damage, attacker_hp)
-        history.append(formation_of_history(protector_card, return_damage))
+    if defender_card.class_card.name == 'Бог Император':  # Защитник отражает урон
+        attacker_hp, return_damage = use_spell_emperor_mankind(defender_card, attacker_damage, attacker_hp)
+        history.append(formation_of_history(defender_card, return_damage))
 
     history.append(f'Здоровье {attacker_card.owner.user.username} {attacker_hp}')
-    history.append(f'Здоровье {protector_card.owner.user.username} {protector_hp}')
+    history.append(f'Здоровье {defender_card.owner.user.username} {defender_hp}')
 
-    return attacker_hp, attacker_damage, protector_hp, protector_damage, history
+    return attacker_hp, attacker_damage, defender_hp, defender_damage, history
 
 
 def use_spell_dryad(card: Card, card_hp: float) -> tuple[float, float]:
     """ Использование способности дриады.
         Восстанавливает свое здоровье в зависимости от уровня слияния.
         Возвращает итоговое количество своего здоровья и полученное лечение.
+        Args:
+            card: карта класса дриада
+            card_hp: текущее здоровье карты
+        Returns:
+            tuple:
+                - float: итоговое здоровье карты
+                - float: количество восстановленного здоровья
+
     """
 
     heal_hp = card.class_card.numeric_value + 5 * card.merger
@@ -334,7 +360,8 @@ def use_spell_dryad(card: Card, card_hp: float) -> tuple[float, float]:
     return card_hp, heal_hp
 
 
-def use_spell_demon(card: Card, card_damage: float, enemy_card_hp: float) -> tuple[float, float] | None:
+def use_spell_demon(card: Card, card_damage: float, enemy_card_hp: float
+                    ) -> tuple[float, float] | None:
     """ Использование способности демона.
         Если сработал шанс, то наносит дополнительный урон, в зависимости от своей атаки и уровня слияния.
         Возвращает итоговое количество вражеского здоровья и дополнительный урон или None при неудаче.
