@@ -9,6 +9,7 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
 from cards_app.models.users import User
+from cards_app.use_cases.figth import ProcessFightUseCase
 from cards_app.use_cases.profile import ViewProfileUseCase, AddFavoriteUserUseCase, RemoveFavoriteUserUseCase, \
     FavoriteUsersUseCase
 
@@ -158,5 +159,41 @@ async def remove_user_favorite(request: Request,
             return RedirectResponse(full_url, status_code=303)
 
 
+@router.post(path='/fight_{user_id}', name='fight_user')
+async def fight_user(request: Request,
+                     user_id: int,
+                     session_db: AsyncSession = Depends(get_db_session),
+                     current_user: User | None = Depends(get_current_user_with_profile),
+                     ):
+    """ Рейтинговый бой между участниками.
+        Редиректит на другие станицы в зависимости от успеха или неудачи.
+    """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = ProcessFightUseCase(session_db)
+    data: dict = await use_case.execute(attacker=current_user,
+                                        protector_id=user_id)
+    if data.get('fight_dto'):
+        # todo переписать редирект
+        print('Принято fight_dto')
+        pass
+        # url = request.url_for('user_profile', user_id=user_id)
+        # full_url = f'{url}?success={data.get("success_message")}'
+        # return RedirectResponse(full_url, status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') == 500:
+            return templates.TemplateResponse(request=request,
+                                              name='errors/error_page.html',
+                                              context={'error': data.get('error_message'),
+                                                       'status_code': data.get('status_code'),
+                                                       'current_user': current_user_dto},
+                                              status_code=data.get('status_code')
+                                              )
+        else:
+            error_msg = data.get('error_message')
+            encoded_error = quote(error_msg)
+            url = request.url_for('user_profile', user_id=user_id)
+            full_url = f'{url}?error={encoded_error}'
+            return RedirectResponse(full_url, status_code=303)
 
 

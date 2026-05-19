@@ -1,4 +1,6 @@
 import logging
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import *
@@ -25,7 +27,7 @@ class ViewCardUseCase:
     async def execute(self,
                       card_id: int,
                       current_user: User
-                      ) -> dict:
+                      ) -> dict[str, Any]:
         """ Выполняет получение карты и формирует DTO для отображения.
                Args:
                    card_id: ID карты для просмотра.
@@ -106,7 +108,7 @@ class ViewGetFreeCardUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User) -> dict:
+    async def execute(self, current_user: User) -> dict[str, Any]:
         """ Формирует DTO для страницы получения бесплатной карты.
             Args:
                 current_user: Объект текущего пользователя (User) с подгруженным профилем.
@@ -160,7 +162,7 @@ class GetFreeCardUseCase:
 
     async def execute(self,
                       current_user: User | None
-                      ) -> dict:
+                      ) -> dict[str, Any]:
         """ Выполняет получение бесплатной карты для авторизованного пользователя.
             Args:
                 current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
@@ -187,17 +189,14 @@ class GetFreeCardUseCase:
             answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
             answer_data['status_code'] = 400
             return answer_data
-
-        if current_user.profile.receiving_timer is not None:
-            check_time, hours = time_difference_check(check_time=current_user.profile.receiving_timer,
-                                                      need_hours=hours_for_get_free_card)
-            if not check_time:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для получения бесплатной карты осталось: {hours_for_get_free_card - hours}'
-                answer_data['status_code'] = 400
-                return answer_data
-
         try:
+            if current_user.profile.receiving_timer is not None:
+                check_time, hours = time_difference_check(check_time=current_user.profile.receiving_timer,
+                                                          need_hours=hours_for_get_free_card)
+                if not check_time:
+                    base_message = f'Вы не можете получить бесплатную карту'
+                    raise CooldownNotElapsedError(base_message=base_message, hours=hours)
+
             await check_can_user_receive_card(session_db=self.session_db,
                                               current_user=current_user,
                                               need_slots=1)
@@ -214,7 +213,7 @@ class GetFreeCardUseCase:
             answer_data['new_card_id'] = new_card_id
             answer_data['status_code'] = 303
 
-        except NotEnoughSlotsError as error:
+        except (NotEnoughSlotsError, CooldownNotElapsedError) as error:
             await self.session_db.rollback()
             answer_data['success'] = False
             answer_data['error_message'] = str(error)

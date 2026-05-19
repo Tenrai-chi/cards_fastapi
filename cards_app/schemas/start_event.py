@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List, Optional
 
 
 class StartEventAwardDTO(BaseModel):
@@ -8,12 +7,12 @@ class StartEventAwardDTO(BaseModel):
     day: int
     type_award: str
     amount_or_rarity: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class StartEventAwardsDTO(BaseModel):
     """ Просмотр наград стартового события """
 
-    awards: List[StartEventAwardDTO]
+    awards: list[StartEventAwardDTO]
     can_get_award: bool
     received: int

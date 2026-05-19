@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional, List
 
 
 class CardInStoreDTO(BaseModel):
@@ -20,4 +19,4 @@ class CardInStoreDTO(BaseModel):
 class CardStoreDTO(BaseModel):
     """ Данные избранной карты пользователя """
 
-    cards: List[CardInStoreDTO]
+    cards: list[CardInStoreDTO]

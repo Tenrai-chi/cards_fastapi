@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional, List
 
 
 class AmuletDTO(BaseModel):
@@ -28,15 +27,15 @@ class CardDTO(BaseModel):
     max_merger: int
     enhancement: int
     max_enhancement: int
-    current_exp: Optional[int] = None
-    need_exp: Optional[int] = None
+    current_exp: int | None = None
+    need_exp: int | None = None
 
 
 class CardInfoDTO(BaseModel):
     """ Данные для просмотра карты """
 
     card: CardDTO
-    amulet: Optional[AmuletDTO]
+    amulet: AmuletDTO | None
     is_owner: bool = False
 
 
@@ -57,6 +56,6 @@ class ClassCard(BaseModel):
 class GetFreeCardDTO(BaseModel):
     """ Данные для страницы получения бесплатной карты """
 
-    all_classes: List[ClassCard]
-    all_rarities: List[RarityCard]
+    all_classes: list[ClassCard]
+    all_rarities: list[RarityCard]
     can_get_free_card: bool = False

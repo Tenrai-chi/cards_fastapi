@@ -2,7 +2,7 @@ import random
 import logging
 from datetime import datetime
 from random import choice
-from typing import List
+from typing import List, Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,7 +49,7 @@ async def get_card_with_details(session_db: AsyncSession,
     return card
 
 
-async def get_rarities_and_classes(session_db: AsyncSession) -> dict:
+async def get_rarities_and_classes(session_db: AsyncSession) -> dict[str, list[Any]]:
     """ Получает из БД все классы карт и редкости для расчёта шанса выпадения
         и вывода полученной информации на страницу получения случайной карты
         Args:

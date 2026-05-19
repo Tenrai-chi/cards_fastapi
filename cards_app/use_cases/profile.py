@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
@@ -28,7 +28,7 @@ class ViewProfileUseCase:
     async def execute(self,
                       current_user: Optional[User],
                       target_user_id: int
-                      ) -> dict:
+                      ) -> dict[str, Any]:
         """ Выполняет получение и подготовку данных профиля для отображения
             Args:
                 current_user (User | None): объект текущего пользователя (User) с подгруженным профилем
@@ -180,7 +180,7 @@ class AddFavoriteUserUseCase:
     async def execute(self,
                       current_user: Optional[User],
                       target_user_id: int
-                      ) -> dict:
+                      ) -> dict[str, Any]:
         """ Добавляет целевого пользователя в избранное текущего.
             Args:
                 current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
@@ -247,7 +247,7 @@ class RemoveFavoriteUserUseCase:
     async def execute(self,
                       current_user: Optional[User],
                       target_user_id: int
-                      ) -> dict:
+                      ) -> dict[str, Any]:
         """ Удаляет целевого пользователя из избранного текущего.
             Args:
                 current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
@@ -311,7 +311,7 @@ class FavoriteUsersUseCase:
 
     async def execute(self,
                       current_user: Optional[User],
-                      ) -> dict:
+                      ) -> dict[str, Any]:
         answer_data = {'favorite_users_dto': None,
                        'status_code': None,
                        'error_message': None}

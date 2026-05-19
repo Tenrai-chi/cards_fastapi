@@ -1,6 +1,5 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
-from typing import Optional
 
 
 class UserOut(BaseModel):
@@ -23,7 +22,7 @@ class UserOut(BaseModel):
 class CurrentUserForMenuDTO(BaseModel):
     """ Данные для вывода информации в шапке профиля """
 
-    id: Optional[int] = None
-    username: Optional[str] = None
-    gold: Optional[int] = None
-    diamond: Optional[int] = None
+    id: int | None = None
+    username: str | None = None
+    gold: int | None = None
+    diamond: int | None = None

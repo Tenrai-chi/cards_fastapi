@@ -1,6 +1,5 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import Optional, List
 
 from cards_app.schemas.cards import AmuletDTO, CardDTO
 
@@ -36,7 +35,7 @@ class ProfileBaseDTO(BaseModel):
 
     id: int
     username: str
-    about_user: Optional[str] = None
+    about_user: str | None = None
     profile_pic: str
     win: int
     lose: int
@@ -49,19 +48,19 @@ class ProfileResponseDTO(BaseModel):
 
     # Поля доступные всем
     profile: ProfileBaseDTO
-    guild: Optional[GuildDTO] = None
-    card: Optional[CardDTO] = None
-    amulet: Optional[AmuletDTO] = None
-    role: Optional[str] = 'anonymous'
+    guild: GuildDTO | None = None
+    card: CardDTO | None = None
+    amulet: AmuletDTO | None = None
+    role: str | None = 'anonymous'
 
     # Владелец
-    user_email: Optional[str] = None
-    battle_history: Optional[List[FightHistoryRecordDTO]] = None
+    user_email: str | None = None
+    battle_history: list[FightHistoryRecordDTO] | None = None
 
     # Гость
-    win_vs: Optional[int] = None
-    lose_vs: Optional[int] = None
-    is_favorite: Optional[bool] = None
+    win_vs: int | None = None
+    lose_vs: int | None = None
+    is_favorite: bool | None = None
 
 
 class FavoriteUserDTO(BaseModel):
@@ -76,4 +75,4 @@ class FavoriteUsersPageDTO(BaseModel):
 
     amount_users: int
     max_amount_users: int
-    favorite_users: Optional[List[FavoriteUserDTO]]
+    favorite_users: list[FavoriteUserDTO]

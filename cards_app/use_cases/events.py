@@ -1,4 +1,6 @@
 import logging
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import NotEnoughSlotsError
@@ -23,7 +25,7 @@ class ViewNewsUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, page: int, size: int) -> dict:
+    async def execute(self, page: int, size: int) -> dict[str, Any]:
         """ Выполняет получение новостей и формирует DTO для отображения.
             Args:
                 page (int): Номер страницы (начиная с 1).
@@ -71,7 +73,7 @@ class ViewStartEventUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None) -> dict:
+    async def execute(self, current_user: User | None) -> dict[str, Any]:
         """ Выполняет получение списка наград стартового события и формирует DTO для отображения.
             Returns:
                 dict: Словарь с полями:
@@ -115,7 +117,7 @@ class GetAwardStartEventUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User) -> dict:
+                      current_user: User) -> dict[str, Any]:
         """ Выполняет получение награды в стартовом событии.
            Args:
                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
@@ -210,6 +212,7 @@ class GetAwardStartEventUseCase:
             answer_data['status_code'] = error.status_code
 
         except Exception as error:
+            await self.session_db.rollback()
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в GetAwardStartEventUseCase: {error}', exc_info=True)

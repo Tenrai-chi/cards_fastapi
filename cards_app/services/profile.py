@@ -141,16 +141,19 @@ async def check_can_user_receive_card(session_db: AsyncSession, current_user: Us
         raise NotEnoughSlotsError('У вас недостаточно места для новых карт')
 
 
-async def charge_user_gold(session_db: AsyncSession, current_user: User, need_gold: int) -> dict:
+async def charge_user_gold(session_db: AsyncSession,
+                           current_user: User,
+                           need_gold: int
+                           ) -> dict[str, int]:
     """ Списывает золото у пользователя.
         Args:
-            session_db: Асинхронная сессия SQLAlchemy.
-            current_user: Объект текущего пользователя (User) с подгруженным профилем.
-            need_gold: Количество золота для списания.
+            session_db: сессия базы данных
+            current_user: объект текущего пользователя (User) с подгруженным профилем
+            need_gold: количество золота для списания.
         Returns:
             dict:
-                - gold_before (int): количество золота до списания.
-                - gold_after (int): количество золота после списания.
+                - gold_before (int): количество золота до списания
+                - gold_after (int): количество золота после списания
         Raises:
             InsufficientFundsUserError: если у пользователя недостаточно золота.
     """
@@ -175,12 +178,15 @@ async def charge_user_gold(session_db: AsyncSession, current_user: User, need_go
     return answer_data
 
 
-async def add_user_gold(session_db: AsyncSession, current_user: User, add_gold: int) -> dict:
+async def add_user_gold(session_db: AsyncSession,
+                        current_user: User,
+                        add_gold: int
+                        ) -> dict[str, int]:
     """ Добавляет пользователю золото.
         Args:
-            session_db: Асинхронная сессия SQLAlchemy.
-            current_user: Объект текущего пользователя (User) с подгруженным профилем.
-            add_gold: Количество полученного золота
+            session_db: сессия базы данных
+            current_user: объект текущего пользователя (User) с подгруженным профилем
+            add_gold: количество полученного золота
         Returns:
             dict:
                 - gold_before (int): количество золота до списания.

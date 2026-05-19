@@ -1,4 +1,6 @@
 import logging
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.config.exceptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
@@ -22,7 +24,7 @@ class ViewCardStoreUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self) -> dict:
+    async def execute(self) -> dict[str, Any]:
         """ Выполняет получение списка карт, доступных в магазине, и формирует DTO.
             Returns:
                 dict:
@@ -67,7 +69,7 @@ class BuyStoreCardUseCase:
     async def execute(self,
                       current_user: User | None,
                       temp_card_id: int,
-                      ) -> dict:
+                      ) -> dict[str, Any]:
         """ Выполняет покупку карты в магазине.
            Args:
                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
@@ -145,6 +147,7 @@ class BuyStoreCardUseCase:
             answer_data['status_code'] = error.status_code
 
         except Exception as error:
+            await self.session_db.rollback()
             answer_data['success'] = False
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500

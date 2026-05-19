@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime
 
 
@@ -15,7 +14,7 @@ class NewsRecordDTO(BaseModel):
 class NewsDTO(BaseModel):
     """ Новости для вывода на главной странице """
 
-    items: List[NewsRecordDTO]
+    items: list[NewsRecordDTO]
     total: int
     page: int
     size: int

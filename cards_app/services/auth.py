@@ -1,5 +1,7 @@
 import logging
 from datetime import datetime, timedelta
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +17,7 @@ async def create_user_and_profile(db_session: AsyncSession,
                                   username: str,
                                   email: str,
                                   password: str
-                                  ) -> dict:
+                                  ) -> dict[str, Any]:
     """ Создаёт нового пользователя и связанный с ним профиль.
         Args:
             db_session: сессия базы данных
@@ -63,7 +65,7 @@ async def create_user_and_profile(db_session: AsyncSession,
 async def authenticate_and_create_tokens(db_session: AsyncSession,
                                          username: str,
                                          password: str
-                                         ) -> dict:
+                                         ) -> dict[str, Any]:
     """ Аутентифицирует пользователя по login/email и паролю.
         При успехе обновляет поле last_login и генерирует пару success и refresh токенов
         Args:
