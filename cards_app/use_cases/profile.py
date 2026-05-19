@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cards_app.exeptions import UserFavoriteException
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
                                         get_user_fight_history, is_favorite, add_user_to_favorite,
                                         remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user)
@@ -10,8 +11,8 @@ from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, Guild
                                        CardDTO, AmuletDTO, FightHistoryRecordDTO, CardBriefDTO, FavoriteUserDTO,
                                        FavoriteUsersPageDTO)
 from cards_app.models.users import User
-from cards_app.config.exceptions import (UserNotFoundError, DuplicateFavoriteError, SelfFavoriteError,
-                                         FavoriteNotFoundError, SelfFavoriteRemoveError, NotEnoughSlotsError)
+from cards_app.exeptions import (UserNotFoundError, DuplicateFavoriteError, SelfFavoriteError,
+                                 FavoriteNotFoundError, SelfFavoriteRemoveError, NotEnoughSlotsError)
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +221,7 @@ class AddFavoriteUserUseCase:
             answer_data['success_message'] = 'Пользователь добавлен в избранное'
             return answer_data
 
-        except (SelfFavoriteError, UserNotFoundError, DuplicateFavoriteError, NotEnoughSlotsError) as error:
+        except (UserFavoriteException, NotEnoughSlotsError) as error:
             await self.session_db.rollback()
             answer_data['success'] = False
             answer_data['error_message'] = str(error)
@@ -286,7 +287,7 @@ class RemoveFavoriteUserUseCase:
             answer_data['success_message'] = 'Пользователь удален из избранного'
             return answer_data
 
-        except (SelfFavoriteRemoveError, UserNotFoundError, FavoriteNotFoundError) as error:
+        except (UserNotFoundError, UserFavoriteException) as error:
             await self.session_db.rollback()
             answer_data['success'] = False
             answer_data['error_message'] = str(error)

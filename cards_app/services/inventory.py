@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.config.exceptions import NotEnoughSlotsError
+from cards_app.exeptions import NotEnoughSlotsError
 from cards_app.models import UsersInventory, ExperienceItems, User, AmuletItem, AmuletType
 
 logger = logging.getLogger(__name__)

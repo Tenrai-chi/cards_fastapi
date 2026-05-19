@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from cards_app.config.exceptions import CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError
+from cards_app.exeptions import CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError
 from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore
 
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select, or_, desc
 
-from cards_app.config.exceptions import SelfFightError, UserNotFoundError, CooldownNotElapsedError, NoCurrentCardError
+from cards_app.exeptions import SelfFightError, UserNotFoundError, CooldownNotElapsedError, NoCurrentCardError
 from cards_app.models import User, FightHistory, Card, AmuletItem, Profile
 from cards_app.utils.common import time_difference_check
 

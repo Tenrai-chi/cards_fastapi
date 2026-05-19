@@ -171,8 +171,8 @@ async def fight_user(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ProcessFightUseCase(session_db)
-    data: dict = await use_case.execute(attacker=current_user,
-                                        protector_id=user_id)
+    data: dict = await use_case.execute(user=current_user,
+                                        enemy_id=user_id)
     if data.get('fight_dto'):
         # todo переписать редирект
         print('Принято fight_dto')

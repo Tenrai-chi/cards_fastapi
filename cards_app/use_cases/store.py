@@ -3,8 +3,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.config.exceptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
-                                         CardInStoreNotFoundError)
+from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
+                                 CardInStoreNotFoundError)
 from cards_app.models import User
 from cards_app.schemas.store import CardInStoreDTO, CardStoreDTO
 from cards_app.services.cards import (get_temp_card_in_store, create_new_card_from_template,

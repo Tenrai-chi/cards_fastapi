@@ -3,7 +3,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.config.exceptions import *
+from cards_app.exeptions import NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError
 from cards_app.services.cards import (get_card_with_details, get_rarities_and_classes, generate_random_card,
                                       create_record_in_history_receiving_card)
 

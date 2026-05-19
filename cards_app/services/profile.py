@@ -4,9 +4,9 @@ from sqlalchemy import func, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from cards_app.config.exceptions import (InsufficientFundsUserError, NotEnoughSlotsError, SelfFavoriteError,
-                                         DuplicateFavoriteError, UserNotFoundError, SelfFavoriteRemoveError,
-                                         FavoriteNotFoundError)
+from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, SelfFavoriteError,
+                                 DuplicateFavoriteError, UserNotFoundError, SelfFavoriteRemoveError,
+                                 FavoriteNotFoundError)
 from cards_app.models import User, Profile, Card, FightHistory, Transactions, FavoriteUsers
 from cards_app.services.cards import get_all_cards_user
 

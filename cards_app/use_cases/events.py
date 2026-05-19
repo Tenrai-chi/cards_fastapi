@@ -3,7 +3,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.config.exceptions import NotEnoughSlotsError
+from cards_app.exeptions import NotEnoughSlotsError
 from cards_app.services.cards import generate_card_start_event, create_record_in_history_receiving_card
 from cards_app.services.events import get_total_news_count, get_paginated_news, get_info_start_event_awards, \
     get_info_award, update_profile_event_award_received

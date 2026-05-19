@@ -2,20 +2,9 @@ import logging
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from cards_app.config.exceptions import NotEnoughSlotsError, UserNotFoundError, NoCurrentCardError, \
-    CooldownNotElapsedError
-from cards_app.services.cards import generate_card_start_event, create_record_in_history_receiving_card
-from cards_app.services.events import get_total_news_count, get_paginated_news, get_info_start_event_awards, \
-    get_info_award, update_profile_event_award_received
-from cards_app.schemas.fight import Participant, FightDTO
-from cards_app.schemas.start_event import StartEventAwardDTO, StartEventAwardsDTO
+from cards_app.exeptions import UserNotFoundError, NoCurrentCardError, CooldownNotElapsedError
 from cards_app.models import User
-from cards_app.services.fight import validate_battle_preconditions, check_last_fight, get_cards_participants, \
-    stats_calculation, fight_now
-from cards_app.services.inventory import add_experience_book, can_user_receive_amulet, give_amulet_to_user
-from cards_app.services.events import can_get_start_event_award
-from cards_app.services.profile import check_can_user_receive_card, add_user_gold, create_transaction
+from cards_app.services.fight import (validate_battle_preconditions, get_cards_participants, fight_now)
 
 logger = logging.getLogger(__name__)
 
