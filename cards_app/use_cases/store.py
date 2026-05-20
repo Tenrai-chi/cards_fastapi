@@ -1,8 +1,6 @@
 import logging
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
                                  CardInStoreNotFoundError)
 from cards_app.models import User
@@ -11,6 +9,7 @@ from cards_app.services.cards import (get_temp_card_in_store, create_new_card_fr
                                       create_record_in_history_receiving_card)
 from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
 from cards_app.services.store import get_cards_in_store
+from cards_app.types import ViewCardStoreUseCaseDict, BuyStoreCardUseCaseDict
 from cards_app.utils.common import calculate_final_price
 
 logger = logging.getLogger(__name__)
@@ -24,10 +23,10 @@ class ViewCardStoreUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self) -> dict[str, Any]:
+    async def execute(self) -> ViewCardStoreUseCaseDict:
         """ Выполняет получение списка карт, доступных в магазине, и формирует DTO.
             Returns:
-                dict:
+                ViewCardStoreUseCaseDict:
                     - status_code (int): HTTP статус-код.
                     - card_store_dto (CardStoreDTO | None): DTO со списком карт в магазине.
             Note:
@@ -69,11 +68,11 @@ class BuyStoreCardUseCase:
     async def execute(self,
                       current_user: User | None,
                       temp_card_id: int,
-                      ) -> dict[str, Any]:
+                      ) -> BuyStoreCardUseCaseDict:
         """ Выполняет покупку карты в магазине.
            Args:
-               current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
-               temp_card_id (int): ID карты-шаблона в магазине
+               current_user: User + Profile текущего пользователя
+               temp_card_id: ID карты-шаблона в магазине
 
            Returns:
                dict:

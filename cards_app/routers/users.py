@@ -9,6 +9,8 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
 from cards_app.models.users import User
+from cards_app.types import ViewProfileUseCaseDict, AddFavoriteUserUseCaseDict, RemoveFavoriteUserUseCaseDict, \
+    FavoriteUsersUseCaseDict
 from cards_app.use_cases.figth import ProcessFightUseCase
 from cards_app.use_cases.profile import ViewProfileUseCase, AddFavoriteUserUseCase, RemoveFavoriteUserUseCase, \
     FavoriteUsersUseCase
@@ -26,7 +28,7 @@ async def view_favorite_users(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = FavoriteUsersUseCase(session_db)
-    data: dict = await use_case.execute(current_user=current_user)
+    data: FavoriteUsersUseCaseDict = await use_case.execute(current_user=current_user)
 
     if data.get('favorite_users_dto'):
         context = {'request': request,
@@ -63,7 +65,7 @@ async def view_user_profile(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewProfileUseCase(session_db)
-    data: dict = await use_case.execute(current_user, user_id)
+    data: ViewProfileUseCaseDict = await use_case.execute(current_user, user_id)
     if data.get('user_info'):
         context = {'request': request,
                    'current_user': current_user_dto,
@@ -99,8 +101,8 @@ async def add_user_favorite(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = AddFavoriteUserUseCase(session_db)
-    data: dict = await use_case.execute(current_user=current_user,
-                                        target_user_id=user_id)
+    data: AddFavoriteUserUseCaseDict = await use_case.execute(current_user=current_user,
+                                                              target_user_id=user_id)
     if data.get('success') is True:
         url = request.url_for('user_profile', user_id=user_id)
         full_url = f'{url}?success={data.get("success_message")}'
@@ -134,8 +136,8 @@ async def remove_user_favorite(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = RemoveFavoriteUserUseCase(session_db)
-    data: dict = await use_case.execute(current_user=current_user,
-                                        target_user_id=user_id)
+    data: RemoveFavoriteUserUseCaseDict = await use_case.execute(current_user=current_user,
+                                                                 target_user_id=user_id)
 
     if data.get('success') is True:
         url = request.url_for('user_profile', user_id=user_id)
@@ -195,5 +197,3 @@ async def fight_user(request: Request,
             url = request.url_for('user_profile', user_id=user_id)
             full_url = f'{url}?error={encoded_error}'
             return RedirectResponse(full_url, status_code=303)
-
-

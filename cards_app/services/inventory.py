@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,8 +54,8 @@ async def add_experience_book(session_db: AsyncSession,
 
 
 async def can_user_receive_amulet(session_db: AsyncSession,
-                                        current_user: User,
-                                        need_slots: int) -> None:
+                                  current_user: User,
+                                  need_slots: int) -> None:
     """ Проверяет, хватит ли у пользователя места в инвентаре для новых амулетов.
         Args:
             session_db: сессия базы данных
@@ -73,9 +72,8 @@ async def can_user_receive_amulet(session_db: AsyncSession,
         raise NotEnoughSlotsError('У вас недостаточно места для новых амулетов')
 
 
-async def get_all_amulets_user(session_db: AsyncSession,
-                               owner_id: int
-                               ) -> List[AmuletItem]:
+async def get_all_amulets_user(session_db: AsyncSession, owner_id: int
+                               ) -> list[AmuletItem]:
 
     """ Возвращает список всех амулетов пользователя.
         Args:
@@ -83,27 +81,31 @@ async def get_all_amulets_user(session_db: AsyncSession,
             owner_id: ID профиля владельца
 
         Returns:
-            List[AmuletItem]: список амулетов, принадлежащих пользователю
+            list[AmuletItem]: список амулетов, принадлежащих пользователю
     """
 
-    stmt = select(AmuletItem).where(AmuletItem.owner_id == owner_id).order_by(AmuletItem.amulet_type_id)
-    result = await session_db.execute(stmt)
+    stmt_amulets = (
+        select(AmuletItem)
+        .where(AmuletItem.owner_id == owner_id)
+        .order_by(AmuletItem.amulet_type_id)
+    )
+    result = await session_db.execute(stmt_amulets)
     amulets = list(result.scalars().all())
     return amulets
 
 
 async def give_amulet_to_user(session_db: AsyncSession,
                               owner_id: int,
-                              name_amulet: str):
-    """ Создает в инвентарь пользователя амулет по имени.
+                              name_amulet: str) -> None:
+    """ Создает в инвентарь пользователя амулет по названию амулета.
         Args:
             session_db: сессия базы данных
             owner_id: ID профиля пользователя
             name_amulet: название амулета
     """
 
-    stmt = select(AmuletType).where(AmuletType.name == name_amulet)
-    result = await session_db.execute(stmt)
+    stmt_amulet = select(AmuletType).where(AmuletType.name == name_amulet)
+    result = await session_db.execute(stmt_amulet)
     amulet_type = result.scalar_one_or_none()
 
     new_amulet_item = AmuletItem(amulet_type_id=amulet_type.id,

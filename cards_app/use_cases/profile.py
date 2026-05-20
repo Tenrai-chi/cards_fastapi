@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import UserFavoriteException
@@ -11,8 +11,9 @@ from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, Guild
                                        CardDTO, AmuletDTO, FightHistoryRecordDTO, CardBriefDTO, FavoriteUserDTO,
                                        FavoriteUsersPageDTO)
 from cards_app.models.users import User
-from cards_app.exeptions import (UserNotFoundError, DuplicateFavoriteError, SelfFavoriteError,
-                                 FavoriteNotFoundError, SelfFavoriteRemoveError, NotEnoughSlotsError)
+from cards_app.exeptions import UserNotFoundError, NotEnoughSlotsError
+from cards_app.types import ViewProfileUseCaseDict, AddFavoriteUserUseCaseDict, RemoveFavoriteUserUseCaseDict, \
+    FavoriteUsersUseCaseDict
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +28,16 @@ class ViewProfileUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: Optional[User],
+                      current_user: User | None,
                       target_user_id: int
-                      ) -> dict[str, Any]:
+                      ) -> ViewProfileUseCaseDict:
         """ Выполняет получение и подготовку данных профиля для отображения
             Args:
-                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем
-                target_user_id (int): ID пользователя, чей профиль просматривается
+                current_user: User + Profile текущего пользователя
+                target_user_id: ID профиля пользователя, чей профиль просматривается
 
             Returns:
-                dict:
+                ViewProfileUseCaseDict:
                     - user_info (ProfileResponseDTO | None): DTO с полной информацией профиля
                     - error_message (str | None): сообщение об ошибке
                     - status_code (int): HTTP статус-код
@@ -179,15 +180,15 @@ class AddFavoriteUserUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: Optional[User],
+                      current_user: User | None,
                       target_user_id: int
-                      ) -> dict[str, Any]:
+                      ) -> AddFavoriteUserUseCaseDict:
         """ Добавляет целевого пользователя в избранное текущего.
             Args:
-                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
-                target_user_id (int): ID профиля пользователя, которого нужно добавить в избранное.
+                current_user: User + Profile текущего пользователя
+                target_user_id: ID профиля пользователя, которого нужно добавить в избранное.
             Returns:
-                dict:
+                AddFavoriteUserUseCaseDict:
                     - success (bool): True при успешном добавлении.
                     - error_message (str | None): сообщение об ошибке.
                     - status_code (int): HTTP статус-код.
@@ -246,15 +247,15 @@ class RemoveFavoriteUserUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: Optional[User],
+                      current_user: User | None,
                       target_user_id: int
-                      ) -> dict[str, Any]:
+                      ) -> RemoveFavoriteUserUseCaseDict:
         """ Удаляет целевого пользователя из избранного текущего.
             Args:
-                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
-                target_user_id (int): ID профиля пользователя, которого нужно удалить из избранного.
+                current_user: User + Profile текущего пользователя
+                target_user_id: ID профиля пользователя, которого нужно удалить из избранного.
             Returns:
-                dict:
+                RemoveFavoriteUserUseCaseDict:
                     - success (bool): True при успешном удалении.
                     - error_message (str | None): сообщение об ошибке.
                     - status_code (int): HTTP статус-код.
@@ -310,9 +311,20 @@ class FavoriteUsersUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user: Optional[User],
-                      ) -> dict[str, Any]:
+    async def execute(self, current_user: User | None,
+                      ) -> FavoriteUsersUseCaseDict:
+        """ Формирует FavoriteUsersPageDTO для просмотра списка избранных пользователей
+            Args:
+                current_user: User + Profile текущего пользователя
+            Returns:
+                FavoriteUsersUseCaseDict:
+                    - favorite_users_dto (FavoriteUsersPageDTO | None): DTO избранных пользователей
+                    - error_message (str | None): сообщение об ошибке.
+                    - status_code (int): HTTP статус-код.
+            Note:
+                - 200: успешное получение данных
+        """
+
         answer_data = {'favorite_users_dto': None,
                        'status_code': None,
                        'error_message': None}
@@ -322,7 +334,7 @@ class FavoriteUsersUseCase:
             answer_data['status_code'] = 404
             return answer_data
         all_favorite_users: list = await get_favorite_user(self.session_db,
-                                                           current_user=current_user)
+                                                           user_profile_id=current_user.profile.id)
         favorite_users = []
         for user in all_favorite_users:
             favorite_users.append(FavoriteUserDTO(id=user.favorite_user.id,

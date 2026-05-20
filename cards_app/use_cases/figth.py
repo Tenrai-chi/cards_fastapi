@@ -1,10 +1,10 @@
 import logging
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.exeptions import UserNotFoundError, NoCurrentCardError, CooldownNotElapsedError
 from cards_app.models import User
 from cards_app.services.fight import (validate_battle_preconditions, get_cards_participants, fight_now)
+from cards_app.types import ProcessFightUseCaseDict
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,8 @@ class ProcessFightUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, user: User | None, enemy_id: int) -> dict[str, Any]:
+    async def execute(self, user: User | None, enemy_id: int
+                      ) -> ProcessFightUseCaseDict:
         """ Оркестрирует процесс рейтинговой битвы.
             1. Проверяет возможность битвы
             2. Проводит битву между 2 картами
@@ -27,7 +28,7 @@ class ProcessFightUseCase:
                 user (User | None): объект текущего пользователя (User) с подгруженным профилем
                 enemy_id (int | None): ID противника
             Returns:
-                dict
+                ProcessFightUseCaseDict
                     - status_code: чета там
                     - error_message: ошибка
                     - fight_dto: DTO

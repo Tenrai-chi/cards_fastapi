@@ -8,8 +8,8 @@ from cards_app.auth.dependencies import get_current_user_with_profile
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
+from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict
 from cards_app.use_cases.cards import ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase
-
 
 from cards_app.models.users import User
 
@@ -30,7 +30,7 @@ async def view_card(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewCardUseCase(session_db)
-    data: dict = await use_case.execute(card_id, current_user)
+    data: ViewCardUseCaseDict = await use_case.execute(card_id, current_user)
     if data.get('card_info_dto') is not None:
         context = {'request': request,
                    'current_user': current_user_dto,
@@ -63,7 +63,7 @@ async def view_free_card(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewGetFreeCardUseCase(session_db)
-    data: dict = await use_case.execute(current_user)
+    data: ViewGetFreeCardUseCaseDict = await use_case.execute(current_user)
 
     context = {'request': request,
                'current_user': current_user_dto,
@@ -85,7 +85,7 @@ async def get_free_card(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = GetFreeCardUseCase(session_db)
-    data: dict = await use_case.execute(current_user)
+    data: GetFreeCardUseCaseDict = await use_case.execute(current_user)
 
     if data.get('success') is True:
         new_card_id = data.get('new_card_id')

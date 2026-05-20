@@ -1,14 +1,14 @@
 import logging
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import NotEnoughSlotsError
 from cards_app.services.cards import generate_card_start_event, create_record_in_history_receiving_card
-from cards_app.services.events import get_total_news_count, get_paginated_news, get_info_start_event_awards, \
-    get_info_award, update_profile_event_award_received
+from cards_app.services.events import (get_total_news_count, get_paginated_news, get_info_start_event_awards,
+                                       get_info_award, update_profile_event_award_received)
 from cards_app.schemas.news import NewsRecordDTO, NewsDTO
 from cards_app.schemas.start_event import StartEventAwardDTO, StartEventAwardsDTO
+from cards_app.types import ViewNewsUseCaseDict, ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
 from cards_app.models import User
 from cards_app.services.inventory import add_experience_book, can_user_receive_amulet, give_amulet_to_user
 from cards_app.services.events import can_get_start_event_award
@@ -25,13 +25,14 @@ class ViewNewsUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, page: int, size: int) -> dict[str, Any]:
+    async def execute(self, page: int, size: int
+                      ) -> ViewNewsUseCaseDict:
         """ Выполняет получение новостей и формирует DTO для отображения.
             Args:
-                page (int): Номер страницы (начиная с 1).
-                size (int): Количество новостей на странице.
+                page: номер страницы (начиная с 1).
+                size: количество новостей на странице.
             Returns:
-                dict: Словарь с полями:
+                ViewNewsUseCaseDict:
                     - news_dto (NewsDTO | None): DTO с новостями и пагинацией (при успехе).
                     - status_code (int):  HTTP статус-код всегда 200
         """
@@ -73,10 +74,13 @@ class ViewStartEventUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None) -> dict[str, Any]:
+    async def execute(self, current_user: User | None
+                      ) -> ViewStartEventUseCaseDict:
         """ Выполняет получение списка наград стартового события и формирует DTO для отображения.
+            Args:
+                current_user: User + Profile текущего пользователя
             Returns:
-                dict: Словарь с полями:
+                ViewStartEventUseCaseDict:
                     - start_event_awards_dto (StartEventAwardsDTO | None): DTO с новостями и пагинацией (если пользователь авторизован).
                     - status_code (int):  HTTP статус-код, всегда 200
         """
@@ -116,14 +120,14 @@ class GetAwardStartEventUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user: User) -> dict[str, Any]:
+    async def execute(self, current_user: User | None
+                      ) -> GetAwardStartEventUseCaseDict:
         """ Выполняет получение награды в стартовом событии.
            Args:
-               current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
+               current_user: User + Profile текущего пользователя
 
            Returns:
-               dict:
+               GetAwardStartEventUseCaseDict:
                    - success_message (str | None): при удачном получении награды, кроме карты
                    - error_message (str | None): сообщение об ошибке.
                    - new_card_id (int | None): ID созданной карты, если награда была картой

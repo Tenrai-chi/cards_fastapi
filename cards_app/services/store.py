@@ -1,4 +1,5 @@
 import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -21,7 +22,7 @@ async def get_cards_in_store(session_db: AsyncSession) -> list[CardStore]:
                 - class_card (ClassCard)
     """
 
-    stmt = (
+    stmt_cards = (
         select(CardStore)
         .where(CardStore.sale_now == True)
         .join(CardStore.rarity_card)
@@ -32,5 +33,6 @@ async def get_cards_in_store(session_db: AsyncSession) -> list[CardStore]:
         )
         .order_by(Rarity.name.desc())
     )
-    result = await session_db.execute(stmt)
-    return list(result.scalars().all())
+    result = await session_db.execute(stmt_cards)
+    cards = list(result.scalars().all())
+    return cards

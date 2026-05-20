@@ -363,8 +363,18 @@ def use_spell_dryad(card: Card, card_hp: float) -> tuple[float, float]:
 def use_spell_demon(card: Card, card_damage: float, enemy_card_hp: float
                     ) -> tuple[float, float] | None:
     """ Использование способности демона.
-        Если сработал шанс, то наносит дополнительный урон, в зависимости от своей атаки и уровня слияния.
+        Если сработал шанс, то наносит дополнительный урон, зависящий от атаки и уровня слияния.
         Возвращает итоговое количество вражеского здоровья и дополнительный урон или None при неудаче.
+        Args:
+            card: карта класса демон
+            card_damage: урон карты
+            enemy_card_hp: текущее здоровье карты противника
+        Returns:
+            tuple:
+                - float: итоговое здоровье карты противника
+                - float: нанесенный способностью дополнительный урон
+            None:
+                - Если способность не была использована
     """
 
     chance = randint(1, 100)
@@ -375,10 +385,21 @@ def use_spell_demon(card: Card, card_damage: float, enemy_card_hp: float
         return enemy_card_hp, additional_damage
 
 
-def use_spell_werewolf(card: Card, card_hp: float, card_damage: float) -> tuple[float, float] | None:
+def use_spell_werewolf(card: Card, card_hp: float, card_damage: float
+                       ) -> tuple[float, float] | None:
     """ Использование способности оборотня.
-        Если сработал шанс, то восстанавливает свое здоровье в зависимости от базового урона.
+        Если сработал шанс, то восстанавливает свое здоровье, зависящее от его урона и уровня слияния.
         Возвращает итоговое количество своего здоровья и количество восполненного здоровья или None при неудаче.
+        Args:
+            card: карта класса оборотень
+            card_hp: здоровье карты
+            card_damage: урон карты
+        Returns:
+            tuple:
+                - float: итоговое здоровье карты
+                - float: количество восстановленного здоровья
+            None:
+                - Если способность не была использована
     """
 
     chance = randint(1, 100)
@@ -391,8 +412,18 @@ def use_spell_werewolf(card: Card, card_hp: float, card_damage: float) -> tuple[
 
 def use_spell_ghost(card: Card, card_hp: float, enemy_damage: float) -> tuple[float, float] | None:
     """ Использование способности призрака.
-        Если сработал шанс, избегает урон от атаки противника (восполнятся здоровье)
+        Если сработал шанс, призрак избегает урон от атаки противника (восполнятся здоровье)
         Возвращает итоговое количество своего здоровья или None при неудаче.
+        Args:
+            card: карта класса призрак
+            card_hp: текущее здоровье карты
+            enemy_damage: урон карты противника
+        Returns:
+            tuple:
+                - float: итоговое здоровье карты
+                - float: количество восстановленного здоровья
+            None:
+                - Если способность не была использована
     """
 
     chance = randint(1, 100)
@@ -406,6 +437,14 @@ def use_spell_emperor_mankind(card: Card, enemy_damage: float, enemy_hp: float) 
     """ Использование способности императора человечества.
         Наносит часть полученного урона атаковавшему.
         Возвращает итоговое количество здоровья нападающего, и количество возвращенного урона.
+        Args:
+            card: карта класса бог император
+            enemy_damage: урон карты противника
+            enemy_hp: здоровье карты противника
+        Returns:
+            tuple:
+                - float: итоговое здоровье карты противника
+                - float: количество возвращенного урона
     """
 
     return_damage = round((card.class_card.numeric_value + 3 * card.merger) * enemy_damage / 100, 2)
@@ -416,8 +455,15 @@ def use_spell_emperor_mankind(card: Card, enemy_damage: float, enemy_hp: float) 
 
 def use_spell_berserk(card: Card, card_damage: float) -> tuple[float, float]:
     """ Использование способности берсерка.
-        Увеличивает свой урон.
+        Увеличивает свой урон после атаки.
         Возвращает итоговое значение своего урона.
+        Args:
+            card: карта класса берсерк
+            card_damage: текущий урон карты
+        Returns:
+            tuple:
+                - float: итоговый урон карты
+                - float: количество увеличенного урона
     """
 
     change = round(1 + 0.5 * card.merger, 2)
@@ -426,10 +472,22 @@ def use_spell_berserk(card: Card, card_damage: float) -> tuple[float, float]:
     return up_damage, change
 
 
-def use_spell_reaper(card: Card, card_damage: float, enemy_card_damage: float) -> tuple[float, float, float] | None:
+def use_spell_reaper(card: Card, card_damage: float, enemy_card_damage: float
+                     ) -> tuple[float, float, float] | None:
     """ Использование способности жнеца.
         Если сработал шанс, понижает урон противника и повышает свой.
         Возвращает итоговые значения урона карты пользователя и карты противника или None при неудаче.
+        Args:
+            card: карта класса жнец
+            card_damage: текущий урон карты
+            enemy_card_damage: текущий урон карты противника
+        Returns:
+            tuple:
+                - float: итоговый урон карты
+                - float: итоговый урон карты противника
+                - float: количество повышенного и пониженного урона (одинаковое для всех)
+            None:
+                - Если способность не была использована
     """
 
     chance = randint(1, 100)
@@ -442,8 +500,13 @@ def use_spell_reaper(card: Card, card_damage: float, enemy_card_damage: float) -
 
 
 def formation_of_history(card: Card, value: float) -> str:
-    """ Создание текста для записи в историю ходов
+    """ Формирование текста для записи в историю ходов
         при использовании способности карты
+        Args:
+            card: карта использующая способность
+            value: значение способности (уронЮ обновление характеристик и тд)
+        Returns:
+            str: Строка с описанием использования способности
     """
 
     description_move = (f'Используется способность {card.owner.user.username}-' +

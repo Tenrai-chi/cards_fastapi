@@ -8,6 +8,7 @@ from cards_app.auth.dependencies import get_current_user_with_profile
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
+from cards_app.types import ViewCardStoreUseCaseDict
 from cards_app.use_cases.store import BuyStoreCardUseCase
 
 from cards_app.models.users import User
@@ -28,7 +29,7 @@ async def view_card_store(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewCardStoreUseCase(session_db)
-    data: dict = await use_case.execute()
+    data: ViewCardStoreUseCaseDict = await use_case.execute()
 
     context = {'request': request,
                'current_user': current_user_dto,

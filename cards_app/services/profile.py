@@ -1,4 +1,5 @@
 import logging
+
 from datetime import datetime
 from sqlalchemy import func, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,16 +14,14 @@ from cards_app.services.cards import get_all_cards_user
 logger = logging.getLogger(__name__)
 
 
-async def get_base_info_profile(session_db: AsyncSession,
-                                user_id: int
+async def get_base_info_profile(session_db: AsyncSession, user_id: int
                                 ) -> User:
     """ Возвращает базовую информацию профиля с подгруженной гильдией.
         Args:
             session_db: сессия базы данных
-            user_id: ID пользователя
-
+            user_id: ID User пользователя
         Returns:
-            User: orm объект пользователя
+            User: User + Profile
         Raises:
             UserNotFoundError: если пользователь с указанным ID не найден в БД.
     """
@@ -42,7 +41,8 @@ async def get_base_info_profile(session_db: AsyncSession,
     return user
 
 
-async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_id: int) -> tuple[int, int]:
+async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_id: int
+                           ) -> tuple[int, int]:
     """ Возвращает статистику побед / поражений пользователя против другого.
         Args:
             session_db: сессия базы данных
@@ -63,7 +63,8 @@ async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_
     return wins or 0, loses or 0
 
 
-async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limit: int = 50):
+async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limit: int = 50
+                                 ) -> list[FightHistory]:
     """ Возвращает список боёв, где профиль был участником, с подгрузкой соперника и карт.
          Args:
             session_db: сессия базы данных
@@ -75,7 +76,7 @@ async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limi
             от новых к старым. Каждый объект содержит подгруженные связи
     """
 
-    query = (
+    stmt_battle_history = (
         select(FightHistory)
         .where((FightHistory.winner_id == profile_id) | (FightHistory.loser_id == profile_id))
         .order_by(desc(FightHistory.date_and_time))
@@ -89,11 +90,13 @@ async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limi
             selectinload(FightHistory.card_loser).selectinload(Card.type_card),
         )
     )
-    result = await session_db.execute(query)
-    return result.scalars().all()
+    result = await session_db.execute(stmt_battle_history)
+    battle_history = list(result.scalars().all())
+    return battle_history
 
 
-async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_profile_id: int) -> bool:
+async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_profile_id: int
+                      ) -> bool:
     """ Возвращает флаг о том, находится ли выбранный пользователь в списке избранных у текущего.
         Args:
             session_db: сессия базы данных
@@ -104,11 +107,13 @@ async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_
             bool: True, если target_profile_id есть в избранном у current_profile_id, иначе False.
     """
 
-    query = select(FavoriteUsers).where(
-        FavoriteUsers.user_id == current_profile_id,
-        FavoriteUsers.favorite_user_id == target_profile_id
+    stmt_user = (
+        select(FavoriteUsers)
+        .where(FavoriteUsers.user_id == current_profile_id,
+               FavoriteUsers.favorite_user_id == target_profile_id
+               )
     )
-    result = await session_db.execute(query)
+    result = await session_db.execute(stmt_user)
     return result.scalar_one_or_none() is not None
 
 
@@ -124,11 +129,12 @@ async def update_user_receiving_timer(session_db: AsyncSession, current_user: Us
     logger.info(f'Пользователь ID {current_user.profile.id} обновил таймер получения')
 
 
-async def check_can_user_receive_card(session_db: AsyncSession, current_user: User, need_slots: int) -> None:
+async def check_can_user_receive_card(session_db: AsyncSession, current_user: User, need_slots: int
+                                      ) -> None:
     """ Проверяет, хватит ли у пользователя места в инвентаре для новых карт.
         Args:
             session_db: сессия базы данных
-            current_user: объект User текущего пользователя
+            current_user: объект User + Profile текущего пользователя
             need_slots: количество слотов, необходимых для новых карт
         Raises:
             NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
@@ -185,7 +191,7 @@ async def add_user_gold(session_db: AsyncSession,
     """ Добавляет пользователю золото.
         Args:
             session_db: сессия базы данных
-            current_user: объект текущего пользователя (User) с подгруженным профилем
+            current_user: User + Profile текущего пользователя
             add_gold: количество полученного золота
         Returns:
             dict:
@@ -259,9 +265,11 @@ async def add_user_to_favorite(session_db: AsyncSession,
         logger.warning(f'Не найден профиль ID {target_user_id} при добавлении в избранное')
         raise UserNotFoundError()
 
-    stmt_check = select(FavoriteUsers).where(
-        FavoriteUsers.user_id == current_user_id,
-        FavoriteUsers.favorite_user_id == target_user_id
+    stmt_check = (
+        select(FavoriteUsers)
+        .where(FavoriteUsers.user_id == current_user_id,
+               FavoriteUsers.favorite_user_id == target_user_id
+               )
     )
     result = await session_db.execute(stmt_check)
     existing = result.scalar_one_or_none()
@@ -299,9 +307,11 @@ async def remove_user_from_favorite(session_db: AsyncSession,
         logger.warning(f'Не найден профиль ID {target_user_id} при удалении из избранного')
         raise UserNotFoundError()
 
-    stmt_check = select(FavoriteUsers).where(
-        FavoriteUsers.user_id == current_user_id,
-        FavoriteUsers.favorite_user_id == target_user_id
+    stmt_check = (
+        select(FavoriteUsers)
+        .where(FavoriteUsers.user_id == current_user_id,
+               FavoriteUsers.favorite_user_id == target_user_id
+               )
     )
     result = await session_db.execute(stmt_check)
     favorite = result.scalar_one_or_none()
@@ -312,8 +322,7 @@ async def remove_user_from_favorite(session_db: AsyncSession,
     logger.info(f'Пользователь ID {current_user_id} удалил профиль {target_user_id} из избранного')
 
 
-async def ensure_favorite_slot_available(session_db: AsyncSession,
-                                         current_user: User
+async def ensure_favorite_slot_available(session_db: AsyncSession, current_user: User
                                          ) -> None:
     """ Проверяет, что у пользователя есть место для добавления нового пользователя в избранное.
         Args:
@@ -323,10 +332,13 @@ async def ensure_favorite_slot_available(session_db: AsyncSession,
             NotEnoughSlotsError: недостаточно места для добавления в избранное нового пользователя
     """
 
-    stmt = select(func.count()).select_from(FavoriteUsers).where(
-        FavoriteUsers.user_id == current_user.profile.id
+    stmt_count_fav_users = (
+        select(func.count())
+        .select_from(FavoriteUsers)
+        .where(FavoriteUsers.user_id == current_user.profile.id
+               )
     )
-    result = await session_db.execute(stmt)
+    result = await session_db.execute(stmt_count_fav_users)
     favorites_count = result.scalar_one()
 
     if favorites_count >= current_user.profile.max_favorite:
@@ -334,24 +346,24 @@ async def ensure_favorite_slot_available(session_db: AsyncSession,
         raise NotEnoughSlotsError('У вас недостаточно места в списке избранных для добавления нового пользователя')
 
 
-async def get_favorite_user(session_db: AsyncSession,
-                            current_user: User
+async def get_favorite_user(session_db: AsyncSession, user_profile_id: int
                             ) -> list[FavoriteUsers]:
     """ Возвращает список избранных пользователей.
         Args:
             session_db: сессия базы данных
-            current_user: объект пользователя
+            user_profile_id: ID профиля пользователя
         Returns:
-            list: список избранных пользователей
+            list [FavoriteUsers]: список избранных пользователей
     """
 
-    stmt = (
+    stmt_fav_users = (
         select(FavoriteUsers)
-        .where(FavoriteUsers.user_id == current_user.profile.id)
+        .where(FavoriteUsers.user_id == user_profile_id)
         .options(
             selectinload(FavoriteUsers.favorite_user).selectinload(Profile.user)
         )
     )
-    result = await session_db.execute(stmt)
+    result = await session_db.execute(stmt_fav_users)
+    favorite_users = list(result.scalars().all())
 
-    return list(result.scalars().all())
+    return favorite_users

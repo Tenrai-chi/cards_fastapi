@@ -1,8 +1,8 @@
 import logging
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict
 from cards_app.exeptions import NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError
 from cards_app.services.cards import (get_card_with_details, get_rarities_and_classes, generate_random_card,
                                       create_record_in_history_receiving_card)
@@ -17,25 +17,21 @@ logger = logging.getLogger(__name__)
 
 
 class ViewCardUseCase:
-    """ Use case для просмотра карты.
-        Преобразовывает данные для вывода информации о карте
-    """
+    """ Use case для просмотра карты """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      card_id: int,
-                      current_user: User
-                      ) -> dict[str, Any]:
+    async def execute(self, card_id: int, current_user: User | None
+                      ) -> ViewCardUseCaseDict:
         """ Выполняет получение карты и формирует DTO для отображения.
                Args:
                    card_id: ID карты для просмотра.
-                   current_user: Объект текущего пользователя (User) с подгруженным профилем.
+                   current_user: User + Profile текущего пользователя
                        Может быть None, если пользователь не авторизован.
 
                Returns:
-                   dict: Словарь с полями:
+                   ViewCardUseCaseDict:
                        - card_info_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
                        - error_message (str | None): текст ошибки, если произошла.
                        - status_code (int): HTTP статус-код (200, 404, 500).
@@ -108,13 +104,13 @@ class ViewGetFreeCardUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User) -> dict[str, Any]:
+    async def execute(self, current_user: User | None
+                      ) -> ViewGetFreeCardUseCaseDict:
         """ Формирует DTO для страницы получения бесплатной карты.
             Args:
-                current_user: Объект текущего пользователя (User) с подгруженным профилем.
-                    Может быть None, если пользователь не авторизован.
+                current_user: User + Profile текущего пользователя
             Returns:
-                dict:
+                ViewGetFreeCardUseCaseDict:
                     - get_free_card_dto (GetFreeCardDTO): DTO со списками классов, редкостей и флагом can_get_free_card.
                     - status_code (int): HTTP статус-код всегда 200
         """
@@ -160,14 +156,13 @@ class GetFreeCardUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user: User | None
-                      ) -> dict[str, Any]:
+    async def execute(self, current_user: User | None
+                      ) -> GetFreeCardUseCaseDict:
         """ Выполняет получение бесплатной карты для авторизованного пользователя.
             Args:
-                current_user (User | None): объект текущего пользователя (User) с подгруженным профилем.
+                current_user: User + Profile текущего пользователя
             Returns:
-                dict:
+                GetFreeCardUseCaseDict:
                     - success (bool): True при успешном получении карты.
                     - new_card_id (int | None): ID новой карты (при успехе).
                     - error_message (str | None): сообщение об ошибке.

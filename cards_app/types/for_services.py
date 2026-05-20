@@ -1,5 +1,6 @@
 from typing import TypedDict
 from cards_app.models import *
+from cards_app.schemas import *
 
 
 class RaritiesAndClassesDict(TypedDict):
@@ -16,3 +17,6 @@ class FightNowDataDict(TypedDict):
     winner: User | None
     loser: User | None
     history_fight: list[list[str]]
+
+
+
