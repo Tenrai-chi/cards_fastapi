@@ -124,7 +124,7 @@ class BuyStoreCardUseCase:
 
             # Создание транзакции
             await create_transaction(session_db=self.session_db,
-                                     user_id=current_user.id,
+                                     user_profile_id=current_user.id,
                                      gold_before=gold_transaction['gold_before'],
                                      gold_after=gold_transaction['gold_after'],
                                      comment='Покупка в магазине карт')

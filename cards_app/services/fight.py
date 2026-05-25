@@ -1,11 +1,12 @@
+from datetime import datetime
 from random import randint
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, or_, desc
+from sqlalchemy import select, or_, desc, and_
 
 from cards_app.exeptions import SelfFightError, UserNotFoundError, CooldownNotElapsedError, NoCurrentCardError
-from cards_app.models import User, FightHistory, Card, AmuletItem, Profile
+from cards_app.models import User, FightHistory, Card, AmuletItem, Profile, Guild, Type
 from cards_app.types import FightNowDataDict
 from cards_app.utils.common import time_difference_check
 
@@ -39,7 +40,9 @@ async def validate_battle_preconditions(session_db: AsyncSession,
     stmt_user = (
         select(User).where(User.id == user_id)
         .options(
-            selectinload(User.profile).selectinload(Profile.guild)
+            selectinload(User.profile)
+            .selectinload(Profile.guild)
+            .selectinload(Guild.buff)
         )
     )
     user_result = await session_db.execute(stmt_user)
@@ -49,7 +52,9 @@ async def validate_battle_preconditions(session_db: AsyncSession,
         select(User)
         .where(User.id == enemy_id)
         .options(
-            selectinload(User.profile).selectinload(Profile.guild)
+            selectinload(User.profile)
+            .selectinload(Profile.guild)
+            .selectinload(Guild.buff)
         )
     )
     enemy_result = await session_db.execute(stmt_enemy)
@@ -86,19 +91,28 @@ async def check_last_fight(session_db: AsyncSession,
     """
 
     stmt_last_fight = (
-        select(FightHistory).where(
+        select(FightHistory)
+        .where(
             or_(
-                (FightHistory.winner_id == enemy_profile_id) & (FightHistory.loser_id == user_profile_id),
-                (FightHistory.winner_id == user_profile_id) & (FightHistory.loser_id == enemy_profile_id)
+                and_(
+                    FightHistory.participant1_id == user_profile_id,
+                    FightHistory.participant2_id == enemy_profile_id
+                ),
+                and_(
+                    FightHistory.participant1_id == enemy_profile_id,
+                    FightHistory.participant2_id == user_profile_id
+                )
             )
-        ).order_by(desc(FightHistory.id)).limit(1)
+        )
+        .order_by(desc(FightHistory.date_and_time))
+        .limit(1)
     )
 
     result = await session_db.execute(stmt_last_fight)
     last_fight = result.scalar_one_or_none()
 
     if last_fight is not None:
-        can_fight, hours = time_difference_check(last_fight.date_and_time, 6)
+        can_fight, hours = time_difference_check(check_time=last_fight.date_and_time, need_hours=6)
         if not can_fight:
             base_message = f'Вы не можете бросить вызов этому пользователю'
             raise CooldownNotElapsedError(base_message=base_message, hours=hours)
@@ -125,7 +139,8 @@ async def get_cards_participants(session_db: AsyncSession,
         ).options(
             selectinload(Card.amulet).selectinload(AmuletItem.amulet_type),
             selectinload(Card.class_card),
-            selectinload(Card.type_card),
+            selectinload(Card.type_card).selectinload(Type.better),  # подгружаем better
+            selectinload(Card.type_card).selectinload(Type.worst),
             selectinload(Card.rarity_card)
         )
     )
@@ -182,11 +197,11 @@ def stats_calculation(user_card: Card,
     return user_card_hp, user_card_damage, enemy_card_hp, enemy_card_damage
 
 
-def fight_now(user: User,
-              enemy: User,
-              user_card: Card,
-              enemy_card: Card
-              ) -> FightNowDataDict:
+async def fight_now(user: User,
+                    enemy: User,
+                    user_card: Card,
+                    enemy_card: Card
+                    ) -> FightNowDataDict:
     """ Принимает пользователей и их карты с подгруженными данными и проводит бой.
         Если в битве есть победитель, то возвращает winner и loser,
         иначе оба None
@@ -516,3 +531,33 @@ def formation_of_history(card: Card, value: float) -> str:
                         f'{value}')
 
     return description_move
+
+
+async def create_record_fight_history(session_db: AsyncSession,
+                                      is_victory: bool,
+                                      participant1_id: int,
+                                      participant2_id: int,
+                                      card1_id: int,
+                                      card2_id: int,
+                                      winner_id: int | None = None,
+                                      ) -> None:
+    """ Создает запись в истории боев.
+        Args:
+            session_db: сессия базы данных
+            is_victory: True - если был победитель, False - если ничья
+            participant1_id: ID профиля нападавшего пользователя
+            participant2_id: ID профиля противника
+            card1_id: ID карты нападавшего пользователя
+            card2_id: ID карты противника
+            winner_id: ID участника одержавшего победу
+    """
+
+    new_record = FightHistory(date_and_time=datetime.now(),
+                              is_victory=is_victory,
+                              participant1_id=participant1_id,
+                              participant2_id=participant2_id,
+                              card1_id=card1_id,
+                              card2_id=card2_id,
+                              winner_id=winner_id)
+
+    session_db.add(new_record)

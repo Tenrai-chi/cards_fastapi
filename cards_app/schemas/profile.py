@@ -23,9 +23,9 @@ class FightHistoryRecordDTO(BaseModel):
     """ История боев """
 
     date_and_time: datetime
-    result: str
+    result: str  # win, loss, draw
     user_card: CardBriefDTO
-    opponent_profile_id: int
+    opponent_id: int
     opponent_username: str
     opponent_card: CardBriefDTO
 
@@ -36,9 +36,10 @@ class ProfileBaseDTO(BaseModel):
     id: int
     username: str
     about_user: str | None = None
-    profile_pic: str
+    profile_pic: str | None = None
     win: int
     lose: int
+    rating: int
 
 
 class ProfileResponseDTO(BaseModel):

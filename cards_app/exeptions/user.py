@@ -38,6 +38,7 @@ class CooldownNotElapsedError(UserException):
         else:
             time_part = ''
 
+        print(base_message, hours)
         if base_message:
             message = f'{base_message}. {time_part}' if time_part else base_message
         else:

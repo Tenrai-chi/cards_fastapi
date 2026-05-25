@@ -1,7 +1,9 @@
 import logging
 
 from datetime import datetime
-from sqlalchemy import func, desc, select
+from math import ceil
+
+from sqlalchemy import func, or_, select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -10,6 +12,7 @@ from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError
                                  FavoriteNotFoundError)
 from cards_app.models import User, Profile, Card, FightHistory, Transactions, FavoriteUsers
 from cards_app.services.cards import get_all_cards_user
+from cards_app.types import AddGoldForFightDict
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +57,25 @@ async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_
 
     wins = await session_db.scalar(
         select(func.count())
-        .where(FightHistory.winner_id == profile1_id, FightHistory.loser_id == profile2_id)
+        .where(
+            FightHistory.winner_id == profile1_id,
+            or_(
+                FightHistory.participant1_id == profile2_id,
+                FightHistory.participant2_id == profile2_id
+            )
+        )
     )
     loses = await session_db.scalar(
         select(func.count())
-        .where(FightHistory.winner_id == profile2_id, FightHistory.loser_id == profile1_id)
+        .where(
+            FightHistory.winner_id == profile2_id,
+            or_(
+                FightHistory.participant1_id == profile1_id,
+                FightHistory.participant2_id == profile1_id
+            )
+        )
     )
+
     return wins or 0, loses or 0
 
 
@@ -78,16 +94,22 @@ async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limi
 
     stmt_battle_history = (
         select(FightHistory)
-        .where((FightHistory.winner_id == profile_id) | (FightHistory.loser_id == profile_id))
+        .where(
+            or_(
+                FightHistory.participant1_id == profile_id,
+                FightHistory.participant2_id == profile_id
+            )
+        )
         .order_by(desc(FightHistory.date_and_time))
         .limit(limit)
         .options(
-            selectinload(FightHistory.winner).selectinload(Profile.user),
-            selectinload(FightHistory.loser).selectinload(Profile.user),
-            selectinload(FightHistory.card_winner).selectinload(Card.class_card),
-            selectinload(FightHistory.card_winner).selectinload(Card.type_card),
-            selectinload(FightHistory.card_loser).selectinload(Card.class_card),
-            selectinload(FightHistory.card_loser).selectinload(Card.type_card),
+            selectinload(FightHistory.participant1).selectinload(Profile.user),
+            selectinload(FightHistory.participant2).selectinload(Profile.user),
+            selectinload(FightHistory.winner),
+            selectinload(FightHistory.card1).selectinload(Card.class_card),
+            selectinload(FightHistory.card1).selectinload(Card.type_card),
+            selectinload(FightHistory.card2).selectinload(Card.class_card),
+            selectinload(FightHistory.card2).selectinload(Card.type_card),
         )
     )
     result = await session_db.execute(stmt_battle_history)
@@ -216,7 +238,7 @@ async def add_user_gold(session_db: AsyncSession,
 
 
 async def create_transaction(session_db: AsyncSession,
-                             user_id: int,
+                             user_profile_id: int,
                              gold_before: int,
                              gold_after: int,
                              comment: str
@@ -224,19 +246,19 @@ async def create_transaction(session_db: AsyncSession,
     """ Создает транзакцию пользователя.
         Args:
             session_db: сессия базы данных
-            user_id: ID профиля текущего пользователя
+            user_profile_id: ID профиля текущего пользователя
             gold_before: количество золота до списания
             gold_after: количество золота после списания
             comment: цель траты
     """
 
     new_transaction = Transactions(date_and_time=datetime.now(),
-                                   user_id=user_id,
+                                   user_id=user_profile_id,
                                    before=gold_before,
                                    after=gold_after,
                                    comment=comment)
     session_db.add(new_transaction)
-    logger.debug(f'Создана транзакция для пользователя ID {user_id}: '
+    logger.debug(f'Создана транзакция для пользователя ID {user_profile_id}: '
                  f'{comment} (было {gold_before} → стало {gold_after})')
 
 
@@ -367,3 +389,90 @@ async def get_favorite_user(session_db: AsyncSession, user_profile_id: int
     favorite_users = list(result.scalars().all())
 
     return favorite_users
+
+
+async def update_win_lose(session_db: AsyncSession,
+                          winner=User,
+                          loser=User
+                          ) -> None:
+    """ Обновляет статистику побед/поражений у пользователей после битвы.
+        Вызывается только если у битвы был победитель.
+        Args:
+            session_db: сессия базы данных
+            winner: User + Profile победителя
+            loser: User + Profile проигравшего
+    """
+
+    winner.profile.win += 1
+    loser.profile.lose += 1
+    session_db.add(winner)
+    session_db.add(loser)
+
+
+async def add_gold_for_fight(session_db: AsyncSession,
+                             user: User,
+                             result_battle: str
+                             ) -> AddGoldForFightDict:
+    """ Вычисляет количество золота, которое должен получить пользователь за участие в битве,
+        затем вызывает функцию начисления залота
+        Количество золота зависит от итога боя и наличия усиления гильдии.
+        Args:
+            session_db: сессия базы данных
+            user: User + Profile участника боя
+            result_battle: итог боя
+        Returns:
+            AddGoldForFightDict:
+                - gold_before (int): золото до получения награды
+                - gold_after (int): золото после получения награды
+                - comment (str): строка пояснение для создания транзакции
+        Raises:
+            ValueError: если итог боя был
+    """
+
+    gold_for_win = 100
+    gold_for_draw = 75
+    gold_for_lose = 50
+
+    if result_battle == 'win':
+        comment = 'Награда за победу в битве'
+        if user.profile.guild and user.profile.guild.buff.name == 'Бандитский улов':
+            reward_gold = ceil(gold_for_win * user.profile.guild.buff.numeric_value / 100)
+        else:
+            reward_gold = gold_for_win
+    elif result_battle == 'lose':
+        comment = 'Награда за поражение в битве'
+        reward_gold = gold_for_lose
+    elif result_battle == 'draw':
+        comment = 'Награда за ничью в битве'
+        reward_gold = gold_for_draw
+    else:
+        raise ValueError(f'Принят неверный результат битвы result_battle: {result_battle}')
+
+    answer_data: dict = await add_user_gold(session_db=session_db,
+                                            current_user=user,
+                                            add_gold=reward_gold)
+    answer_data['comment'] = comment
+    return answer_data
+
+
+async def update_rating_user(session_db: AsyncSession, user: User, user_fight_result: str
+                             ) -> None:
+    """ Обновляет рейтинг участника битвы. При победе/поражении начисляет/отнимает 25 рейтинга пользователя.
+        При ничьей начисляет 5 очков.
+        Args:
+            session_db: сессия базы данных
+            user: User + Profile участника битвы
+            user_fight_result: итог битвы для пользователя win/lose/draw
+    """
+
+    win_delta = 25
+    draw_delta = 5
+
+    if user_fight_result == 'draw':
+        user.profile.rating += draw_delta
+    elif user_fight_result == 'win':
+        user.profile.rating += win_delta
+    else:
+        user.profile.rating = max(0, user.profile.rating - win_delta)
+
+    session_db.add(user)

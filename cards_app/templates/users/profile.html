@@ -31,6 +31,7 @@
                 Нет гильдии
                 {% endif %}
             </p>
+            <p><strong>Рейтинг: </strong>{{ profile_dto.profile.rating }}</p>
             <p><strong>Победы: </strong>{{ profile_dto.profile.win }}</p>
             <p><strong>Поражения: </strong>{{ profile_dto.profile.lose }}</p>
             {% if profile_dto.role == 'guest' %}
@@ -149,21 +150,27 @@
                     {% for fight in profile_dto.battle_history %}
                         <tr>
                             <td>{{ fight.date_and_time.strftime('%d.%m.%Y %H:%M') if fight.date_and_time else '—' }}</td>
-                            <td class="{% if fight.result == 'win' %}fight-result-win{% else %}fight-result-lose{% endif %}">
-                                {% if fight.result == 'win' %}Победа{% else %}Поражение{% endif %}
+                            <td class="{% if fight.result == 'win' %}fight-result-win{% elif fight.result == 'draw' %}fight-result-draw{% else %}fight-result-lose{% endif %}">
+                                {% if fight.result == 'win' %}
+                                Победа
+                                {% elif fight.result == 'draw' %}
+                                Ничья
+                                {% else %}
+                                Поражение
+                                {% endif %}
                             </td>
                             <td>
-                                <a href="#">
+                                <a href="{{ url_for('view_card', card_id=fight.user_card.id) }}">
                                     {{ fight.user_card.class_name }} ({{ fight.user_card.type_name }})
                                 </a>
                             </td>
                             <td>
-                                <a href="#">
+                                <a href="{{ url_for('user_profile', user_id=fight.opponent_id) }}">
                                     {{ fight.opponent_username }}
                                 </a>
                             </td>
                             <td>
-                                <a href="#">
+                                <a href="{{ url_for('view_card', card_id=fight.opponent_card.id) }}">
                                     {{ fight.opponent_card.class_name }} ({{ fight.opponent_card.type_name }})
                                 </a>
                             </td>

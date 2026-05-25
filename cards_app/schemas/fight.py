@@ -6,6 +6,7 @@ class Participant(BaseModel):
 
     id: int
     username: str
+    profile_pic: str | None = None
 
 
 class FightDTO(BaseModel):
@@ -27,12 +28,8 @@ class FightDTO(BaseModel):
     reward_amulet_user: list | None = None
     history_fight: list[list] | None = None
     is_victory: bool | None = None
+    winner_id: int | None
 
-    winner: Participant | None = None
-    loser: Participant | None = None
     user: Participant | None = None
     enemy: Participant | None = None
     error_message: str | None = None
-
-
-

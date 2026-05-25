@@ -103,6 +103,6 @@ class ProcessFightUseCaseDict(TypedDict):
     """ Кастомный словарь для возврата данных из ProcessFightUseCase """
     # todo в процессе
 
+    fight_dto: FightDTO | None
     error_message: str | None
-    fight_dto: int | None
     status_code: int

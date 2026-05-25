@@ -104,10 +104,12 @@ class Card(Base):
     rarity_card = relationship('Rarity', foreign_keys=[rarity_id], back_populates='cards')
     owner = relationship('Profile', foreign_keys='[Card.owner_id]', back_populates='cards')
     selected_by = relationship('Profile', foreign_keys='[Profile.current_card_id]', back_populates='current_card')
-    won_fights = relationship('FightHistory', foreign_keys='[FightHistory.card_winner_id]',
-                              back_populates='card_winner')
-    lost_fights = relationship('FightHistory', foreign_keys='[FightHistory.card_loser_id]',
-                               back_populates='card_loser')
+    fight_histories_as_card1 = relationship('FightHistory',
+                                            foreign_keys='[FightHistory.card1_id]',
+                                            back_populates='card1')
+    fight_histories_as_card2 = relationship('FightHistory',
+                                            foreign_keys='[FightHistory.card2_id]',
+                                            back_populates='card2')
     receiving_history = relationship('HistoryReceivingCards', foreign_keys='[HistoryReceivingCards.card_id]', back_populates='card')
     sale_records = relationship('SaleUserCards', foreign_keys='[SaleUserCards.card_id]',  back_populates='card')
     amulet = relationship('AmuletItem', foreign_keys='[AmuletItem.card_id]',  back_populates='card', uselist=False)

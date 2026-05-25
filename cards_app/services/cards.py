@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 from cards_app.types import RaritiesAndClassesDict
 from cards_app.exeptions import CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError
 from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore
+from cards_app.utils.common import calculate_need_exp
 
 logger = logging.getLogger(__name__)
 
@@ -258,3 +259,51 @@ async def create_record_in_history_receiving_card(session_db: AsyncSession,
     session_db.add(new_record)
     logger.info(f'Создана запись в истории получения карт: карта ID: {card_id} '
                 f'получена пользователем ID {user_profile_id} способом "{method_receiving}"')
+
+
+async def update_card_experience(session_db: AsyncSession,
+                                 card: Card
+                                 ) -> None:
+    """ Получение опыта карты в битве.
+        Args:
+            session_db:
+            card:
+    """
+    add_exp = 75
+
+    if card.level == card.rarity_card.max_level:
+        return
+
+    card.experience_bar += add_exp
+
+    need_exp_for_level = calculate_need_exp(level=card.level)
+    if card.experience_bar >= need_exp_for_level:
+        card.experience_bar -= need_exp_for_level
+        card.level += 1
+
+        # Если достигнут максимальный уровень, прогресс опыта обнуляется
+        if card.level == card.rarity_card.max_level:
+            card.experience_bar = 0
+
+        # Увеличение характеристик карты
+        await increase_stats(session_db=session_db, card=card)
+    session_db.add(card)
+    logger.info(f'Обновлен опыт карты ID {card.id}')
+
+
+async def increase_stats(session_db:AsyncSession,
+                         card: Card,
+                         new_level: int = 1
+                         ) -> None:
+    """ Увеличение характеристик карты при получении уровня.
+        Args:
+            session_db:
+            card:
+            new_level:
+    """
+
+    card.damage += card.rarity_card.coefficient_damage_for_level * new_level
+    card.hp += card.rarity_card.coefficient_hp_for_level * new_level
+    session_db.add(card)
+
+    logger.info(f'Карта ID {card.id} изменила свои характеристики при получении уровня')

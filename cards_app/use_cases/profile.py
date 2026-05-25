@@ -70,6 +70,7 @@ class ViewProfileUseCase:
                                   profile_pic=target_user.profile.profile_pic,
                                   win=target_user.profile.win,
                                   lose=target_user.profile.lose,
+                                  rating=target_user.profile.rating
                                   )
 
         guild_dto = None
@@ -124,25 +125,42 @@ class ViewProfileUseCase:
                                                   limit=50)
             battle_history = []
             for fight in fights:
-                is_win = (fight.winner_id == target_user.profile.id)
-                user_card = fight.card_winner if is_win else fight.card_loser
-                opponent_card = fight.card_loser if is_win else fight.card_winner
-                opponent_profile = fight.loser if is_win else fight.winner
+
+                target_is_participant1 = (fight.participant1_id == target_user.profile.id)
+                target_profile = fight.participant1 if target_is_participant1 else fight.participant2
+                opponent_profile = fight.participant2 if target_is_participant1 else fight.participant1
+
+                # Карты: у participant1 – fight.card1, у participant2 – fight.card2
+                target_card = fight.card1 if target_is_participant1 else fight.card2
+                opponent_card = fight.card2 if target_is_participant1 else fight.card1
+
+                # Определяем результат
+                if fight.winner_id is None:
+                    result = 'draw'
+                elif fight.winner_id == target_user.profile.id:
+                    result = 'win'
+                else:
+                    result = 'loss'
+
+                # Получаем данные оппонента (пользователь из профиля)
                 opponent_user = opponent_profile.user
 
                 battle_history.append(FightHistoryRecordDTO(date_and_time=fight.date_and_time,
-                                                            result='win' if is_win else 'loss',
-                                                            user_card=CardBriefDTO(id=user_card.id,
-                                                                                   class_name=user_card.class_card.name,
-                                                                                   type_name=user_card.type_card.name,
-                                                                                   ),
-                                                            opponent_profile_id=opponent_profile.id,
+                                                            result=result,
+                                                            user_card=CardBriefDTO(
+                                                                id=target_card.id,
+                                                                class_name=target_card.class_card.name,
+                                                                type_name=target_card.type_card.name
+                                                            ),
+                                                            opponent_id=opponent_user.id,
                                                             opponent_username=opponent_user.username,
-                                                            opponent_card=CardBriefDTO(id=opponent_card.id,
-                                                                                       class_name=opponent_card.class_card.name,
-                                                                                       type_name=opponent_card.type_card.name,
-                                                                                       ),
-                                                            ))
+                                                            opponent_card=CardBriefDTO(
+                                                                id=opponent_card.id,
+                                                                class_name=opponent_card.class_card.name,
+                                                                type_name=opponent_card.type_card.name
+                                                            )
+                                                            )
+                                      )
 
         elif current_user is not None:
             role = 'guest'
@@ -166,7 +184,7 @@ class ViewProfileUseCase:
                                        win_vs=win_vs,
                                        lose_vs=lose_vs,
                                        is_favorite=is_fav,
-                                       role=role
+                                       role=role,
                                        )
         answer_data['user_info'] = user_info
         answer_data['status_code'] = 200

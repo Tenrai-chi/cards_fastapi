@@ -164,7 +164,7 @@ class GetAwardStartEventUseCase:
             books = ['Маленькая книга опыта', 'Средняя книга опыта', 'Большая книга опыта']
             if award_of_day.type_award in books:
                 await add_experience_book(session_db=self.session_db,
-                                          user_id=current_user.profile.id,
+                                          user_profile_id=current_user.profile.id,
                                           amount=int(award_of_day.amount_or_rarity_award),
                                           name_book=award_of_day.type_award)
                 answer_data['success_message'] = (f'Вы получили в награду {award_of_day.type_award} '
@@ -187,7 +187,7 @@ class GetAwardStartEventUseCase:
                                                                  current_user=current_user,
                                                                  add_gold=int(award_of_day.amount_or_rarity_award))
                 await create_transaction(session_db=self.session_db,
-                                         user_id=current_user.profile.id,
+                                         user_profile_id=current_user.profile.id,
                                          gold_before=data_for_transaction['gold_before'],
                                          gold_after=data_for_transaction['gold_after'],
                                          comment=f'Получение награды в боевом событии')

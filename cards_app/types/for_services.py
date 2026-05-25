@@ -19,4 +19,16 @@ class FightNowDataDict(TypedDict):
     history_fight: list[list[str]]
 
 
+class AddGoldForFightDict(TypedDict):
+    """ Кастомный словарь для вывода информации о полученном золоте после битвы """
 
+    gold_before: int
+    gold_after: int
+    comment: str
+
+
+class RewardLootAfterFightDict(TypedDict):
+    """ Кастомный словарь для вывода полученных наград после битвы """
+
+    exp_items: list[ExperienceItems] | list
+    amulets: list[AmuletType] | list

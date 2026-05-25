@@ -69,8 +69,19 @@ class Profile(Base):
     leader_guild = relationship('Guild', foreign_keys='[Guild.leader_id]', back_populates='leader', uselist=False)
 
     cards = relationship('Card', foreign_keys='[Card.owner_id]', back_populates='owner')
-    won_fights = relationship('FightHistory', foreign_keys='[FightHistory.winner_id]', back_populates='winner')
-    lost_fights = relationship('FightHistory', foreign_keys='[FightHistory.loser_id]', back_populates='loser')
+    fights_as_participant1 = relationship('FightHistory',
+                                          foreign_keys='[FightHistory.participant1_id]',
+                                          back_populates='participant1'
+                                          )
+    fights_as_participant2 = relationship('FightHistory',
+                                          foreign_keys='[FightHistory.participant2_id]',
+                                          back_populates='participant2'
+                                          )
+    fights_won = relationship('FightHistory',
+                              foreign_keys='FightHistory.winner_id',
+                              back_populates='winner'
+                              )
+
     cards_received = relationship('HistoryReceivingCards', foreign_keys='[HistoryReceivingCards.user_id]',
                                   back_populates='user')
     favorites = relationship('FavoriteUsers', foreign_keys='[FavoriteUsers.user_id]', back_populates='user')
@@ -140,15 +151,19 @@ class FightHistory(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     date_and_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    winner_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
-    loser_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
-    card_winner_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=False)
-    card_loser_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=False)
+    is_victory: Mapped[bool] = mapped_column(Boolean)
+    participant1_id: Mapped[int] = mapped_column(ForeignKey('profiles.id'), nullable=False)
+    participant2_id: Mapped[int] = mapped_column(ForeignKey('profiles.id'), nullable=False)
+    winner_id: Mapped[int] = mapped_column(ForeignKey('profiles.id'), nullable=True)
 
-    winner = relationship('Profile', foreign_keys=[winner_id], back_populates='won_fights')
-    loser = relationship('Profile', foreign_keys=[loser_id], back_populates='lost_fights')
-    card_winner = relationship('Card', foreign_keys=[card_winner_id], back_populates='won_fights')
-    card_loser = relationship('Card', foreign_keys=[card_loser_id], back_populates='lost_fights')
+    card1_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=False)
+    card2_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=False)
+
+    participant1 = relationship('Profile', foreign_keys=[participant1_id], back_populates='fights_as_participant1')
+    participant2 = relationship('Profile', foreign_keys=[participant2_id], back_populates='fights_as_participant2')
+    winner = relationship('Profile', foreign_keys=[winner_id], back_populates='fights_won')
+    card1 = relationship('Card', foreign_keys=[card1_id], back_populates='fight_histories_as_card1')
+    card2 = relationship('Card', foreign_keys=[card2_id], back_populates='fight_histories_as_card2')
 
 
 class RefreshToken(Base):
