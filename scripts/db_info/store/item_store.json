@@ -1,0 +1,22 @@
+{
+  "box_store": [
+    {
+      "name": "Сундук опыта",
+      "description": "Вы получите 10 книг опыта. Одна из них гарантированно будет UR.",
+      "price": 1600,
+      "image": "image/box/exp.png"
+    },
+    {
+      "name": "Сундук амулетов",
+      "description": "Вы получите 5 амулетов. У вас есть шанс получить амулет UR.",
+      "price": 15000,
+      "image": "image/box/amulets.png"
+    },
+    {
+      "name": "UR карта",
+      "description": "UR карта с максимальным уроном или здоровьем.",
+      "price": 20000,
+      "image": "image/box/ur_card.png"
+    }
+  ]
+}

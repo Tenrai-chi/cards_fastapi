@@ -1,0 +1,111 @@
+/* static/css/store.css */
+/* Стили для страницы магазина предметов */
+
+/* Фильтры (аналогично home_tabs, но без зависимости от home.css) */
+.store-filters-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.store-filters {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    background: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 60px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(4px);
+}
+
+.filter-tab {
+    display: inline-block;
+    padding: 0.7rem 1.8rem;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--primary-dark);
+    text-decoration: none;
+    border-radius: 40px;
+    transition: all 0.3s ease;
+    background: transparent;
+    border: 1px solid var(--primary-light);
+    cursor: pointer;
+    text-align: center;
+    min-width: 100px;
+}
+
+.filter-tab:hover {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.filter-tab.active {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-main));
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(106, 27, 154, 0.3);
+}
+
+/* Секции магазина */
+.store-section {
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    color: var(--primary-main);
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--primary-main);
+    padding-left: 1rem;
+}
+
+/* Дополнительные стили для карточек (если не хватает из card_store) */
+.card-description {
+    font-size: 0.85rem;
+    color: #555;
+    margin: 0.5rem 0;
+    line-height: 1.3;
+    text-align: center;
+}
+
+/* Цены: зелёные / красные */
+.price-sufficient,
+.new-price.price-sufficient {
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+.price-insufficient,
+.new-price.price-insufficient {
+    color: #c62828;
+    font-weight: bold;
+}
+.price-label {
+    margin-right: 0.25rem;
+    color: var(--text-dark);
+}
+
+.old-price {
+    text-decoration: line-through;
+    color: #999;
+    margin-right: 0.5rem;
+}
+
+/* Адаптивность для фильтров */
+@media (max-width: 768px) {
+    .store-filters {
+        gap: 0.8rem;
+        padding: 0.8rem;
+    }
+    .filter-tab {
+        padding: 0.5rem 1rem;
+        min-width: 70px;
+        font-size: 0.85rem;
+    }
+    .section-title {
+        font-size: 1.2rem;
+    }
+}

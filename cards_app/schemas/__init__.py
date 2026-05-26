@@ -41,4 +41,7 @@ __all__ = [
 
     'CardInStoreDTO',
     'CardStoreDTO',
+
+    'RatingTableDTO',
+    'UserRatingTableDTO'
 ]

@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from cards_app.types import RaritiesAndClassesDict
 from cards_app.exeptions import CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError
-from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore
+from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore, Profile
 from cards_app.utils.common import calculate_need_exp
 
 logger = logging.getLogger(__name__)
@@ -222,18 +222,34 @@ async def get_temp_card_in_store(session_db: AsyncSession, card_temp_id: int) ->
     return temp_card
 
 
-async def get_all_cards_user(session_db: AsyncSession, owner_id: int) -> List[Card]:
+async def get_all_cards_user(session_db: AsyncSession,
+                             owner_id: int,
+                             with_details: bool = False
+                             ) -> List[Card]:
     """ Возвращает список всех карт пользователя.
         Args:
             session_db: сессия базы данных
             owner_id: ID профиля владельца
+            with_details: маркер нужно ли подгружать детали
 
         Returns:
             List[Card]: список карт, принадлежащих пользователю
     """
 
-    stmt_user_cards = (select(Card)
-                       .where(Card.owner_id == owner_id).order_by(Card.id))
+    stmt_user_cards = select(Card).where(Card.owner_id == owner_id)
+
+    if with_details:
+        stmt_user_cards = (
+            stmt_user_cards
+            .join(Card.rarity_card)
+            .options(
+                selectinload(Card.class_card),
+                selectinload(Card.type_card),
+                selectinload(Card.rarity_card)
+            )
+            .order_by(Rarity.id, Card.id)
+        )
+
     result = await session_db.execute(stmt_user_cards)
     cards = list(result.scalars().all())
     return cards
@@ -266,8 +282,8 @@ async def update_card_experience(session_db: AsyncSession,
                                  ) -> None:
     """ Получение опыта карты в битве.
         Args:
-            session_db:
-            card:
+            session_db: сессия базы данных
+            card: карта
     """
     add_exp = 75
 
@@ -291,15 +307,15 @@ async def update_card_experience(session_db: AsyncSession,
     logger.info(f'Обновлен опыт карты ID {card.id}')
 
 
-async def increase_stats(session_db:AsyncSession,
+async def increase_stats(session_db: AsyncSession,
                          card: Card,
                          new_level: int = 1
                          ) -> None:
     """ Увеличение характеристик карты при получении уровня.
         Args:
-            session_db:
-            card:
-            new_level:
+            session_db: сессия базы данных
+            card: карта
+            new_level: новый уровень
     """
 
     card.damage += card.rarity_card.coefficient_damage_for_level * new_level
@@ -307,3 +323,29 @@ async def increase_stats(session_db:AsyncSession,
     session_db.add(card)
 
     logger.info(f'Карта ID {card.id} изменила свои характеристики при получении уровня')
+
+
+async def get_cards_in_trading(session_db: AsyncSession) -> list[Card]:
+    """ Возвращает список карт, которые продают пользователи.
+        Args:
+            session_db: сессия базы данных
+        Returns:
+            list[Card]: карты в продаже
+    """
+
+    stmt_cards = (
+        select(Card)
+        .join(Card.rarity_card)
+        .where(Card.sale_status == True)
+        .options(
+            selectinload(Card.class_card),
+            selectinload(Card.type_card),
+            selectinload(Card.rarity_card),
+            selectinload(Card.owner).selectinload(Profile.user)
+        )
+        .order_by(Rarity.id, Card.id)
+    )
+
+    result = await session_db.execute(stmt_cards)
+    cards = list(result.scalars().all())
+    return cards

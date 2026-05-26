@@ -39,4 +39,6 @@ __all__ = [
     'Transactions',
     'FightHistory',
     'RefreshToken',
+
+    'Boxes'
 ]

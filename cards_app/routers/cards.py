@@ -8,8 +8,10 @@ from cards_app.auth.dependencies import get_current_user_with_profile
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict
-from cards_app.use_cases.cards import ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase
+from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict, \
+    ViewUserCardsUseCaseDict, ViewTradingUseCaseDict
+from cards_app.use_cases.cards import ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase, ViewUserCardsUseCase, \
+    ViewTradingUseCase
 
 from cards_app.models.users import User
 
@@ -107,3 +109,67 @@ async def get_free_card(request: Request,
             url = request.url_for('get_card')
             full_url = f'{url}?error={encoded_error}'
             return RedirectResponse(full_url, status_code=303)
+
+
+@router.get(path='/user-{user_id}', name='view_user_cards')
+async def view_user_cards(request: Request,
+                          user_id: int,
+                          session_db: AsyncSession = Depends(get_db_session),
+                          current_user: User | None = Depends(get_current_user_with_profile),
+                          ):
+    """ Просмотр всех карт пользователя """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = ViewUserCardsUseCase(session_db)
+    data: ViewUserCardsUseCaseDict = await use_case.execute(user_id)
+    if data.get('user_cards_dto') is not None:
+        context = {'request': request,
+                   'current_user': current_user_dto,
+                   'user_cards_dto': data.get('user_cards_dto'),
+                   }
+        return templates.TemplateResponse(request=request,
+                                          name='cards/user_cards.html',
+                                          context=context,
+                                          status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') in (404, 500):
+            context = {'error': data.get('error_message'),
+                       'error_code': data.get('status_code')}
+            return templates.TemplateResponse(request=request,
+                                              name='errors/error_page.html',
+                                              context=context,
+                                              status_code=data.get('status_code')
+                                              )
+
+
+@router.get(path='/trading', name='trading')
+async def view_trading(request: Request,
+                       session_db: AsyncSession = Depends(get_db_session),
+                       current_user: User | None = Depends(get_current_user_with_profile),
+                       error: str = None,
+                       success: str = None
+                       ):
+    """ Просмотр торговой площадки """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = ViewTradingUseCase(session_db)
+    data: ViewTradingUseCaseDict = await use_case.execute()
+    if data.get('cards_trading_dto') is not None:
+        context = {'request': request,
+                   'current_user': current_user_dto,
+                   'cards_trading_dto': data.get('cards_trading_dto'),
+                   'error_message': error,
+                   'success_message': success
+                   }
+        return templates.TemplateResponse(request=request,
+                                          name='cards/trading.html',
+                                          context=context,
+                                          status_code=data.get('status_code'))
+    else:
+        context = {'error': 'Какая-то ошибка',
+                   'error_code': 500}
+        return templates.TemplateResponse(request=request,
+                                          name='errors/error_page.html',
+                                          context=context,
+                                          status_code=data.get('status_code')
+                                          )

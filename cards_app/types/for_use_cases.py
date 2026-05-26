@@ -1,5 +1,6 @@
 from typing import TypedDict
 from cards_app.schemas import *
+from cards_app.schemas import AllStoreDTO, UserCardsDTO, CardsTradingDTO
 
 
 class ViewCardUseCaseDict(TypedDict):
@@ -101,8 +102,37 @@ class BuyStoreCardUseCaseDict(TypedDict):
 
 class ProcessFightUseCaseDict(TypedDict):
     """ Кастомный словарь для возврата данных из ProcessFightUseCase """
-    # todo в процессе
 
     fight_dto: FightDTO | None
     error_message: str | None
     status_code: int
+
+
+class ViewUsersRatingDict(TypedDict):
+    """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
+
+    rating_dto: RatingTableDTO
+    status_code: int
+
+
+class ViewItemStoreUseCaseDict(TypedDict):
+    """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
+
+    status_code: int
+    store_dto: AllStoreDTO | None
+
+
+class ViewUserCardsUseCaseDict(TypedDict):
+    """ Кастомный словарь для возврата данных из ViewUserCardsUseCase """
+
+    user_cards_dto: UserCardsDTO | None
+    error_message: str | None
+    status_code: int
+
+
+class ViewTradingUseCaseDict(TypedDict):
+    """ Кастомный словарь для возврата данных из ViewTradingUseCase """
+
+    cards_trading_dto: CardsTradingDTO | None
+    status_code: int
+

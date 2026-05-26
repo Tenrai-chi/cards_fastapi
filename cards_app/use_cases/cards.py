@@ -2,13 +2,15 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict
+from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict, \
+    ViewUserCardsUseCaseDict, ViewTradingUseCaseDict
 from cards_app.exeptions import NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError
 from cards_app.services.cards import (get_card_with_details, get_rarities_and_classes, generate_random_card,
-                                      create_record_in_history_receiving_card)
+                                      create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading)
 
-from cards_app.schemas.cards import AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard
-from cards_app.services.profile import update_user_receiving_timer, check_can_user_receive_card
+from cards_app.schemas.cards import AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard, \
+    UserCardsDTO, CardsTradingDTO
+from cards_app.services.profile import update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile
 
 from cards_app.utils.common import calculate_need_exp, time_difference_check
 from cards_app.models.users import User
@@ -121,15 +123,16 @@ class ViewGetFreeCardUseCase:
         all_classes = data_for_page['classes']
         all_rarities = data_for_page['rarities']
 
-        classes_card = []
-        rarities_card = []
-        for class_card in all_classes:
-            classes_card.append(ClassCard(name=class_card.name,
-                                          skill_description=class_card.description))
+        classes_card = [
+            ClassCard(name=class_card.name, skill_description=class_card.description)
+            for class_card in all_classes
+        ]
 
-        for rarity_card in all_rarities:
-            rarities_card.append(RarityCard(name=rarity_card.name,
-                                            chance_drop=rarity_card.drop_chance))
+        rarities_card = [
+            RarityCard(name=rarity_card.name, chance_drop=rarity_card.drop_chance)
+            for rarity_card in all_rarities
+        ]
+
         can_get_card = False
         if current_user and current_user.profile.receiving_timer is not None:
             hours_for_get_free_card = 6
@@ -222,3 +225,127 @@ class GetFreeCardUseCase:
             logger.error(f'Непредвиденная ошибка в GetFreeCardUseCase: {error}', exc_info=True)
 
         return answer_data
+
+
+class ViewUserCardsUseCase:
+    """ Use case для просмотра карт пользователя """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self, user_id: int
+                      ) -> ViewUserCardsUseCaseDict:
+        """ Выполняет получение карты и формирует DTO для отображения.
+               Args:
+                   user_id: ID User владельца карт.
+               Returns:
+                   ViewUserCardsUseCaseDict:
+                       - user_cards_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
+                       - error_message (str | None): текст ошибки, если произошла.
+                       - status_code (int): HTTP статус-код (200, 404, 500).
+
+               Note:
+                   - 200: успешное получение данных.
+                   - 404: пользователь не найден (UserNotFound).
+                   - 500: любая другая непредвиденная ошибка.
+               """
+
+        answer_data: ViewUserCardsUseCaseDict = {'user_cards_dto': None,
+                                                 'error_message': None,
+                                                 'status_code': None}
+        try:
+            owner: User = await get_base_info_profile(session_db=self.session_db,
+                                                      user_id=user_id)
+        except CardNotFoundError as error:
+            answer_data['error_message'] = str(error)
+            answer_data['status_code'] = error.status_code
+            return answer_data
+        except Exception as error:
+            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в ViewCardUseCase: {error}', exc_info=True)
+            return answer_data
+
+        user_cards: list = await get_all_cards_user(session_db=self.session_db,
+                                                    owner_id=owner.profile.id,
+                                                    with_details=True)
+        user_cards_dto = UserCardsDTO(
+            cards=[
+                CardDTO(id=card.id,
+                        class_card_name=card.class_card.name,
+                        rarity_card_name=card.rarity_card.name,
+                        type_card_name=card.type_card.name,
+                        class_card_pic=card.class_card.image,
+                        hp=card.hp,
+                        damage=card.damage,
+                        level=card.level,
+                        max_level=card.rarity_card.max_level,
+                        merger=card.merger,
+                        max_merger=card.max_merger,
+                        enhancement=card.enhancement,
+                        max_enhancement=card.max_enhancement,
+                        sale_status=card.sale_status,
+                        price=card.price,
+                        )
+                for card in user_cards
+            ],
+            owner_id=owner.id,
+            owner_username=owner.username,
+            owner_current_card_id=owner.profile.current_card_id
+        )
+        answer_data['user_cards_dto'] = user_cards_dto
+        answer_data['status_code'] = 200
+        return answer_data
+
+
+class ViewTradingUseCase:
+    """ Use case для просмотра торговой площадки """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self) -> ViewTradingUseCaseDict:
+        """ Выполняет получение карты и формирует DTO для отображения.
+               Args:
+               Returns:
+                   ViewTradingUseCaseDict:
+                       - cards_trading_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
+                       - status_code (int): HTTP статус-код (200, 404, 500).
+
+               Note:
+                   - 200: успешное получение данных.
+                   - 500: любая другая непредвиденная ошибка.
+               """
+
+        answer_data: ViewTradingUseCaseDict = {'cards_trading_dto': None,
+                                               'status_code': None}
+
+        cards_trading: list = await get_cards_in_trading(session_db=self.session_db)
+        cards_trading_dto = CardsTradingDTO(
+            cards=[
+                CardDTO(id=card.id,
+                        class_card_name=card.class_card.name,
+                        rarity_card_name=card.rarity_card.name,
+                        type_card_name=card.type_card.name,
+                        class_card_pic=card.class_card.image,
+                        hp=card.hp,
+                        damage=card.damage,
+                        level=card.level,
+                        max_level=card.rarity_card.max_level,
+                        merger=card.merger,
+                        max_merger=card.max_merger,
+                        enhancement=card.enhancement,
+                        max_enhancement=card.max_enhancement,
+                        sale_status=card.sale_status,
+                        price=card.price,
+                        owner_id=card.owner.user.id,
+                        owner_username=card.owner.user.username
+                        )
+                for card in cards_trading
+            ],
+        )
+        answer_data['cards_trading_dto'] = cards_trading_dto
+        answer_data['status_code'] = 200
+        return answer_data
+
+

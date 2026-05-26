@@ -8,8 +8,8 @@ from cards_app.auth.dependencies import get_current_user_with_profile
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import ViewCardStoreUseCaseDict
-from cards_app.use_cases.store import BuyStoreCardUseCase
+from cards_app.types import ViewCardStoreUseCaseDict, ViewItemStoreUseCaseDict
+from cards_app.use_cases.store import BuyStoreCardUseCase, ViewItemStoreUseCase
 
 from cards_app.models.users import User
 from cards_app.use_cases.store import ViewCardStoreUseCase
@@ -39,6 +39,32 @@ async def view_card_store(request: Request,
 
     return templates.TemplateResponse(request=request,
                                       name='store/card_store.html',
+                                      context=context,
+                                      status_code=data.get('status_code'))
+
+
+@router.get(path='/items/{store_filter}', name='item_store')
+async def view_items_store(request: Request,
+                           session_db: AsyncSession = Depends(get_db_session),
+                           current_user: User | None = Depends(get_current_user_with_profile),
+                           store_filter: str = 'all',
+                           error: str = None
+                           ):
+    """ Просмотр страницы магазина карт """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = ViewItemStoreUseCase(session_db)
+    data: ViewItemStoreUseCaseDict = await use_case.execute(store_filter=store_filter)
+
+    context = {'request': request,
+               'current_user': current_user_dto,
+               'store_dto': data.get('store_dto'),
+               'error_message': error,
+               'current_store_filter': store_filter
+               }
+
+    return templates.TemplateResponse(request=request,
+                                      name='store/item_store.html',
                                       context=context,
                                       status_code=data.get('status_code'))
 

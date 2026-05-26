@@ -173,3 +173,14 @@ class UpgradeItemsUsers(Base):
 
     upgrade_item_type = relationship('UpgradeItemsType', foreign_keys=[upgrade_item_type_id], back_populates='user_items')
     owner = relationship('Profile', foreign_keys=[owner_id], back_populates='upgrade_items')
+
+
+class Boxes(Base):
+    """ Модель сундуков в магазине предметов """
+
+    __tablename__ = 'boxes_in_store'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(30), nullable=False)
+    description: Mapped[str] = mapped_column(String(100), nullable=False)
+    price: Mapped[int] = mapped_column(Integer, nullable=False)
+    image: Mapped[str] = mapped_column(String(255), nullable=True)

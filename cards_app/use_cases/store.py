@@ -4,12 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
                                  CardInStoreNotFoundError)
 from cards_app.models import User
-from cards_app.schemas.store import CardInStoreDTO, CardStoreDTO
+from cards_app.schemas.store import CardInStoreDTO, CardStoreDTO, BoxStoreDTO, AllStoreDTO, AmuletsStoreDTO, \
+    UpgradeItemsStoreDTO, ExpItemsStoreDTO
 from cards_app.services.cards import (get_temp_card_in_store, create_new_card_from_template,
                                       create_record_in_history_receiving_card)
 from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
-from cards_app.services.store import get_cards_in_store
-from cards_app.types import ViewCardStoreUseCaseDict, BuyStoreCardUseCaseDict
+from cards_app.services.store import get_cards_in_store, get_box_in_store, get_amulets_in_store, \
+    get_upgrade_items_in_store, get_exp_items_in_store
+from cards_app.types import ViewCardStoreUseCaseDict, BuyStoreCardUseCaseDict, ViewItemStoreUseCaseDict
 from cards_app.utils.common import calculate_final_price
 
 logger = logging.getLogger(__name__)
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ViewCardStoreUseCase:
     """ Use case для просмотра магазина карт.
-        Преобразовывает данные для вывода информации о продаваемых картах.
+        Преобразует данные для вывода информации о продаваемых картах.
     """
 
     def __init__(self, session_db: AsyncSession):
@@ -153,3 +155,130 @@ class BuyStoreCardUseCase:
             logger.error(f'Непредвиденная ошибка в BuyStoreCardUseCase: {error}', exc_info=True)
 
         return answer_data
+
+
+class ViewItemStoreUseCase:
+    """ Use case для просмотра магазина предметов.
+        Преобразует данные для вывода ассортимента магазина в зависимости от фильтра
+    """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self, store_filter: str) -> ViewItemStoreUseCaseDict:
+        """ Выполняет получение списков предметов, доступных в магазине, и формирует DTO.
+            Returns:
+                ViewItemStoreUseCaseDict:
+                    - status_code (int): HTTP статус-код.
+                    - store_dto (ItemStoreDTO | None): DTO  ассортиментов магазина
+            Note:
+                - 200: успешное получение данных.
+                - 500: непредвиденная ошибка
+        """
+
+        answer_data: ViewItemStoreUseCaseDict = {'status_code': None,
+                                                 'store_dto': None}
+
+        if store_filter == 'box':
+            store_dto = AllStoreDTO(boxes=await self._get_boxes_dto(),
+                                    exp_items=None,
+                                    amulets=None,
+                                    upgrade_items=None
+                                    )
+
+        elif store_filter == 'amulet':
+            store_dto = AllStoreDTO(boxes=None,
+                                    exp_items=None,
+                                    amulets=await self._get_amulets_dto(),
+                                    upgrade_items=None
+                                    )
+
+        elif store_filter == 'upgrade_item':
+            store_dto = AllStoreDTO(boxes=None,
+                                    exp_items=None,
+                                    amulets=None,
+                                    upgrade_items=await self._get_upgrade_items_dto()
+                                    )
+
+        elif store_filter == 'exp_items':
+            store_dto = AllStoreDTO(boxes=None,
+                                    exp_items=await self._get_exp_items_dto(),
+                                    amulets=None,
+                                    upgrade_items=None
+                                    )
+
+        elif store_filter == 'all':
+            store_dto = AllStoreDTO(boxes=await self._get_boxes_dto(),
+                                    exp_items=await self._get_exp_items_dto(),
+                                    amulets=await self._get_amulets_dto(),
+                                    upgrade_items=await self._get_upgrade_items_dto()
+                                    )
+        else:
+            answer_data['status_code'] = 500
+            return answer_data
+
+        answer_data['store_dto'] = store_dto
+        answer_data['status_code'] = 200
+
+        return answer_data
+
+    async def _get_boxes_dto(self) -> list[BoxStoreDTO]:
+        """ Преобразует DTO для сундуков """
+
+        boxes: list = await get_box_in_store(session_db=self.session_db)
+        boxes_dto = [BoxStoreDTO(id=box.id,
+                                 name=box.name,
+                                 description=box.description,
+                                 price=box.price,
+                                 image=box.image
+                                 )
+                     for box in boxes
+                     ]
+        return boxes_dto
+
+    async def _get_amulets_dto(self) -> list[AmuletsStoreDTO]:
+        """ Преобразует DTO для амулетов """
+
+        amulets: list = await get_amulets_in_store(session_db=self.session_db)
+        amulets_dto = [AmuletsStoreDTO(id=amulet.id,
+                                       name=amulet.name,
+                                       bonus_hp=amulet.bonus_hp,
+                                       bonus_damage=amulet.bonus_damage,
+                                       price=amulet.price,
+                                       image=amulet.image,
+                                       discount=amulet.discount,
+                                       discount_now=amulet.discount_now,
+                                       rarity_name=amulet.rarity.name,
+                                       )
+                       for amulet in amulets
+                       ]
+        return amulets_dto
+
+    async def _get_upgrade_items_dto(self) -> list[UpgradeItemsStoreDTO]:
+        """ Преобразует DTO для предметов усиления """
+
+        upgrade_items: list = await get_upgrade_items_in_store(session_db=self.session_db)
+        upgrade_items_dto = [UpgradeItemsStoreDTO(id=item.id,
+                                                  name=item.name,
+                                                  description=item.description,
+                                                  image=item.image,
+                                                  price=item.price,
+                                                  )
+                             for item in upgrade_items
+                             ]
+        return upgrade_items_dto
+
+    async def _get_exp_items_dto(self) -> list[ExpItemsStoreDTO]:
+        """ Преобразует DTO для книг опыта """
+
+        exp_items: list = await get_exp_items_in_store(session_db=self.session_db)
+        exp_items_dto = [ExpItemsStoreDTO(id=item.id,
+                                          name=item.name,
+                                          experience_amount=item.experience_amount,
+                                          price=item.price,
+                                          image=item.image,
+                                          sale_now=item.sale_now, )
+                         for item in exp_items
+                         ]
+        return exp_items_dto
+

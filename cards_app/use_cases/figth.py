@@ -86,29 +86,25 @@ class ProcessFightUseCase:
                                       loser=loser)
 
             # 5. Получение опыта карт
-            await update_card_experience(session_db=self.session_db,
-                                         card=user_card)
-            await update_card_experience(session_db=self.session_db,
-                                         card=enemy_card)
+            for card in (user_card, enemy_card):
+                await update_card_experience(session_db=self.session_db,
+                                             card=card)
 
-            # 6. Начисление золота и рейтинга и очков гильдии пользователям
-            # в зависимости от исхода битвы
+            # 6. Определение результатов
             if not is_victory:
-                user_result = 'draw'
-                enemy_result = 'draw'
-            elif winner.id == user.id:
-                user_result = 'win'
-                enemy_result = 'lose'
+                user_result = enemy_result = 'draw'
             else:
-                user_result = 'lose'
-                enemy_result = 'win'
+                user_result, enemy_result = ('win', 'lose') if winner.id == user.id else ('lose', 'win')
 
+            # 7. Начисление золота
             user_gold_data: AddGoldForFightDict = await add_gold_for_fight(session_db=self.session_db,
                                                                            user=user,
                                                                            result_battle=user_result)
             enemy_gold_data: AddGoldForFightDict = await add_gold_for_fight(session_db=self.session_db,
                                                                             user=enemy,
                                                                             result_battle=enemy_result)
+
+            # 8. Обновление рейтинга и очков гильдии
             await update_guild_points_user(session_db=self.session_db,
                                            user=user,
                                            result_battle=user_result)
@@ -118,7 +114,7 @@ class ProcessFightUseCase:
             await update_rating_user(session_db=self.session_db, user=user, user_fight_result=user_result)
             await update_rating_user(session_db=self.session_db, user=enemy, user_fight_result=enemy_result)
 
-            # 7. Создание транзакций у пользователей
+            # 9. Создание транзакций у пользователей
             await create_transaction(session_db=self.session_db,
                                      user_profile_id=user.profile.id,
                                      gold_before=user_gold_data.get('gold_before'),
@@ -129,7 +125,7 @@ class ProcessFightUseCase:
                                      gold_before=enemy_gold_data.get('gold_before'),
                                      gold_after=enemy_gold_data.get('gold_after'),
                                      comment=enemy_gold_data.get('comment'))
-            # 8. Выпадение наград для пользователя после боя
+            # 10. Выпадение наград для пользователя после боя
             user_buff_elf_value = user_card.class_card.numeric_value if user_card.class_card.name == 'Эльф' else 0
             user_loot: RewardLootAfterFightDict = await reward_loot_after_fight(session_db=self.session_db,
                                                                                 user=user,
@@ -140,7 +136,7 @@ class ProcessFightUseCase:
             await reward_loot_after_fight(session_db=self.session_db,
                                           user=enemy,
                                           buff_value=enemy_buff_elf_value)
-            # 9. Создание записи о бое в истории
+            # 11. Создание записи о бое в истории
             await create_record_fight_history(session_db=self.session_db,
                                               is_victory=is_victory,
                                               participant1_id=user.profile.id,

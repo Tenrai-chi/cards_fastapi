@@ -33,7 +33,7 @@ class ViewNewsUseCase:
                 size: количество новостей на странице.
             Returns:
                 ViewNewsUseCaseDict:
-                    - news_dto (NewsDTO | None): DTO с новостями и пагинацией (при успехе).
+                    - news_dto (NewsDTO): DTO с новостями и пагинацией.
                     - status_code (int):  HTTP статус-код всегда 200
         """
 
@@ -89,14 +89,13 @@ class ViewStartEventUseCase:
                        'status_code': None}
 
         start_event_awards = await get_info_start_event_awards(session_db=self.session_db)
-        awards = []
-        for award in start_event_awards:
-            awards.append(StartEventAwardDTO(day=award.day_event_visit,
-                                             type_award=award.type_award,
-                                             amount_or_rarity=award.amount_or_rarity_award,
-                                             description=award.description
-                                             )
-                          )
+        awards = [StartEventAwardDTO(day=award.day_event_visit,
+                                     type_award=award.type_award,
+                                     amount_or_rarity=award.amount_or_rarity_award,
+                                     description=award.description
+                                     )
+                  for award in start_event_awards
+                  ]
         if current_user is None:
             can_get = False
             received = 0

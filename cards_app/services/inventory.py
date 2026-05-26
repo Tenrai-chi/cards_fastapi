@@ -185,10 +185,6 @@ async def reward_loot_after_fight(session_db: AsyncSession,
                                   )
     answer_data['amulets'] = new_amulets
     answer_data['exp_items'] = new_exp_items
-    for a in new_amulets:
-        print(a.name)
-    for i in new_exp_items:
-        print(i.name)
 
     return answer_data
 

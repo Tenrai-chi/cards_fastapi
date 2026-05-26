@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Торговая площадка{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_store.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/user_cards.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/trading.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: var(--primary-dark); text-align: center;">
+    🏪 Торговая площадка
+</h1>
+
+{% if cards_trading_dto and cards_trading_dto.cards %}
+<div class="store-grid">
+    {% for card in cards_trading_dto.cards %}
+    {% set can_buy = current_user and current_user.id != card.owner_id and current_user.gold >= card.price %}
+    <div class="store-card">
+        <div class="card-image">
+            <img src="{{ url_for('static', path=card.class_card_pic) }}" alt="{{ card.class_card_name }}">
+        </div>
+        <div class="card-info">
+            <div class="card-name">
+                {{ card.class_card_name }} ({{ card.type_card_name }})
+            </div>
+            <div class="card-stats user-card-stats">
+                <div class="card-stat">💪 Уровень: {{ card.level }}/{{ card.max_level }}</div>
+                <div class="card-stat">✨ Редкость: {{ card.rarity_card_name }}</div>
+                <div class="card-stat">❤️ Здоровье: {{ card.hp }}</div>
+                <div class="card-stat">⚔️ Урон: {{ card.damage }}</div>
+                <div class="card-stat">🛠️ Усиление: {{ card.enhancement }}/{{ card.max_enhancement }}</div>
+                <div class="card-stat">🧬 Слияние: {{ card.merger }}/{{ card.max_merger }}</div>
+            </div>
+
+            <!-- Информация о продавце -->
+            <div class="seller-info">
+                <span class="seller-label">Продавец:</span>
+                <a href="{{ url_for('user_profile', user_id=card.owner_id) }}" class="seller-link">
+                    {{ card.owner_username }}
+                </a>
+            </div>
+
+            <!-- Цена -->
+            <div class="card-price">
+                <span class="price-label">Цена:</span>
+                {% if current_user and current_user.id == card.owner_id %}
+                    <span class="price price-owner">{{ card.price }}💰</span>
+                {% elif current_user and current_user.gold >= card.price %}
+                    <span class="price price-sufficient">{{ card.price }}💰</span>
+                {% else %}
+                    <span class="price price-insufficient">{{ card.price }}💰</span>
+                {% endif %}
+            </div>
+
+            <!-- Кнопки действий -->
+            <div class="card-actions-vertical">
+                {% if current_user %}
+                    {% if current_user.id == card.owner_id %}
+                        <!-- Владелец: убрать с продажи -->
+                        <form action="#" method="post" class="action-form">
+                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                            <button type="submit" class="card-action-btn">📤 Убрать с продажи</button>
+                        </form>
+                    {% else %}
+                        <!-- Покупатель: купить -->
+                        {% if current_user.gold >= card.price %}
+                            <form action="#" method="post" class="buy-form">
+                                <input type="hidden" name="card_id" value="{{ card.id }}">
+                                <button type="submit" class="btn-buy">Купить</button>
+                            </form>
+                        {% else %}
+                            <button class="btn-buy disabled" disabled>Купить</button>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-store">
+    😢 На торговой площадке пока нет карт. Загляните позже!
+</div>
+{% endif %}
+{% endblock %}

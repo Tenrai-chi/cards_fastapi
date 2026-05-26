@@ -20,7 +20,7 @@ class CardDTO(BaseModel):
     class_card_pic: str
     hp: float
     damage: float
-    skill: str
+    skill: str | None = None
     level: int
     max_level: int
     merger: int
@@ -29,6 +29,10 @@ class CardDTO(BaseModel):
     max_enhancement: int
     current_exp: int | None = None
     need_exp: int | None = None
+    sale_status: bool | None = None
+    price: int | None = None
+    owner_id: int | None = None
+    owner_username: str | None = None
 
 
 class CardInfoDTO(BaseModel):
@@ -59,3 +63,18 @@ class GetFreeCardDTO(BaseModel):
     all_classes: list[ClassCard]
     all_rarities: list[RarityCard]
     can_get_free_card: bool = False
+
+
+class UserCardsDTO(BaseModel):
+    """ Данные для просмотра всех карт пользователя """
+
+    owner_id: int
+    owner_username: str
+    owner_current_card_id: int | None
+    cards: list[CardDTO]
+
+
+class CardsTradingDTO(BaseModel):
+    """ Данные для просмотра торговой площадки """
+
+    cards: list[CardDTO]

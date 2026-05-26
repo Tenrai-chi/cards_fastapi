@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Карты пользователя {{ user_cards_dto.owner_username }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_store.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/user_cards.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: var(--primary-dark); text-align: center;">
+    🃏 Карты игрока {{ user_cards_dto.owner_username }}
+</h1>
+
+{% if user_cards_dto and user_cards_dto.cards %}
+<div class="store-grid">
+    {% for card in user_cards_dto.cards %}
+    {% set is_favorite = (user_cards_dto.owner_current_card_id == card.id) %}
+    <div class="store-card {% if is_favorite %}favorite-card{% endif %}">
+        <div class="card-image">
+            <img src="{{ url_for('static', path=card.class_card_pic) }}" alt="{{ card.class_card_name }}">
+        </div>
+        <div class="card-info">
+            <div class="card-name">
+                {{ card.class_card_name }} ({{ card.type_card_name }})
+                {% if is_favorite %}
+                <span class="favorite-star">⭐</span>
+                {% endif %}
+            </div>
+            <div class="card-stats user-card-stats">
+                <div class="card-stat">💪 Уровень: {{ card.level }}/{{ card.max_level }}</div>
+                <div class="card-stat">✨ Редкость: {{ card.rarity_card_name }}</div>
+                <div class="card-stat">❤️ Здоровье: {{ card.hp }}</div>
+                <div class="card-stat">⚔️ Урон: {{ card.damage }}</div>
+                <div class="card-stat">🛠️ Усиление: {{ card.enhancement }}/{{ card.max_enhancement }}</div>
+                <div class="card-stat">🧬 Слияние: {{ card.merger }}/{{ card.max_merger }}</div>
+            </div>
+
+            <!-- Отображение цены, если карта на продаже -->
+            {% if card.sale_status and card.price %}
+            <div class="card-price">
+                <span class="price-label">Цена:</span>
+                {% if current_user and current_user.id == user_cards_dto.owner_id %}
+                    <span class="price price-owner">{{ card.price }}💰</span>
+                {% elif current_user and current_user.gold >= card.price %}
+                    <span class="price price-sufficient">{{ card.price }}💰</span>
+                {% else %}
+                    <span class="price price-insufficient">{{ card.price }}💰</span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Кнопки действий (вертикальный список) -->
+            <div class="card-actions-vertical">
+                {% if current_user and current_user.id == user_cards_dto.owner_id %}
+                    <!-- Владелец -->
+                    {% if card.sale_status %}
+                        <form action="#" method="post" class="action-form">
+                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                            <button type="submit" class="card-action-btn">📤 Убрать с продажи</button>
+                        </form>
+                    {% else %}
+                        <form action="#" method="post" class="action-form">
+                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                            <button type="submit" class="card-action-btn">💰 Выставить на продажу</button>
+                        </form>
+                    {% endif %}
+
+                    {% if is_favorite %}
+                        <form action="#" method="post" class="action-form">
+                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                            <button type="submit" class="card-action-btn">⭐ Убрать из избранного</button>
+                        </form>
+                    {% else %}
+                        <form action="#" method="post" class="action-form">
+                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                            <button type="submit" class="card-action-btn">✨ Сделать избранной</button>
+                        </form>
+                    {% endif %}
+
+                {% elif current_user and current_user.id != user_cards_dto.owner_id and card.sale_status %}
+                    <!-- Гость: покупка -->
+                    {% if current_user.gold >= card.price %}
+                        <form action="#" method="post" class="buy-form">
+                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                            <button type="submit" class="btn-buy">Купить</button>
+                        </form>
+                    {% else %}
+                        <button class="btn-buy disabled" disabled>Купить</button>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-store">
+    😢 У этого игрока пока нет карт.
+</div>
+{% endif %}
+{% endblock %}

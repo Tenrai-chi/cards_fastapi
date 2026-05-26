@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Рейтинг игроков{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', path='css/rating.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="free-card-page">
+    <h1 class="page-title">🏆 Таблица лидеров</h1>
+
+    {% if rating and rating.user_rating and rating.user_rating|length %}
+    <div class="table-responsive">
+        <table class="fight-table rating-table">
+            <thead>
+                <tr>
+                    <th>Место</th>
+                    <th>Игрок</th>
+                    <th>Рейтинг</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in rating.user_rating %}
+                {% set position = (rating.page - 1) * rating.size + loop.index %}
+                <tr>
+                    <td style="text-align: center;">{{ position }}</td>
+                    <td>
+                        <a href="{{ url_for('user_profile', user_id=user.id) }}" class="user-link">
+                            {{ user.username }}
+                        </a>
+                    </td>
+                    <td>{{ user.rating }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Пагинация -->
+    {% if rating.total_pages > 1 %}
+    <div class="pagination">
+        {% if rating.page > 1 %}
+            <a href="?page=1&size={{ rating.size }}">⏮</a>
+            <a href="?page={{ rating.page - 1 }}&size={{ rating.size }}">←</a>
+        {% else %}
+            <span class="disabled">⏮</span>
+            <span class="disabled">←</span>
+        {% endif %}
+
+        {% set start = [rating.page - 2, 1] | max %}
+        {% set end = [rating.page + 2, rating.total_pages] | min %}
+
+        {% if start > 1 %}
+            <span class="dots">…</span>
+        {% endif %}
+
+        {% for p in range(start, end + 1) %}
+            {% if p == rating.page %}
+                <span class="current">{{ p }}</span>
+            {% else %}
+                <a href="?page={{ p }}&size={{ rating.size }}">{{ p }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if end < rating.total_pages %}
+            <span class="dots">…</span>
+        {% endif %}
+
+        {% if rating.page < rating.total_pages %}
+            <a href="?page={{ rating.page + 1 }}&size={{ rating.size }}">→</a>
+            <a href="?page={{ rating.total_pages }}&size={{ rating.size }}">⏭</a>
+        {% else %}
+            <span class="disabled">→</span>
+            <span class="disabled">⏭</span>
+        {% endif %}
+    </div>
+    <div class="pagination-info">
+        Страница {{ rating.page }} из {{ rating.total_pages }} • Всего игроков: {{ rating.total }}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-rating">
+        <p>В рейтинге пока нет участников с выбранной картой.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

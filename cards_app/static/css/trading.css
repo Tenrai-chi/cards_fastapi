@@ -1,0 +1,28 @@
+/* trading.css – стили для торговой площадки */
+
+.seller-info {
+    text-align: center;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+    background: var(--bg-light);
+    padding: 0.3rem;
+    border-radius: 20px;
+}
+
+.seller-label {
+    font-weight: bold;
+    color: var(--primary-dark);
+    margin-right: 0.4rem;
+}
+
+.seller-link {
+    color: var(--primary-main);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.seller-link:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}

@@ -25,6 +25,10 @@ app.include_router(users.router)
 app.include_router(events.router)
 app.include_router(store.router)
 
+for route in app.routes:
+    if hasattr(route, 'name'):
+        print(f"name={route.name}, path={route.path}")
+
 
 if __name__ == '__main__':
     uvicorn.run('main:app', reload=True)

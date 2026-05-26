@@ -1,0 +1,41 @@
+/* rating.css – стили для страницы рейтинга */
+.rating-table th:nth-child(1),
+.rating-table td:nth-child(1) {
+    width: 80px;
+    text-align: center;
+}
+
+.rating-table th:nth-child(2) {
+    text-align: left;
+}
+
+.rating-table th:nth-child(3) {
+    width: 120px;
+    text-align: center;
+}
+
+.rating-table td:nth-child(3) {
+    text-align: center;
+    font-weight: bold;
+    color: var(--primary-dark);
+}
+
+.user-link {
+    color: var(--primary-dark);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.user-link:hover {
+    color: var(--primary-main);
+    text-decoration: underline;
+}
+
+.empty-rating {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+}

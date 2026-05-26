@@ -77,3 +77,22 @@ class FavoriteUsersPageDTO(BaseModel):
     amount_users: int
     max_amount_users: int
     favorite_users: list[FavoriteUserDTO]
+
+
+class UserRatingTableDTO(BaseModel):
+    """ Участник в таблице рейтинга """
+
+    id: int
+    username: str
+    rating: int
+
+
+class RatingTableDTO(BaseModel):
+    """ Таблица рейтинга """
+
+    user_rating: list[UserRatingTableDTO]
+    total: int
+    page: int
+    size: int
+    total_pages: int
+

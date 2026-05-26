@@ -24,7 +24,7 @@ async def get_base_info_profile(session_db: AsyncSession, user_id: int
             session_db: сессия базы данных
             user_id: ID User пользователя
         Returns:
-            User: User + Profile
+            User: User + Profile + Guild
         Raises:
             UserNotFoundError: если пользователь с указанным ID не найден в БД.
     """
@@ -33,7 +33,8 @@ async def get_base_info_profile(session_db: AsyncSession, user_id: int
         select(User)
         .where(User.id == user_id)
         .options(
-            selectinload(User.profile).selectinload(Profile.guild)
+            selectinload(User.profile)
+            .selectinload(Profile.guild)
         )
     )
     result_user = await session_db.execute(stmt_user)
@@ -414,7 +415,7 @@ async def add_gold_for_fight(session_db: AsyncSession,
                              result_battle: str
                              ) -> AddGoldForFightDict:
     """ Вычисляет количество золота, которое должен получить пользователь за участие в битве,
-        затем вызывает функцию начисления залота
+        затем вызывает функцию начисления золота.
         Количество золота зависит от итога боя и наличия усиления гильдии.
         Args:
             session_db: сессия базы данных
@@ -476,3 +477,48 @@ async def update_rating_user(session_db: AsyncSession, user: User, user_fight_re
         user.profile.rating = max(0, user.profile.rating - win_delta)
 
     session_db.add(user)
+
+
+async def get_rating_users(session_db: AsyncSession, limit: int, offset: int
+                           ) -> list[User]:
+    """ Возвращает таблицу рейтинга с пагинацией, отсортированный по уменьшению рейтинга.
+        Args:
+            session_db: сессия базы данных
+            limit: максимальное количество пользователей в одной странице
+            offset: сдвиг для пагинации
+        Returns:
+            list[User]: список пользователей с профилем
+    """
+
+    stmt_users = (
+        select(User)
+        .join(Profile, User.id == Profile.user_id)
+        .where(Profile.current_card_id.is_not(None))
+        .order_by(Profile.rating.desc())
+        .options(selectinload(User.profile))
+        .limit(limit)
+        .offset(offset)
+    )
+    result = await session_db.execute(stmt_users)
+    users = list(result.scalars().all())
+    return users
+
+
+async def get_total_users_count(session_db: AsyncSession) -> int:
+    """ Возвращает общее количество пользователей рейтинга для пагинации
+        Args:
+            session_db: сессия базы данных
+
+        Returns:
+            int: общее число записей в таблице Users.
+    """
+
+    stmt_count = (
+        select(func.count())
+        .select_from(User)
+        .join(Profile, User.id == Profile.user_id)
+        .where(Profile.current_card_id.is_not(None))
+    )
+    result = await session_db.execute(stmt_count)
+    count = result.scalar_one()
+    return count

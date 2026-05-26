@@ -9,7 +9,8 @@ from cards_app.models import News, InitialEventAwards, User
 logger = logging.getLogger(__name__)
 
 
-async def get_paginated_news(session_db: AsyncSession, limit: int, offset: int) -> list[News]:
+async def get_paginated_news(session_db: AsyncSession, limit: int, offset: int
+                             ) -> list[News]:
     """ Возвращает список новостей с пагинацией, отсортированный по дате создания.
         Args:
             session_db: сессия базы данных

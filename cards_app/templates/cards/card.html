@@ -15,10 +15,12 @@
         <img src="{{ url_for('static', path=card_dto.card.class_card_pic) }}" alt="Карта">
     </div>
     <div class="card-info">
-        <div class="card-name">{{ card_dto.card.class_card_name }} ({{ card_dto.card.type_card_name }})</div>
+        <div class="card-name">{{ card_dto.card.class_card_name }}</div>
         <div class="card-stats">
             <div class="card-stat">💪Уровень: {{ card_dto.card.level }} / {{ card_dto.card.max_level }}</div>
+            <div class="card-stat">📚Опыт: {{ card_dto.card.current_exp }}/{{ card_dto.card.need_exp }}</div>
             <div class="card-stat">✨Редкость: {{ card_dto.card.rarity_card_name }}</div>
+            <div class="card-stat">🏷️Тип: {{ card_dto.card.type_card_name }}</div>
 
             {% if card_dto.amulet %}
             {% if card_dto.amulet.bonus_hp > 0%}

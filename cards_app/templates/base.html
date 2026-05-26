@@ -16,13 +16,12 @@
             </div>
             <nav class="nav-links">
                 <a href="{{ url_for('news') }}">Главная</a>
-                <a href="#">Рейтинг</a>
+                <a href="{{ url_for('rating') }}">Рейтинг</a>
                 <a href="#">Гильдия</a>
-                <a href="#">Карты</a>
                 <a href="{{ url_for('card_store') }}">Магазин<br>карт</a>
-                <a href="#">Магазин<br>предметов</a>
+                <a href="{{ url_for('item_store', store_filter='all') }}">Магазин<br>предметов</a>
                 <a href="{{ url_for('get_card') }}">Получить<br>бесплатно</a>
-                <a href="#">Торговая<br>площадка</a>
+                <a href="{{ url_for('trading') }}">Торговая<br>площадка</a>
             </nav>
             <div class="user-area">
                 {% if current_user %}

@@ -9,8 +9,10 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.models.users import User
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import ViewNewsUseCaseDict, ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
+from cards_app.types import (ViewNewsUseCaseDict, ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict,
+                             ViewUsersRatingDict)
 from cards_app.use_cases.events import ViewNewsUseCase, ViewStartEventUseCase, GetAwardStartEventUseCase
+from cards_app.use_cases.profile import ViewUsersRatingUseCase
 
 router = APIRouter()
 
@@ -42,6 +44,29 @@ async def view_news(request: Request,
                }
     return templates.TemplateResponse(request=request,
                                       name='home/home_news.html',
+                                      context=context,
+                                      status_code=data.get('status_code'))
+
+
+@router.get(path='/rating', name='rating')
+async def view_rating(request: Request,
+                      session_db: AsyncSession = Depends(get_db_session),
+                      current_user: User | None = Depends(get_current_user_with_profile),
+                      page: int = 1,
+                      size: int = 25
+                      ):
+    """ Просмотр новостей """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = ViewUsersRatingUseCase(session_db)
+    data: ViewUsersRatingDict = await use_case.execute(page, size)
+
+    context = {'request': request,
+               'current_user': current_user_dto,
+               'rating': data.get('rating_dto')
+               }
+    return templates.TemplateResponse(request=request,
+                                      name='users/rating.html',
                                       context=context,
                                       status_code=data.get('status_code'))
 

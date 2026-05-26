@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Магазин предметов{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/card_store.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/store.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="item-store-page">
+    <!-- Фильтры -->
+    <div class="store-filters-container">
+        <div class="store-filters">
+            <a href="{{ url_for('item_store', store_filter='all') }}"
+               class="filter-tab {% if current_store_filter == 'all' %}active{% endif %}">Все</a>
+            <a href="{{ url_for('item_store', store_filter='box') }}"
+               class="filter-tab {% if current_store_filter == 'box' %}active{% endif %}">Сундуки</a>
+            <a href="{{ url_for('item_store', store_filter='exp_items') }}"
+               class="filter-tab {% if current_store_filter == 'exp_items' %}active{% endif %}">Книги опыта</a>
+            <a href="{{ url_for('item_store', store_filter='amulet') }}"
+               class="filter-tab {% if current_store_filter == 'amulet' %}active{% endif %}">Амулеты</a>
+            <a href="{{ url_for('item_store', store_filter='upgrade_item') }}"
+               class="filter-tab {% if current_store_filter == 'upgrade_item' %}active{% endif %}">Усиления</a>
+        </div>
+    </div>
+
+    {% if not store_dto.boxes and not store_dto.exp_items and not store_dto.amulets and not store_dto.upgrade_items %}
+        <div class="empty-store">
+            <p>В магазине пока нет предметов.</p>
+        </div>
+    {% else %}
+
+        <!-- Сундуки -->
+        {% if store_dto.boxes %}
+        <section class="store-section">
+            <h2 class="section-title">Сундуки</h2>
+            <div class="store-grid">
+                {% for box in store_dto.boxes %}
+                    {% set final_price = box.price %}
+                    <div class="store-card">
+                        <div class="card-image">
+                            <img src="{{ url_for('static', path=box.image) }}" alt="{{ box.name }}">
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">{{ box.name }}</div>
+                            <div class="card-description">{{ box.description }}</div>
+                            <div class="card-price">
+                                <span class="price-label">Цена:</span>
+                                <span class="price {% if not current_user or current_user.gold < final_price %}price-insufficient{% else %}price-sufficient{% endif %}">
+                                    {{ final_price }}💰
+                                </span>
+                            </div>
+                        </div>
+                        <form action="#" method="post" class="buy-form">
+                            <input type="hidden" name="item_type" value="box">
+                            <input type="hidden" name="item_id" value="{{ box.id }}">
+                            <button type="submit" class="btn-buy {% if not current_user or current_user.gold < final_price %}disabled{% endif %}"
+                                    {% if not current_user or current_user.gold < final_price %}disabled{% endif %}>
+                                Купить
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Книги опыта -->
+        {% if store_dto.exp_items %}
+        <section class="store-section">
+            <h2 class="section-title">Книги опыта</h2>
+            <div class="store-grid">
+                {% for item in store_dto.exp_items %}
+                    {% set final_price = item.price %}
+                    <div class="store-card">
+                        <div class="card-image">
+                            <img src="{{ url_for('static', path=item.image) }}" alt="{{ item.name }}">
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">{{ item.name }}</div>
+                            <div class="card-stats">
+                                <div class="card-stat">📖 Опыт: {{ item.experience_amount }}</div>
+                            </div>
+                            <div class="card-price">
+                                <span class="price-label">Цена:</span>
+                                <span class="price {% if not current_user or current_user.gold < final_price %}price-insufficient{% else %}price-sufficient{% endif %}">
+                                    {{ final_price }}💰
+                                </span>
+                            </div>
+                        </div>
+                        <form action="#" method="post" class="buy-form">
+                            <input type="hidden" name="item_type" value="exp_item">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <button type="submit" class="btn-buy {% if not current_user or current_user.gold < final_price %}disabled{% endif %}"
+                                    {% if not current_user or current_user.gold < final_price %}disabled{% endif %}>
+                                Купить
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Предметы усиления -->
+        {% if store_dto.upgrade_items %}
+        <section class="store-section">
+            <h2 class="section-title">Предметы усиления</h2>
+            <div class="store-grid">
+                {% for item in store_dto.upgrade_items %}
+                    {% set final_price = item.price %}
+                    <div class="store-card">
+                        <div class="card-image">
+                            <img src="{{ url_for('static', path=item.image) }}" alt="{{ item.name }}">
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">{{ item.name }}</div>
+                            <div class="card-description">{{ item.description }}</div>
+                            <div class="card-price">
+                                <span class="price-label">Цена:</span>
+                                <span class="price {% if not current_user or current_user.gold < final_price %}price-insufficient{% else %}price-sufficient{% endif %}">
+                                    {{ final_price }}💰
+                                </span>
+                            </div>
+                        </div>
+                        <form action="#" method="post" class="buy-form">
+                            <input type="hidden" name="item_type" value="upgrade_item">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <button type="submit" class="btn-buy {% if not current_user or current_user.gold < final_price %}disabled{% endif %}"
+                                    {% if not current_user or current_user.gold < final_price %}disabled{% endif %}>
+                                Купить
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Амулеты -->
+        {% if store_dto.amulets %}
+        <section class="store-section">
+            <h2 class="section-title">Амулеты</h2>
+            <div class="store-grid">
+                {% for amulet in store_dto.amulets %}
+                    {% if amulet.discount_now and amulet.discount > 0 %}
+                        {% set final_price = (amulet.price * (100 - amulet.discount) / 100) | round(0, 'floor') | int %}
+                    {% else %}
+                        {% set final_price = amulet.price %}
+                    {% endif %}
+                    <div class="store-card">
+                        <div class="card-image">
+                            <img src="{{ url_for('static', path=amulet.image) }}" alt="{{ amulet.name }}">
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">{{ amulet.name }} ({{ amulet.rarity_name }})</div>
+                            <div class="card-stats">
+                                <div class="card-stat">
+                                    ❤️ Бонус HP:
+                                    {% if amulet.bonus_hp >= 0 %}+{% endif %}{{ amulet.bonus_hp }}
+                                </div>
+                                <div class="card-stat">
+                                    ⚔️ Бонус урона:
+                                    {% if amulet.bonus_damage >= 0 %}+{% endif %}{{ amulet.bonus_damage }}
+                                </div>
+                            </div>
+                            <div class="card-price">
+                                <span class="price-label">Цена:</span>
+                                {% if amulet.discount_now and amulet.discount > 0 %}
+                                    <span class="old-price">{{ amulet.price }}💰</span>
+                                    <span class="new-price {% if not current_user or current_user.gold < final_price %}price-insufficient{% else %}price-sufficient{% endif %}">
+                                        {{ final_price }}💰
+                                    </span>
+                                {% else %}
+                                    <span class="price {% if not current_user or current_user.gold < final_price %}price-insufficient{% else %}price-sufficient{% endif %}">
+                                        {{ final_price }}💰
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <form action="#" method="post" class="buy-form">
+                            <input type="hidden" name="item_type" value="amulet">
+                            <input type="hidden" name="item_id" value="{{ amulet.id }}">
+                            <button type="submit" class="btn-buy {% if not current_user or current_user.gold < final_price %}disabled{% endif %}"
+                                    {% if not current_user or current_user.gold < final_price %}disabled{% endif %}>
+                                Купить
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}

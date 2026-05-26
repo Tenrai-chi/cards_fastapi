@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from cards_app.config.database import AsyncSessionLocal
 from cards_app.config.settings import settings
-from cards_app.models.exchange import AmuletRarity, AmuletType, ExperienceItems, UpgradeItemsType
+from cards_app.models.exchange import AmuletRarity, AmuletType, ExperienceItems, UpgradeItemsType, Boxes
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 logger = logging.getLogger(__name__)
@@ -215,3 +215,51 @@ async def load_upgrade_items_types():
         logger.error(f'Ошибка при разборе JSON: {e}')
     except Exception as e:
         logger.error(f'Произошла непредвиденная ошибка в load_upgrade_items_types: {e}')
+
+
+async def load_boxes_in_store():
+    """ Заполняет таблицу Boxes со списком предметов усилений """
+
+    try:
+        async with AsyncSessionLocal() as session:
+            stmt = select(Boxes.name)
+            result = await session.execute(stmt)
+            existing_names = {row[0] for row in result.all()}
+
+            file_path = os.path.join(os.path.dirname(__file__), 'db_info/store/item_store.json')
+            with open(file_path, 'r', encoding='utf-8') as file_json:
+                data = json.load(file_json)
+            all_boxes = data.get('box_store', [])
+            new_records = []
+
+            for box in all_boxes:
+                image_path = box['image']
+                full_image_path = settings.STATIC_DIR / image_path
+
+                if not full_image_path.exists():
+                    logger.error(f'Предупреждение: файл {full_image_path} не найден для {box["name"]}')
+                    continue
+
+                if box['name'] not in existing_names:
+                    new_records.append(Boxes(name=box['name'],
+                                             description=box['description'],
+                                             image=box['image'],
+                                             price=box['price'],
+                                             ))
+                    logger.info(f'Добавлен сундук в магазин: {box["name"]}')
+                else:
+                    logger.info(f'Сундук {box["name"]} уже существует в магазине, пропускаем')
+
+            if new_records:
+                session.add_all(new_records)
+                await session.commit()
+                logger.info(f'Зарегистрировано {len(new_records)} сундуков в магазине')
+            else:
+                logger.info('Новых сундуков в магазине не зарегистрировано')
+
+    except FileNotFoundError as e:
+        logger.error(f'Ошибка: файл не найден - {e}')
+    except json.JSONDecodeError as e:
+        logger.error(f'Ошибка при разборе JSON: {e}')
+    except Exception as e:
+        logger.error(f'Произошла непредвиденная ошибка в load_boxes_in_store: {e}')

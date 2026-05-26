@@ -201,3 +201,4 @@ async def fight_user(request: Request,
             url = request.url_for('user_profile', user_id=user_id)
             full_url = f'{url}?error={encoded_error}'
             return RedirectResponse(full_url, status_code=303)
+
