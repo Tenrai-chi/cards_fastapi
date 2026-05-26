@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Итог битвы{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', path='css/fight_result.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set fight = fight_dto %}
+{% set is_victory = fight.is_victory %}
+{% set winner_id = fight.winner_id %}
+
+<div class="free-card-page">
+    <div class="fight-header">
+        <div class="fight-title">⚔️ ИТОГ БИТВЫ ⚔️</div>
+        <div class="fight-result-badge
+            {% if not is_victory %}result-draw
+            {% elif winner_id == current_user_id %}result-win
+            {% else %}result-lose{% endif %}">
+            {% if not is_victory %}
+                🤝 НИЧЬЯ
+            {% elif winner_id == fight.user.id %}
+                🏆 ПОБЕДА!
+            {% else %}
+                💔 ПОРАЖЕНИЕ
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="participants-row">
+    <!-- Блок пользователя (user) -->
+    <div class="participant-card">
+        {% if fight.user.profile_pic %}
+            <img class="participant-avatar" src="{{ url_for('media', path=fight.user.profile_pic) }}" alt="user_avatar">
+        {% else %}
+            <img class="participant-avatar" src="{{ url_for('static', path='/image/avatar_default.png') }}" alt="user_avatar">
+        {% endif %}
+        <div class="participant-name">
+            <a href="{{ url_for('user_profile', user_id=fight.user.id) }}">{{ fight.user.username }}</a>
+        </div>
+        {% if is_victory and winner_id == fight.user.id %}
+            <div class="participant-badge">🥇 Победитель</div>
+        {% elif is_victory %}
+            <div class="participant-badge">😔 Проигравший</div>
+        {% else %}
+            <div class="participant-badge">⚡ Участник</div>
+        {% endif %}
+    </div>
+
+    <!-- Блок противника (enemy) -->
+    <div class="participant-card">
+        {% if fight.enemy.profile_pic %}
+            <img class="participant-avatar" src="{{ url_for('media', path=fight.enemy.profile_pic) }}" alt="enemy_avatar">
+        {% else %}
+            <img class="participant-avatar" src="{{ url_for('static', path='/image/avatar_default.png') }}" alt="enemy_avatar">
+        {% endif %}
+        <div class="participant-name">
+            <a href="{{ url_for('user_profile', user_id=fight.enemy.id) }}">{{ fight.enemy.username }}</a>
+        </div>
+        {% if is_victory and winner_id == fight.enemy.id %}
+            <div class="participant-badge">🥇 Победитель</div>
+        {% elif is_victory %}
+            <div class="participant-badge">😔 Проигравший</div>
+        {% else %}
+            <div class="participant-badge">⚡ Участник</div>
+        {% endif %}
+    </div>
+</div>
+
+     <!-- Награды -->
+    <div class="rewards-container">
+    <h2 class="section-title">🎁 ПОЛУЧЕННЫЕ НАГРАДЫ</h2>
+    <div class="reward-group">
+        <div class="reward-items">
+            <!-- Амулеты -->
+            {% if fight.reward_amulet_user and fight.reward_amulet_user|length %}
+                {% for amulet in fight.reward_amulet_user %}
+                    <div class="reward-item" title="{{ amulet.name }}">
+                        <img src="{{ url_for('static', path=amulet.image) if amulet.image else url_for('static', path='/image/default_amulet.png') }}" alt="{{ amulet.name }}">
+                        <span>{{ amulet.name }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <!-- Книги опыта -->
+            {% if fight.reward_item_user and fight.reward_item_user|length %}
+                {% for item in fight.reward_item_user %}
+                    <div class="reward-item" title="{{ item.name }} (+{{ item.experience_amount }} XP)">
+                        <img src="{{ url_for('static', path=item.image) if item.image else url_for('static', path='/image/default_book.png') }}" alt="{{ item.name }}">
+                        <span>{{ item.name }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <!-- Если нет ни амулетов, ни книг -->
+            {% if (not fight.reward_amulet_user or not fight.reward_amulet_user|length) and (not fight.reward_item_user or not fight.reward_item_user|length) %}
+                <div class="empty-rewards">Нет наград</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+    <!-- История боя (список событий) -->
+    <div class="history-container">
+        <h2 class="section-title">📜 ХРОНИКА СРАЖЕНИЯ</h2>
+        <div class="history-timeline">
+            {% if fight.history_fight and fight.history_fight|length %}
+                {% for step in fight.history_fight %}
+                    <div class="history-step">
+                        <div class="step-header">⚔️ {{ step[0] if step[0] else 'Ход' }}</div>
+                        {% for line in step[1:] %}
+                            {% if 'Здоровье' in line or 'HP' in line %}
+                                <div class="step-health">🩸 {{ line }}</div>
+                            {% else %}
+                                <div class="step-detail">{{ line }}</div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-rewards" style="text-align:center;">История боя не сохранена</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
