@@ -1,138 +1,180 @@
 from typing import TypedDict
-from cards_app.schemas import *
-from cards_app.schemas import AllStoreDTO, UserCardsDTO, CardsTradingDTO
+from cards_app.schemas import (AllStoreDTO, UserCardsDTO, CardsTradingDTO, TransactionsDTO,
+                               CardInfoDTO, GetFreeCardDTO, NewsDTO, StartEventAwardsDTO,
+                               ProfileResponseDTO, RatingTableDTO, FavoriteUsersPageDTO,
+                               CardStoreDTO, FightDTO, FullInventoryDTO, FullInfoLeveling, CardsForMergeDTO,
+                               OpenBoxExpItemDTO, OpenBoxAmuletDTO)
 
 
-class ViewCardUseCaseDict(TypedDict):
+class BaseUseCaseDict(TypedDict):
+    """ Базовый класс для всех словарей use case """
+
+    status_code: int
+
+
+class ErrorMixin(TypedDict):
+    """ Миксин для словарей, которые могут содержать сообщение об ошибке.
+        Используется в use case, где возможна ошибка, требующая пояснения пользователю
+    """
+
+    error_message: str | None
+
+
+class SuccessMessageMixin(TypedDict):
+    """ Миксин для словарей, которые могут содержать сообщение об успехе.
+        Используется в use case, где необходимо передать пользователю сообщение об успехе
+    """
+
+    success_message: str | None
+
+
+class SuccessMixin(TypedDict):
+    """ Миксин для словарей с флагом успеха операции.
+        Используется в use case, где необходимо явно указывать успех/неудачу
+    """
+
+    success: bool
+
+
+class ViewCardUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из ViewCardUseCase """
 
     card_info_dto: CardInfoDTO | None
-    error_message: str | None
-    status_code: int
 
 
-class ViewGetFreeCardUseCaseDict(TypedDict):
+class ViewGetFreeCardUseCaseDict(BaseUseCaseDict):
     """ Кастомный словарь для возврата данных из ViewGetFreeCardUseCase """
 
     get_free_card_dto: GetFreeCardDTO | None
-    status_code: int
 
 
-class GetFreeCardUseCaseDict(TypedDict):
+class GetFreeCardUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin):
     """ Кастомный словарь для возврата данных из GetFreeCardUseCase """
 
-    success: bool
     new_card_id: int | None
-    error_message: str | None
-    status_code: int
 
 
-class ViewNewsUseCaseDict(TypedDict):
+class ViewNewsUseCaseDict(BaseUseCaseDict):
     """ Кастомный словарь для возврата данных из ViewNewsUseCase """
 
     news_dto: NewsDTO | None
-    status_code: int
 
 
-class ViewStartEventUseCaseDict(TypedDict):
+class ViewStartEventUseCaseDict(BaseUseCaseDict):
     """ Кастомный словарь для возврата данных из ViewStartEventUseCase """
 
     start_event_awards_dto: StartEventAwardsDTO | None
-    status_code: int
 
 
-class GetAwardStartEventUseCaseDict(TypedDict):
+class GetAwardStartEventUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из GetAwardStartEventUseCase """
 
-    success_message: str | None
-    error_message: str | None
     new_card_id: int | None
-    status_code: int
 
 
-class ViewProfileUseCaseDict(TypedDict):
+class ViewProfileUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из ViewProfileUseCase """
 
     user_info: ProfileResponseDTO | None
-    error_message: str | None
-    status_code: int
 
 
-class AddFavoriteUserUseCaseDict(TypedDict):
+class AddFavoriteUserUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из AddFavoriteUserUseCase """
 
-    success: bool
-    error_message: str | None
-    status_code: int
-    success_message: str | None
 
-
-class RemoveFavoriteUserUseCaseDict(TypedDict):
+class RemoveFavoriteUserUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из RemoveFavoriteUserUseCase """
 
-    success: bool
-    error_message: str | None
-    status_code: int
-    success_message: str | None
 
-
-class FavoriteUsersUseCaseDict(TypedDict):
+class FavoriteUsersUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из FavoriteUsersUseCase """
 
     favorite_users_dto: FavoriteUsersPageDTO | None
-    error_message: str | None
-    status_code: int
 
 
-class ViewCardStoreUseCaseDict(TypedDict):
+class ViewCardStoreUseCaseDict(BaseUseCaseDict):
     """ Кастомный словарь для возврата данных из ViewCardStoreUseCase """
 
     card_store_dto: CardStoreDTO | None
-    status_code: int
 
 
-class BuyStoreCardUseCaseDict(TypedDict):
+class BuyStoreCardUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin):
     """ Кастомный словарь для возврата данных из BuyStoreCardUseCase """
 
-    success: bool
-    error_message: str | None
     new_card_id: int | None
-    status_code: int
 
 
-class ProcessFightUseCaseDict(TypedDict):
+class ProcessFightUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из ProcessFightUseCase """
 
     fight_dto: FightDTO | None
-    error_message: str | None
-    status_code: int
 
 
-class ViewUsersRatingDict(TypedDict):
+class ViewUsersRatingDict(BaseUseCaseDict):
     """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
 
     rating_dto: RatingTableDTO
-    status_code: int
 
 
-class ViewItemStoreUseCaseDict(TypedDict):
+class ViewItemStoreUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
 
-    status_code: int
     store_dto: AllStoreDTO | None
 
 
-class ViewUserCardsUseCaseDict(TypedDict):
+class ViewUserCardsUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из ViewUserCardsUseCase """
 
     user_cards_dto: UserCardsDTO | None
-    error_message: str | None
-    status_code: int
 
 
-class ViewTradingUseCaseDict(TypedDict):
+class ViewTradingUseCaseDict(BaseUseCaseDict):
     """ Кастомный словарь для возврата данных из ViewTradingUseCase """
 
     cards_trading_dto: CardsTradingDTO | None
-    status_code: int
 
+
+class UserTransactionsUseCaseDict(BaseUseCaseDict, ErrorMixin):
+    """ Кастомный словарь для возврата данных из UserTransactionsUseCase """
+
+    transactions_dto: TransactionsDTO | None
+
+
+class ViewInventoryUseCaseDict(BaseUseCaseDict, ErrorMixin):
+    """ Кастомный словарь для возврата данных из ViewInventoryUseCase """
+
+    inventory_dto: FullInventoryDTO | None
+
+
+class ViewLevelUpUseCaseDict(BaseUseCaseDict):
+    """ Кастомный словарь для возврата данных из ViewLevelUpUseCase """
+
+    info_leveling_dto: FullInfoLeveling | None
+
+
+class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+    """ Кастомный словарь для возврата данных из SaleAmuletUseCase """
+
+
+class ViewMergeUseCaseDict(BaseUseCaseDict, ErrorMixin):
+    """ Кастомный словарь для возврата данных из ViewMergeUseCase """
+
+    merge_dto: CardsForMergeDTO | None
+
+
+class MergeUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+    """ Кастомный словарь для возврата данных из MergeUseCase """
+
+
+class BuyBoxUseCaseDict(BaseUseCaseDict, ErrorMixin):
+    """ Кастомный словарь для возврата данных из BuyBoxUseCase """
+
+    exp_items_dto: OpenBoxExpItemDTO | None
+    amulets_items_dto: OpenBoxAmuletDTO | None
+    card_id: int | None
+
+
+class BuyItemUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+    """ Кастомный словарь для возврата данных
+        из BuyExpItemUseCase, BuyAmuletUseCase, BuyUpgradeItemUseCase
+    """

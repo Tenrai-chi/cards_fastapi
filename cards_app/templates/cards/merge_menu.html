@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Слияние карты: {{ merge_dto.current_card.class_card_name }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_store.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_view.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/merge.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="merge-page">
+    <h1 class="page-title">Слияние карт</h1>
+
+    <!-- Карточка текущей карты -->
+    <div class="current-card-wrapper">
+        <div class="selected-card" data-card-id="{{ merge_dto.current_card.id }}">
+            <div class="card-image">
+                <img src="{{ url_for('static', path=merge_dto.current_card.class_card_pic) }}" alt="{{ merge_dto.current_card.class_card_name }}">
+            </div>
+            <div class="card-info">
+                <div class="card-name">
+                    {{ merge_dto.current_card.class_card_name }} ({{ merge_dto.current_card.rarity_card_name }})
+                </div>
+                <div class="card-stats">
+                    <div class="card-stat">💪 Уровень: {{ merge_dto.current_card.level }}/{{ merge_dto.current_card.max_level }}</div>
+                    <div class="card-stat">🏷️ Тип: {{ merge_dto.current_card.type_card_name }}</div>
+                    <div class="card-stat">🧬 Слияние: {{ merge_dto.current_card.merger }}/{{ merge_dto.current_card.max_merger }}</div>
+                    <div class="card-stat">🛠️ Усиление: {{ merge_dto.current_card.enhancement }}/{{ merge_dto.current_card.max_enhancement }}</div>
+                </div>
+                <div class="merge-info">
+                    <p>🔧 Для повышения уровня слияния необходимо ещё <strong>{{ merge_dto.need_cards }}</strong> карт(-ы) того же класса, типа и редкости.</p>
+                    <p>Выбрано: <span id="selectedCount">0</span> / <span id="needCount">{{ merge_dto.need_cards }}</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопка слияния над списком карт -->
+<div class="merge-action">
+    <form method="post" action="{{ url_for('merge_cards') }}" id="mergeForm">
+        <input type="hidden" name="main_card_id" id="mainCardIdInput" value="{{ merge_dto.current_card.id }}">
+        <input type="hidden" name="sacrificed_ids" id="sacrificedIdsInput" value="">
+        <button type="submit" id="mergeButton" class="card-action-btn" disabled>Слить выбранные карты</button>
+    </form>
+</div>
+
+    <!-- Список доступных карт -->
+    {% if merge_dto.cards %}
+        <h2 class="section-subtitle">Доступные карты для слияния</h2>
+        <div class="store-grid">
+            {% for card in merge_dto.cards %}
+                <div class="store-card selectable-card" data-card-id="{{ card.id }}">
+                    <div class="card-image">
+                        <img src="{{ url_for('static', path=card.class_card_pic) }}" alt="{{ card.class_card_name }}">
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">
+                            {{ card.class_card_name }} ({{ card.rarity_card_name }})
+                        </div>
+                        <div class="card-stats merge-card-stats">
+                            <div class="card-stat">💪 Уровень: {{ card.level }}/{{ card.max_level }}</div>
+                            <div class="card-stat">🏷️ Тип: {{ card.type_card_name }}</div>
+                            <div class="card-stat">🧬 Слияние: {{ card.merger }}/{{ card.max_merger }}</div>
+                            <div class="card-stat">🛠️ Усиление: {{ card.enhancement }}/{{ card.max_enhancement }}</div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-store">
+            😢 У вас нет карт, подходящих для слияния с этой.
+        </div>
+    {% endif %}
+</div>
+
+<script src="{{ url_for('static', path='js/merge.js') }}"></script>
+{% endblock %}

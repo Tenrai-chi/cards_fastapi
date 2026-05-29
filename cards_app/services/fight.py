@@ -68,8 +68,8 @@ async def validate_battle_preconditions(session_db: AsyncSession,
         raise NoCurrentCardError(enemy.username)
 
     await check_last_fight(session_db=session_db,
-                           user_profile_id=user_id,
-                           enemy_profile_id=enemy_id)
+                           user_profile_id=user.profile.id,
+                           enemy_profile_id=enemy.profile.id)
 
     answer_data['user'] = user
     answer_data['enemy'] = enemy
@@ -84,8 +84,8 @@ async def check_last_fight(session_db: AsyncSession,
         Если не прошло достаточно времени, то поднимает ошибку CooldownNotElapsedError
         Args:
             session_db: сессия базы данных
-            user_profile_id: ID профиля текущего пользователя
-            enemy_profile_id: ID профиля противника
+            user_profile_id: ID Profile текущего пользователя
+            enemy_profile_id: ID Profile противника
         Raises:
             CooldownNotElapsedError: если не прошло достаточно времени после предыдущей битвы
     """
@@ -226,6 +226,7 @@ async def fight_now(user: User,
 
     history_fight = []
     turn = 0
+    max_turns = 70
 
     while True:
         # Ход пользователя
@@ -255,6 +256,8 @@ async def fight_now(user: User,
             break
 
         turn += 2  # увеличиваем номер хода
+        if turn >= max_turns:
+            break
 
     # Определение победителя
     if user_hp <= 0 and enemy_hp <= 0:
@@ -265,10 +268,15 @@ async def fight_now(user: User,
         winner = enemy
         loser = user
         is_victory = True
-    else:  # enemy_hp <= 0
+    elif enemy_hp <= 0:
         winner = user
         loser = enemy
         is_victory = True
+    # Победитель не был определен за max_turns
+    else:
+        winner = None
+        loser = None
+        is_victory = False
 
     answer_data['is_victory'] = is_victory
     answer_data['winner'] = winner
@@ -491,6 +499,8 @@ def use_spell_reaper(card: Card, card_damage: float, enemy_card_damage: float
                      ) -> tuple[float, float, float] | None:
     """ Использование способности жнеца.
         Если сработал шанс, понижает урон противника и повышает свой.
+        Минимальный урон, который может быть у карты противника 1.
+        Максимальный урон карты жнеца неограничен.
         Возвращает итоговые значения урона карты пользователя и карты противника или None при неудаче.
         Args:
             card: карта класса жнец
@@ -510,6 +520,8 @@ def use_spell_reaper(card: Card, card_damage: float, enemy_card_damage: float
         change = round(enemy_card_damage * (card.class_card.numeric_value + 2 * card.merger) / 100, 2)
         card_damage = round(card_damage + change, 2)
         enemy_card_damage = round(enemy_card_damage - change, 2)
+        if enemy_card_damage < 1:
+            enemy_card_damage = 1
 
         return card_damage, enemy_card_damage, change
 
@@ -519,7 +531,7 @@ def formation_of_history(card: Card, value: float) -> str:
         при использовании способности карты
         Args:
             card: карта использующая способность
-            value: значение способности (уронЮ обновление характеристик и тд)
+            value: значение способности (урон обновление характеристик и тд)
         Returns:
             str: Строка с описанием использования способности
     """
@@ -545,8 +557,8 @@ async def create_record_fight_history(session_db: AsyncSession,
         Args:
             session_db: сессия базы данных
             is_victory: True - если был победитель, False - если ничья
-            participant1_id: ID профиля нападавшего пользователя
-            participant2_id: ID профиля противника
+            participant1_id: ID Profile нападавшего пользователя
+            participant2_id: ID Profile противника
             card1_id: ID карты нападавшего пользователя
             card2_id: ID карты противника
             winner_id: ID участника одержавшего победу

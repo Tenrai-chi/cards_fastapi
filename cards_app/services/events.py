@@ -62,10 +62,10 @@ async def get_info_start_event_awards(session_db: AsyncSession) -> list[InitialE
     return awards
 
 
-async def can_get_start_event_award(user: User) -> bool:
+def can_get_start_event_award(user: User) -> bool:
     """ Проверяет, что пользователь может получить награду стартового события.
         Args:
-            user: объект пользователя с подгруженным profile из depends
+            user: User + Profile пользователя
         Returns:
             bool: True, если пользователь может получить награду
     """
@@ -77,8 +77,8 @@ async def can_get_start_event_award(user: User) -> bool:
         return True
 
     today = date.today()
-    day_passed = bool(user.profile.date_event_visit < today)
-    return day_passed
+    is_day_passed = bool(user.profile.date_event_visit < today)
+    return is_day_passed
 
 
 async def update_profile_event_award_received(session_db: AsyncSession,

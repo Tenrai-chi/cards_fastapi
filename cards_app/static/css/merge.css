@@ -1,0 +1,90 @@
+/* merge.css – стили для страницы слияния */
+.merge-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center; /* центрирование заголовков и контента */
+}
+
+.current-card-wrapper {
+    margin-bottom: 3rem;
+    display: flex;
+    justify-content: center;
+}
+
+.section-subtitle {
+    text-align: center;
+    color: var(--primary-dark);
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+}
+
+.merge-info {
+    background: #f3e5f5;
+    padding: 0.8rem;
+    border-radius: 20px;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* Двухколоночная сетка для карт слияния */
+.merge-card-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem;
+    margin: 0.5rem 0 0;
+}
+
+.selectable-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.selectable-card.selected {
+    border: 3px solid #4caf50;
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+    transform: scale(1.02);
+}
+
+.merge-action {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+#mergeButton {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-main));
+    font-size: 1.2rem;
+    padding: 0.8rem 2rem;
+}
+
+#mergeButton.disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Центрирование самой карточки текущей карты */
+.selected-card {
+    margin: 0 auto;
+}
+/* ... существующие стили ... */
+
+.selectable-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.selectable-card.selected {
+    border: 3px solid #4caf50;
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+    transform: scale(1.02);
+}
+
+.merge-info p {
+    margin: 0.3rem 0;
+}
+
+#selectedCount {
+    font-weight: bold;
+    color: var(--primary-main);
+}

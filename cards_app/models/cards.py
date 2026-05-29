@@ -84,7 +84,7 @@ class Card(Base):
     __tablename__ = 'cards'
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    owner_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=True, index=True)
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=True, index=True)
     class_card_id: Mapped[int] = mapped_column(ForeignKey('class_cards.id'), nullable=False)
     type_id: Mapped[int] = mapped_column(ForeignKey('type_cards.id'), nullable=False)
     rarity_id: Mapped[int] = mapped_column(ForeignKey('rarity_cards.id'), nullable=False)
@@ -110,7 +110,8 @@ class Card(Base):
     fight_histories_as_card2 = relationship('FightHistory',
                                             foreign_keys='[FightHistory.card2_id]',
                                             back_populates='card2')
-    receiving_history = relationship('HistoryReceivingCards', foreign_keys='[HistoryReceivingCards.card_id]', back_populates='card')
+    receiving_history = relationship('HistoryReceivingCards',
+                                     foreign_keys='[HistoryReceivingCards.card_id]', back_populates='card')
     sale_records = relationship('SaleUserCards', foreign_keys='[SaleUserCards.card_id]',  back_populates='card')
     amulet = relationship('AmuletItem', foreign_keys='[AmuletItem.card_id]',  back_populates='card', uselist=False)
 

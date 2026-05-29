@@ -6,15 +6,16 @@ from cards_app.exeptions import UserFavoriteException
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
                                         get_user_fight_history, is_favorite, add_user_to_favorite,
                                         remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user,
-                                        get_rating_users, get_total_users_count)
+                                        get_rating_users, get_total_users_count, get_user_transactions)
 from cards_app.services.cards import get_card_with_details
 from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, GuildDTO,
                                        CardDTO, AmuletDTO, FightHistoryRecordDTO, CardBriefDTO, FavoriteUserDTO,
-                                       FavoriteUsersPageDTO, UserRatingTableDTO, RatingTableDTO)
+                                       FavoriteUsersPageDTO, UserRatingTableDTO, RatingTableDTO, TransactionsDTO,
+                                       RecordTransaction)
 from cards_app.models.users import User
 from cards_app.exeptions import UserNotFoundError, NotEnoughSlotsError
-from cards_app.types import ViewProfileUseCaseDict, AddFavoriteUserUseCaseDict, RemoveFavoriteUserUseCaseDict, \
-    FavoriteUsersUseCaseDict, ViewUsersRatingDict
+from cards_app.types import (ViewProfileUseCaseDict, AddFavoriteUserUseCaseDict, RemoveFavoriteUserUseCaseDict,
+                             FavoriteUsersUseCaseDict, ViewUsersRatingDict, UserTransactionsUseCaseDict)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class ViewProfileUseCase:
         """ Выполняет получение и подготовку данных профиля для отображения
             Args:
                 current_user: User + Profile текущего пользователя
-                target_user_id: ID профиля пользователя, чей профиль просматривается
+                target_user_id: ID Profile пользователя, чей профиль просматривается
 
             Returns:
                 ViewProfileUseCaseDict:
@@ -205,7 +206,7 @@ class AddFavoriteUserUseCase:
         """ Добавляет целевого пользователя в избранное текущего.
             Args:
                 current_user: User + Profile текущего пользователя
-                target_user_id: ID профиля пользователя, которого нужно добавить в избранное.
+                target_user_id: ID Profile пользователя, которого нужно добавить в избранное.
             Returns:
                 AddFavoriteUserUseCaseDict:
                     - success (bool): True при успешном добавлении.
@@ -272,7 +273,7 @@ class RemoveFavoriteUserUseCase:
         """ Удаляет целевого пользователя из избранного текущего.
             Args:
                 current_user: User + Profile текущего пользователя
-                target_user_id: ID профиля пользователя, которого нужно удалить из избранного.
+                target_user_id: ID Profile пользователя, которого нужно удалить из избранного.
             Returns:
                 RemoveFavoriteUserUseCaseDict:
                     - success (bool): True при успешном удалении.
@@ -320,6 +321,7 @@ class RemoveFavoriteUserUseCase:
             answer_data['success'] = False
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в RemoveFavoriteUserUseCase: {error}', exc_info=True)
 
             return answer_data
 
@@ -406,5 +408,54 @@ class ViewUsersRatingUseCase:
                                     size=size,
                                     total_pages=total_pages)
         answer_data['rating_dto'] = rating_dto
+        answer_data['status_code'] = 200
+        return answer_data
+
+
+class UserTransactionsUseCase:
+    """ Use case для просмотра транзакций """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self, current_user: User | None,
+                      ) -> UserTransactionsUseCaseDict:
+        """ Формирует TransactionsDTO пользователя
+            Args:
+                current_user: User + Profile текущего пользователя
+            Returns:
+                UserTransactionsUseCaseDict:
+                    - transactions (TransactionsDTO | None): DTO избранных пользователей
+                    - status_code (int): HTTP статус-код.
+                    - error_message: текст ошибки
+            Note:
+                - 200: успешное получение данных
+                - 400: если пользователь не авторизован
+        """
+
+        answer_data = {'transactions_dto': None,
+                       'error_message': None,
+                       'status_code': None}
+
+        if current_user is None:
+            answer_data['error_message'] = f'Для просмотра транзакций необходимо быть авторизован'
+            answer_data['status_code'] = 400
+            return answer_data
+
+        user_transactions: list = await get_user_transactions(session_db=self.session_db,
+                                                              user_id=current_user.id)
+        user_transactions_dto = TransactionsDTO(
+            transactions=[
+                RecordTransaction(date_and_time=tx.date_and_time,
+                                  before=tx.before,
+                                  after=tx.after,
+                                  comment=tx.comment,
+                                  delta=tx.after - tx.before
+                                  )
+                for tx in user_transactions
+            ],
+        )
+
+        answer_data['transactions_dto'] = user_transactions_dto
         answer_data['status_code'] = 200
         return answer_data

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Мой инвентарь{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_store.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/store.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/inventory.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="inventory-page">
+    <!-- Фильтры -->
+    <div class="store-filters-container">
+        <div class="store-filters">
+            <a href="{{ url_for('inventory', inventory_filter='all') }}"
+               class="filter-tab {% if current_inventory_filter == 'all' %}active{% endif %}">Все</a>
+            <a href="{{ url_for('inventory', inventory_filter='exp_items') }}"
+               class="filter-tab {% if current_inventory_filter == 'exp_items' %}active{% endif %}">Книги опыта</a>
+            <a href="{{ url_for('inventory', inventory_filter='upgrade_items') }}"
+               class="filter-tab {% if current_inventory_filter == 'upgrade_items' %}active{% endif %}">Усиления</a>
+            <a href="{{ url_for('inventory', inventory_filter='amulets') }}"
+               class="filter-tab {% if current_inventory_filter == 'amulets' %}active{% endif %}">Амулеты</a>
+
+        </div>
+    </div>
+
+    {% if not inventory_dto.exp_items and not inventory_dto.amulets and not inventory_dto.upgrade_items %}
+        <div class="empty-store">
+            <p>😢 Ваш инвентарь пуст. Загляните в магазин!</p>
+        </div>
+    {% else %}
+
+        <!-- ========== КНИГИ ОПЫТА ========== -->
+        {% if inventory_dto.exp_items %}
+        <section class="inventory-section">
+            <h2 class="section-title">📚 Книги опыта</h2>
+            <div class="store-grid">
+                {% for item in inventory_dto.exp_items %}
+                    <div class="store-card">
+                        <div class="card-image">
+                            <img src="{{ url_for('static', path=item.image) }}" alt="{{ item.name }}">
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">{{ item.name }} ({{ item.rarity }})</div>
+                            <div class="card-stats">
+                                <div class="card-stat">📖 Опыт: {{ item.experience_amount }}</div>
+                                <div class="card-stat">📦 Количество: {{ item.amount }}</div>
+                            </div>
+                            <div class="card-price">
+                                <span class="price-label">Цена использования:</span>
+                                <span class="price
+                                    {%- if not current_user or current_user.gold < item.gold_for_use %} price-insufficient
+                                    {%- else %} price-sufficient
+                                    {%- endif %}">
+                                    {{ item.gold_for_use }}💰
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ========== ПРЕДМЕТЫ УСИЛЕНИЯ ========== -->
+        {% if inventory_dto.upgrade_items %}
+        <section class="inventory-section">
+            <h2 class="section-title">⚡ Предметы усиления</h2>
+            <div class="store-grid">
+                {% for item in inventory_dto.upgrade_items %}
+                    <div class="store-card">
+                        <div class="card-image">
+                            <img src="{{ url_for('static', path=item.image) }}" alt="{{ item.name }}">
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">{{ item.name }}</div>
+                            <div class="card-description">{{ item.description }}</div>
+                            <div class="card-stats">
+                                <div class="card-stat">📦 Количество: {{ item.amount }}</div>
+                            </div>
+                            <div class="card-price">
+                                <span class="price-label">Цена использования:</span>
+                                <span class="price
+                                    {%- if not current_user or current_user.gold < item.gold_for_use %} price-insufficient
+                                    {%- else %} price-sufficient
+                                    {%- endif %}">
+                                    {{ item.gold_for_use }}💰
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    <!-- ========== АМУЛЕТЫ ========== -->
+        {% if inventory_dto.amulets %}
+        <section class="inventory-section">
+            <h2 class="section-title">🔮 Амулеты {{ inventory_dto.count_amulet }} / {{ inventory_dto.max_count_amulets }}</h2>
+            <div class="store-grid">
+                {% for amulet in inventory_dto.amulets %}
+                    <div class="store-card">
+                        <div class="card-image">
+                            <img src="{{ url_for('static', path=amulet.image) }}" alt="{{ amulet.name }}">
+                        </div>
+                        <div class="card-info">
+                            <div class="card-name">{{ amulet.name }} ({{ amulet.rarity_name }})</div>
+                            <div class="card-stats">
+                                <div class="card-stat">❤️ Бонус HP: {{ amulet.bonus_hp }}</div>
+                                <div class="card-stat">⚔️ Бонус урона: {{ amulet.bonus_damage }}</div>
+                            </div>
+                            <div class="amulet-upgrades">
+                                🛠️ Улучшений: {{ amulet.upgrades }}/{{ amulet.max_upgrade }}
+                            </div>
+                            {% if amulet.card_id %}
+                            <div class="amulet-equipped-info">
+                                🔗 Надето на карту:
+                                <a href="{{ url_for('view_card', card_id=amulet.card_id) }}" class="card-link">
+                                    {{ amulet.card_class_name }} ({{ amulet.card_rarity_name }})
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="amulet-equip-hint">⚡ Не надет</div>
+                            {% endif %}
+                            <div class="card-price">
+                                <span class="price-label">Цена продажи:</span>
+                                <span class="price">{{ amulet.price_for_sale }}💰</span>
+                            </div>
+                        </div>
+                        <div class="card-actions-vertical">
+                            <!-- Кнопка "Продать" -->
+                            <form action="{{ url_for('sell_amulet', amulet_id=amulet.id) }}" method="post" class="buy-form">
+                                <input type="hidden" name="amulet_id" value="{{ amulet.id }}">
+                                <button type="submit" class="btn-buy">💰 Продать</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}

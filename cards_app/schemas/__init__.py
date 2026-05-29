@@ -6,6 +6,7 @@ from .profile import *
 from .start_event import *
 from .store import *
 from .users import *
+from .inventory import *
 
 __all__ = [
     'UserRegister',
@@ -43,5 +44,18 @@ __all__ = [
     'CardStoreDTO',
 
     'RatingTableDTO',
-    'UserRatingTableDTO'
+    'UserRatingTableDTO',
+    'AllStoreDTO',
+    'UserCardsDTO',
+    'CardsTradingDTO',
+    'TransactionsDTO',
+    'FullInventoryDTO',
+    'ExpItemsInventoryDTO',
+    'AmuletsInventoryDTO',
+    'UpgradeItemsInventoryDTO',
+    'FullInfoLeveling',
+    'CardsForMergeDTO',
+    'OpenBoxAmuletDTO',
+    'OpenBoxExpItemDTO'
+
 ]

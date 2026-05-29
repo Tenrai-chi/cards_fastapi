@@ -17,11 +17,12 @@
             <a href="{{ url_for('item_store', store_filter='box') }}"
                class="filter-tab {% if current_store_filter == 'box' %}active{% endif %}">Сундуки</a>
             <a href="{{ url_for('item_store', store_filter='exp_items') }}"
-               class="filter-tab {% if current_store_filter == 'exp_items' %}active{% endif %}">Книги опыта</a>
-            <a href="{{ url_for('item_store', store_filter='amulet') }}"
-               class="filter-tab {% if current_store_filter == 'amulet' %}active{% endif %}">Амулеты</a>
+               class="filter-tab {% if current_store_filter == 'exp_item' %}active{% endif %}">Книги опыта</a>
             <a href="{{ url_for('item_store', store_filter='upgrade_item') }}"
                class="filter-tab {% if current_store_filter == 'upgrade_item' %}active{% endif %}">Усиления</a>
+            <a href="{{ url_for('item_store', store_filter='amulet') }}"
+               class="filter-tab {% if current_store_filter == 'amulet' %}active{% endif %}">Амулеты</a>
+
         </div>
     </div>
 
@@ -52,7 +53,7 @@
                                 </span>
                             </div>
                         </div>
-                        <form action="#" method="post" class="buy-form">
+                        <form action="{{ url_for('buy_box_in_store', box_id=box.id) }}" method="post" class="buy-form">
                             <input type="hidden" name="item_type" value="box">
                             <input type="hidden" name="item_id" value="{{ box.id }}">
                             <button type="submit" class="btn-buy {% if not current_user or current_user.gold < final_price %}disabled{% endif %}"
@@ -67,7 +68,7 @@
         {% endif %}
 
         <!-- Книги опыта -->
-        {% if store_dto.exp_items %}
+               {% if store_dto.exp_items %}
         <section class="store-section">
             <h2 class="section-title">Книги опыта</h2>
             <div class="store-grid">
@@ -83,19 +84,22 @@
                                 <div class="card-stat">📖 Опыт: {{ item.experience_amount }}</div>
                             </div>
                             <div class="card-price">
-                                <span class="price-label">Цена:</span>
-                                <span class="price {% if not current_user or current_user.gold < final_price %}price-insufficient{% else %}price-sufficient{% endif %}">
-                                    {{ final_price }}💰
-                                </span>
+                                <span class="price-label">Цена за 1 шт:</span>
+                                <span class="price">{{ final_price }}💰</span>
                             </div>
+                            <!-- Блок выбора количества -->
+                            <div class="quantity-selector">
+                                <button class="qty-btn minus" data-item-id="{{ item.id }}" data-price="{{ final_price }}" {% if not current_user %}disabled{% endif %}>-</button>
+                                <input type="number" id="qty-{{ item.id }}" class="qty-input" value="0" min="0" max="0" readonly>
+                                <button class="qty-btn plus" data-item-id="{{ item.id }}" data-price="{{ final_price }}" {% if not current_user %}disabled{% endif %}>+</button>
+                            </div>
+                            <div class="total-price" id="total-{{ item.id }}">Итого: 0💰</div>
                         </div>
-                        <form action="#" method="post" class="buy-form">
+                        <form action="{{ url_for('buy_book_in_store', book_id=item.id) }}" method="post" class="buy-form" id="form-{{ item.id }}">
                             <input type="hidden" name="item_type" value="exp_item">
                             <input type="hidden" name="item_id" value="{{ item.id }}">
-                            <button type="submit" class="btn-buy {% if not current_user or current_user.gold < final_price %}disabled{% endif %}"
-                                    {% if not current_user or current_user.gold < final_price %}disabled{% endif %}>
-                                Купить
-                            </button>
+                            <input type="hidden" name="amount" id="quantity-{{ item.id }}" value="0">
+                            <button type="submit" class="btn-buy" disabled>Купить</button>
                         </form>
                     </div>
                 {% endfor %}
@@ -124,7 +128,7 @@
                                 </span>
                             </div>
                         </div>
-                        <form action="#" method="post" class="buy-form">
+                        <form action="{{ url_for('buy_upgrade_item_in_store', upgrade_item_id=item.id) }}" method="post" class="buy-form">
                             <input type="hidden" name="item_type" value="upgrade_item">
                             <input type="hidden" name="item_id" value="{{ item.id }}">
                             <button type="submit" class="btn-buy {% if not current_user or current_user.gold < final_price %}disabled{% endif %}"
@@ -179,7 +183,7 @@
                                 {% endif %}
                             </div>
                         </div>
-                        <form action="#" method="post" class="buy-form">
+                        <form action="{{ url_for('buy_amulet_in_store', amulet_id=amulet.id) }}" method="post" class="buy-form">
                             <input type="hidden" name="item_type" value="amulet">
                             <input type="hidden" name="item_id" value="{{ amulet.id }}">
                             <button type="submit" class="btn-buy {% if not current_user or current_user.gold < final_price %}disabled{% endif %}"
@@ -192,7 +196,12 @@
             </div>
         </section>
         {% endif %}
-
     {% endif %}
 </div>
+
+<script>
+    window.userGold = {{ current_user.gold if current_user else 0 }};
+    console.log('userGold set to:', window.userGold);
+</script>
+<script src="{{ url_for('static', path='js/store.js') }}"></script>
 {% endblock %}

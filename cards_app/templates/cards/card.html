@@ -49,13 +49,29 @@
         </div>
         {% endif %}
         {% if card_dto.is_owner %}
-        <div class="card-actions-column">
-            <button class="card-action-btn">🛠️Усиление</button>
-            <button class="card-action-btn">💪Улучшение</button>
-            <button class="card-action-btn">🧬Слияние</button>
-            <button class="card-action-btn">🔮Амулет</button>
-        </div>
-        {% endif %}
+<div class="card-actions-column">
+    {% if card_dto.card.enhancement < card_dto.card.max_enhancement %}
+        <a href="" class="card-action-btn">🛠️ Усиление</a>
+    {% else %}
+        <span class="card-action-btn disabled">🛠️ Усиление</span>
+    {% endif %}
+
+    {% if card_dto.card.level < card_dto.card.max_level %}
+        <a href="#" class="card-action-btn">💪 Улучшение</a>
+    {% else %}
+        <span class="card-action-btn disabled">💪 Улучшение</span>
+    {% endif %}
+
+    {% if card_dto.card.merger < card_dto.card.max_merger %}
+        <a href="{{ url_for('view_merge_card', card_id=card_dto.card.id) }}" class="card-action-btn">🧬 Слияние</a>
+    {% else %}
+        <span class="card-action-btn disabled">🧬 Слияние</span>
+    {% endif %}
+
+    <a href="#" class="card-action-btn">🔮 Амулет</a>
+</div>
+</div>
+{% endif %}
     </div>
 </div>
 </div>

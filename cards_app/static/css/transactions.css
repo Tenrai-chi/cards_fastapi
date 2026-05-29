@@ -1,0 +1,79 @@
+/* Стили для страницы транзакций */
+.transactions-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 0.5rem;  /* уменьшили отступ снизу */
+    color: var(--primary-dark);
+}
+
+/* Стиль примечания о количестве транзакций */
+.transactions-note {
+    text-align: center;
+    color: var(--text-dark);
+    opacity: 0.8;
+    font-size: 0.95rem;
+    font-weight: bold;      /* сделали жирным */
+    margin-top: 0;          /* убрали отступ сверху */
+    margin-bottom: 1.5rem;
+    font-style: normal;     /* убрали курсив */
+}
+
+/* Таблица транзакций */
+.transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.transactions-table th,
+.transactions-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--primary-light);
+}
+
+.transactions-table th {
+    background: var(--primary-main);
+    color: white;
+    font-weight: 600;
+}
+
+.transactions-table tr:hover td {
+    background-color: var(--bg-light);
+}
+
+/* Цвета для дельты */
+.delta-positive {
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+.delta-negative {
+    color: #c62828;
+    font-weight: bold;
+}
+
+.empty-transactions {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .transactions-table th,
+    .transactions-table td {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+    }
+}

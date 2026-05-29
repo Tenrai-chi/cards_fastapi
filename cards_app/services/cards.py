@@ -1,16 +1,18 @@
+import asyncio
 import logging
 import random
 
 from datetime import datetime
 from random import choice
-from typing import List
+from typing import List, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from cards_app.types import RaritiesAndClassesDict
-from cards_app.exeptions import CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError
+from cards_app.exeptions import (CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError, NotCardOwnerError,
+                                 EmptyCardsForMergeError, TooManyCardsMergeError, SelfMergeError)
 from cards_app.models import Card, ClassCard, Rarity, Type, HistoryReceivingCards, AmuletItem, CardStore, Profile
 from cards_app.utils.common import calculate_need_exp
 
@@ -65,10 +67,9 @@ async def get_rarities_and_classes(session_db: AsyncSession
                 - classes (list[ClassCard]): список всех классов
     """
 
-    answer_data: RaritiesAndClassesDict = {
-        'rarities': [],
-        'classes': []
-    }
+    answer_data: RaritiesAndClassesDict = {'rarities': None,
+                                           'classes': None
+                                           }
     result_classes = await session_db.execute(select(ClassCard))
     all_classes = list(result_classes.scalars().all())
     answer_data['classes'] = all_classes
@@ -84,7 +85,7 @@ async def generate_random_card(session_db: AsyncSession, owner_id: int) -> int:
     """ Генерирует случайную карту для указанного владельца.
         Args:
             session_db: сессия базы данных
-            owner_id: ID профиля пользователя
+            owner_id: ID Profile пользователя
 
         Returns:
             int: ID созданной карты
@@ -128,7 +129,7 @@ async def generate_card_start_event(session_db: AsyncSession,
     """ Создает случайную карту заданной редкости с максимальными характеристиками.
         Args:
             session_db: сессия базы данных
-            user_profile_id: ID профиля пользователя
+            user_profile_id: ID Profile пользователя
             rarity_name: название редкости карты для получения ее ID
         Returns:
             int: ID созданной карты
@@ -149,7 +150,6 @@ async def generate_card_start_event(session_db: AsyncSession,
     hp = rarity.max_hp
     damage = rarity.max_damage
 
-    # Тут создание карты
     new_card = Card(owner_id=user_profile_id,
                     class_card_id=class_card.id,
                     type_id=type_card.id,
@@ -172,7 +172,7 @@ async def create_new_card_from_template(session_db: AsyncSession,
     """ Создает новую карту пользователя по карте-шаблону из магазина при покупке.
        Args:
             session_db: сессия базы данных
-            owner_id: ID профиля владельца карты
+            owner_id: ID Profile владельца карты
             card_temp: Объект CardStore — шаблон карты из магазина.
         Returns:
             int: ID созданной карты
@@ -229,7 +229,7 @@ async def get_all_cards_user(session_db: AsyncSession,
     """ Возвращает список всех карт пользователя.
         Args:
             session_db: сессия базы данных
-            owner_id: ID профиля владельца
+            owner_id: ID Profile владельца
             with_details: маркер нужно ли подгружать детали
 
         Returns:
@@ -247,7 +247,7 @@ async def get_all_cards_user(session_db: AsyncSession,
                 selectinload(Card.type_card),
                 selectinload(Card.rarity_card)
             )
-            .order_by(Rarity.id, Card.id)
+            .order_by(Card.level.desc(), Rarity.id, Card.id)
         )
 
     result = await session_db.execute(stmt_user_cards)
@@ -264,7 +264,7 @@ async def create_record_in_history_receiving_card(session_db: AsyncSession,
         Args:
             session_db: сессия базы данных
             card_id: ID полученной карты
-            user_profile_id: ID профиля пользователя, получившего карту.
+            user_profile_id: ID Profile пользователя, получившего карту.
             method_receiving: Способ получения (покупка, генерация)
     """
 
@@ -349,3 +349,198 @@ async def get_cards_in_trading(session_db: AsyncSession) -> list[Card]:
     result = await session_db.execute(stmt_cards)
     cards = list(result.scalars().all())
     return cards
+
+
+async def get_cards_for_merge(session_db: AsyncSession,
+                              current_card_id: int,
+                              owner_id: int
+                              ) -> tuple[Card, list[Card]]:
+
+    """ Возвращает список карт, подходящих для слияния.
+        Args:
+            session_db: сессия базы данных
+            current_card_id: ID карты для слияния
+            owner_id: ID Profile текущего пользователя
+        Returns:
+            tuple:
+                - current_card (Card):
+                - cards_for_merge (list[Card]):
+        Rises:
+            NotCardOwnerError: если пользователь не является владельцем карты
+            CardNotFoundError: если карта не найдена в базе данных
+    """
+
+    stmt_current_card = (
+        select(Card)
+        .where(Card.id == current_card_id)
+        .options(
+            selectinload(Card.class_card),
+            selectinload(Card.type_card),
+            selectinload(Card.rarity_card),
+        )
+    )
+    result = await session_db.execute(stmt_current_card)
+    current_card = result.scalar_one_or_none()
+    if current_card is None:
+        raise CardNotFoundError(card_id=current_card_id)
+    if current_card.owner_id != owner_id:
+        raise NotCardOwnerError()
+
+    stmt_cards_for_merge = (
+        select(Card)
+        .where(
+            Card.owner_id == owner_id,
+            Card.class_card_id == current_card.class_card_id,
+            Card.type_id == current_card.type_id,
+            Card.rarity_id == current_card.rarity_id,
+            Card.id != current_card.id
+        )
+        .options(
+            selectinload(Card.class_card),
+            selectinload(Card.type_card),
+            selectinload(Card.rarity_card),
+        )
+    )
+
+    result = await session_db.execute(stmt_cards_for_merge)
+    cards_for_merge = list(result.scalars().all())
+
+    return current_card, cards_for_merge
+
+
+async def increase_merger(session_db: AsyncSession,
+                          card: Card,
+                          add_merge: int
+                          ) -> None:
+    """ Повышает уровень слияния карты на add_merge
+        Args:
+            session_db: сессия базы данных
+            card: текущая карта
+            add_merge: количество полученных уровней слияния
+        """
+
+    card.merger += add_merge
+    session_db.add(card)
+    logger.info(f'Карта ID {card.id} повысила уровень слияния на {add_merge}')
+
+
+async def merge_card(session_db: AsyncSession,
+                     current_card_id: int,
+                     cards_for_merge_ids: list[int],
+                     owner_id: int
+                     ) -> None:
+    """ Процесс слияния карт.
+        Получает текущую карту и карты для слияния.
+        Проверяет, что пользователь является владельцем всех карт и они существуют.
+        Запускает увеличение уровня слияния текущей карты
+        и параллельное удаление карт для слияния
+        Args:
+            session_db: сессия базы данных
+            current_card_id: ID текущей карты для повышения уровня слияния
+            cards_for_merge_ids: список ID карт, которые будут уничтожены для повышения
+            owner_id: ID Profile пользователя, запросившего слияние
+        Raises:
+            CardNotFoundError: если карта(ы) не были найдены в базе данных
+            NotCardOwnerError: если пользователь не является владельцем карт(ы)
+            TooManyCardsMergeError: список карт для пожертвования больше чем требуется
+            SelfMergeError: если пользователь пытается пожертвовать текущую карту
+    """
+
+    if current_card_id in cards_for_merge_ids:
+        raise SelfMergeError
+
+    stmt_current_card = select(Card).where(Card.id == current_card_id)
+    result_card = await session_db.execute(stmt_current_card)
+    current_card = result_card.scalar_one_or_none()
+
+    if current_card is None:
+        raise CardNotFoundError(card_id=current_card_id)
+    if current_card.owner_id != owner_id:
+        raise NotCardOwnerError
+    if not cards_for_merge_ids:
+        raise EmptyCardsForMergeError
+    if current_card.max_merger - current_card.merger < len(cards_for_merge_ids):
+        raise TooManyCardsMergeError
+
+    stmt_cards_for_merge = (
+        select(Card)
+        .where(Card.id.in_(cards_for_merge_ids))
+    )
+    result_cards_for_merge = await session_db.execute(stmt_cards_for_merge)
+    cards_for_merge = result_cards_for_merge.scalars().all()
+
+    for card_for_merge in cards_for_merge:
+        if card_for_merge.owner_id != owner_id:
+            raise NotCardOwnerError
+
+    if len(cards_for_merge_ids) != len(cards_for_merge):
+        raise CardNotFoundError()
+
+    # Параллельное удаление карт
+    update_tasks = [clear_owner_card(session_db, card) for card in cards_for_merge]
+    await asyncio.gather(*update_tasks)
+
+    await increase_merger(session_db=session_db,
+                          card=current_card,
+                          add_merge=len(cards_for_merge))
+
+
+async def clear_owner_card(session_db: AsyncSession,
+                           card: Card,
+                           ) -> None:
+    """ Обнуляет владельца у карты
+         Args:
+            session_db: сессия базы данных
+            card: карты, у которой необходимо удалить владельца
+    """
+
+    card.owner_id = None
+    session_db.add(card)
+    logger.info(f'У карты {card.id} удалён владелец')
+
+
+async def generate_max_stat_ur_card(session_db: AsyncSession,
+                                    user_profile_id: int,
+                                    ) -> int:
+    """ Создает UR карту с максимальным значением здоровья или урона.
+        Используется при открытии сундука с UR картой
+        Args:
+            session_db: сессия базы данных
+            user_profile_id: ID Profile пользователя
+        Returns:
+            int: ID созданной карты
+    """
+
+    stmt_classes = select(ClassCard)
+    result_classes = await session_db.execute(stmt_classes)
+    class_card = choice(result_classes.scalars().all())
+
+    stmt_types = select(Type)
+    result_types = await session_db.execute(stmt_types)
+    type_card = choice(result_types.scalars().all())
+
+    stmt_rarity = select(Rarity).where(Rarity.name == 'UR')
+    result_rarity = await session_db.execute(stmt_rarity)
+    rarity = result_rarity.scalar_one_or_none()
+
+    if random.choice(['hp', 'damage']) == 'hp':
+        hp = rarity.max_hp
+        damage = random.randint(cast(int, rarity.min_hp), cast(int, rarity.max_hp))
+    else:
+        hp = random.randint(cast(int, rarity.min_damage), cast(int, rarity.max_damage))
+        damage = rarity.max_damage
+
+    new_card = Card(owner_id=user_profile_id,
+                    class_card_id=class_card.id,
+                    type_id=type_card.id,
+                    rarity_id=rarity.id,
+                    level=1,
+                    hp=hp,
+                    damage=damage)
+
+    session_db.add(new_card)
+    await session_db.flush()
+    logger.info(f'Сгенерирована карта при покупке сундука: id={new_card.id},'
+                f' владелец={user_profile_id}')
+
+    return new_card.id

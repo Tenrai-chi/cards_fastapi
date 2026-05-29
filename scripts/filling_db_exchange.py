@@ -245,6 +245,8 @@ async def load_boxes_in_store():
                                              description=box['description'],
                                              image=box['image'],
                                              price=box['price'],
+                                             reward_type=box['reward_type'],
+                                             reward_amount=box['reward_amount']
                                              ))
                     logger.info(f'Добавлен сундук в магазин: {box["name"]}')
                 else:

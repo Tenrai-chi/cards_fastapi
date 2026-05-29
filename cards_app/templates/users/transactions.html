@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Мои транзакции{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/transactions.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="transactions-container">
+    <h1 class="page-title">📜 История транзакций</h1>
+    <p class="transactions-note">Показаны последние 50 операций</p>
+
+    {% if transactions_dto and transactions_dto.transactions %}
+        <div class="table-responsive">
+            <table class="transactions-table">
+                <thead>
+                    <tr>
+                        <th>Дата и время</th>
+                        <th>Комментарий</th>
+                        <th>Было</th>
+                        <th>Стало</th>
+                        <th>Изменение</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions_dto.transactions %}
+                        <tr>
+                            <td>{{ tx.date_and_time.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+                            <td>{{ tx.comment }}</td>
+                            <td>{{ tx.before }}💰</td>
+                            <td>{{ tx.after }}💰</td>
+                            <td class="delta {% if tx.delta < 0 %}delta-negative{% else %}delta-positive{% endif %}">
+                                {% if tx.delta > 0 %}+{% endif %}{{ tx.delta }}💰
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-transactions">
+            😢 У вас пока нет транзакций.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

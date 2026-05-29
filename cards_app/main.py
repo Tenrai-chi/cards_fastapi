@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from cards_app.config.settings import settings
 from cards_app.config.logging import setup_logging
 
-from cards_app.routers import auth, users, cards, events, store
+from cards_app.routers import auth, users, cards, events, store, inventory
 
 setup_logging(settings.LOG_LEVEL)
 
@@ -24,11 +24,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(events.router)
 app.include_router(store.router)
-
-for route in app.routes:
-    if hasattr(route, 'name'):
-        print(f"name={route.name}, path={route.path}")
-
+app.include_router(inventory.router)
 
 if __name__ == '__main__':
     uvicorn.run('main:app', reload=True)

@@ -23,7 +23,9 @@
         </div>
         <div class="card-info">
             <div class="card-name">
-                {{ card.class_card_name }} ({{ card.type_card_name }})
+                <a href="{{ url_for('view_card', card_id=card.id) }}" style="text-decoration: none; color: inherit;">
+                    {{ card.class_card_name }} ({{ card.type_card_name }})
+                </a>
                 {% if is_favorite %}
                 <span class="favorite-star">⭐</span>
                 {% endif %}

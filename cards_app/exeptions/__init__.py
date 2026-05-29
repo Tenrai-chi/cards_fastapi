@@ -35,4 +35,11 @@ __all__ = [
 
     'FightException',
     'SelfFightError',
+    'AmuletNotFoundError',
+    'NotAmuletOwnerError',
+    'NotCardOwnerError',
+    'EmptyCardsForMergeError',
+    'TooManyCardsMergeError',
+    'SelfMergeError',
+    'BoxNotFoundError'
 ]

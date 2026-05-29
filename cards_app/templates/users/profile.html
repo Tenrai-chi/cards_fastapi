@@ -42,7 +42,7 @@
         {% if profile_dto.role == 'owner' %}
             <div class="profile-actions">
                 <a href="{{ url_for('favorite_users') }}" class="btn-action">Избранные</a>
-                <a href="#" class="btn-action">Транзакции</a>
+                <a href="{{ url_for('transactions') }}" class="btn-action">Транзакции</a>
                 <a href="#" class="btn-action">Редактировать</a>
                 <a href="{{ url_for('logout') }}" class="btn-action">Выйти</a>
             </div>
@@ -92,8 +92,6 @@
                                 <div class="card-stat">⚔️Урон: {{ profile_dto.card.damage }} {{ profile_dto.amulet.bonus_damage }}</div>
                             {% endif %}
 
-
-
                         {% else %}
                         <div class="card-stat">❤️ Здоровье: {{ profile_dto.card.hp }}</div>
                         <div class="card-stat">⚔️ Урон: {{ profile_dto.card.damage }}</div>
@@ -121,10 +119,9 @@
         {% if profile_dto.role == 'guest' %}
         <div class="guest-actions">
             <a href="{{ url_for('view_user_cards', user_id=profile_dto.profile.id) }}" class="btn-guest">Карты</a>
-            <a href="#" class="btn-guest">Обмен</a>
             <form method="post" action="{{ url_for('fight_user', user_id=profile_dto.profile.id) }}"
                   style="display: inline;">
-                <button type="submit" class="btn-guest">Бой</button>
+                <button type="submit" class="btn-guest">Напасть</button>
             </form>
         </div>
         {% endif %}
@@ -132,8 +129,7 @@
         {% if profile_dto.role == 'owner' %}
         <div class="guest-actions">
             <a href="{{ url_for('view_user_cards', user_id=profile_dto.profile.id) }}" class="btn-guest">Карты</a>
-            <a href="#" class="btn-guest">Обмен</a>
-            <a href="#" class="btn-guest">Инвентарь</a>
+            <a href="{{ url_for('inventory', inventory_filter='all') }}" class="btn-guest">Инвентарь</a>
         </div>
         {% endif %}
 

@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from math import ceil
 
-from sqlalchemy import func, or_, select, desc
+from sqlalchemy import func, or_, select, desc, case, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -50,34 +50,29 @@ async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_
     """ Возвращает статистику побед / поражений пользователя против другого.
         Args:
             session_db: сессия базы данных
-            profile1_id: ID профиля текущего пользователя
-            profile2_id: ID профиля соперника
+            profile1_id: ID Profile текущего пользователя
+            profile2_id: ID Profile соперника
         Returns:
             tuple[int, int]: кортеж побед и поражений текущего пользователя против соперника, либо 0, 0
     """
 
-    wins = await session_db.scalar(
-        select(func.count())
+    stmt_fights = (
+        select(
+            func.sum(case((FightHistory.winner_id == profile1_id, 1), else_=0)).label('wins'),
+            func.sum(case((FightHistory.winner_id == profile2_id, 1), else_=0)).label('loses')
+        )
         .where(
-            FightHistory.winner_id == profile1_id,
             or_(
-                FightHistory.participant1_id == profile2_id,
-                FightHistory.participant2_id == profile2_id
+                and_(FightHistory.participant1_id == profile1_id, FightHistory.participant2_id == profile2_id),
+                and_(FightHistory.participant1_id == profile2_id, FightHistory.participant2_id == profile1_id)
             )
         )
     )
-    loses = await session_db.scalar(
-        select(func.count())
-        .where(
-            FightHistory.winner_id == profile2_id,
-            or_(
-                FightHistory.participant1_id == profile1_id,
-                FightHistory.participant2_id == profile1_id
-            )
-        )
-    )
-
-    return wins or 0, loses or 0
+    result = await session_db.execute(stmt_fights)
+    row = result.one()
+    wins = row.wins or 0
+    loses = row.loses or 0
+    return wins, loses
 
 
 async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limit: int = 50
@@ -85,7 +80,7 @@ async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limi
     """ Возвращает список боёв, где профиль был участником, с подгрузкой соперника и карт.
          Args:
             session_db: сессия базы данных
-            profile_id: ID профиля, историю боёв которого нужно получить
+            profile_id: ID Profile, историю боёв которого нужно получить
             limit: максимальное количество возвращаемых записей. По умолчанию 50
 
         Returns:
@@ -123,8 +118,8 @@ async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_
     """ Возвращает флаг о том, находится ли выбранный пользователь в списке избранных у текущего.
         Args:
             session_db: сессия базы данных
-            current_profile_id: ID профиля текущего пользователя
-            target_profile_id: ID профиля целевого пользователя
+            current_profile_id: ID Profile текущего пользователя
+            target_profile_id: ID Profile целевого пользователя
 
         Returns:
             bool: True, если target_profile_id есть в избранном у current_profile_id, иначе False.
@@ -247,7 +242,7 @@ async def create_transaction(session_db: AsyncSession,
     """ Создает транзакцию пользователя.
         Args:
             session_db: сессия базы данных
-            user_profile_id: ID профиля текущего пользователя
+            user_profile_id: ID Profile текущего пользователя
             gold_before: количество золота до списания
             gold_after: количество золота после списания
             comment: цель траты
@@ -270,8 +265,8 @@ async def add_user_to_favorite(session_db: AsyncSession,
     """ Добавляет выбранного пользователя в список избранных текущего пользователя.
         Args:
             session_db: сессия базы данных.
-            current_user_id: ID профиля текущего пользователя.
-            target_user_id: ID профиля пользователя, которого добавляют в избранное.
+            current_user_id: ID Profile текущего пользователя.
+            target_user_id: ID Profile пользователя, которого добавляют в избранное.
 
         Raises:
             SelfFavoriteError: попытка добавить самого себя
@@ -312,8 +307,8 @@ async def remove_user_from_favorite(session_db: AsyncSession,
     """ Удаляет выбранного пользователя из списка избранных текущего пользователя.
         Args:
             session_db: сессия базы данных.
-            current_user_id: ID профиля текущего пользователя
-            target_user_id: ID профиля пользователя, которого пытаются удалить из избранного
+            current_user_id: ID Profile текущего пользователя
+            target_user_id: ID Profile пользователя, которого пытаются удалить из избранного
 
         Raises:
             SelfFavoriteError: попытка удалить самого себя.
@@ -374,7 +369,7 @@ async def get_favorite_user(session_db: AsyncSession, user_profile_id: int
     """ Возвращает список избранных пользователей.
         Args:
             session_db: сессия базы данных
-            user_profile_id: ID профиля пользователя
+            user_profile_id: ID Profile пользователя
         Returns:
             list [FavoriteUsers]: список избранных пользователей
     """
@@ -393,8 +388,8 @@ async def get_favorite_user(session_db: AsyncSession, user_profile_id: int
 
 
 async def update_win_lose(session_db: AsyncSession,
-                          winner=User,
-                          loser=User
+                          winner: User,
+                          loser: User
                           ) -> None:
     """ Обновляет статистику побед/поражений у пользователей после битвы.
         Вызывается только если у битвы был победитель.
@@ -522,3 +517,18 @@ async def get_total_users_count(session_db: AsyncSession) -> int:
     result = await session_db.execute(stmt_count)
     count = result.scalar_one()
     return count
+
+
+async def get_user_transactions(session_db: AsyncSession, user_id: int
+                                ) -> list[Transactions]:
+    """ Возвращает список последних 50 транзакций пользователя """
+
+    stms_transactions = (
+        select(Transactions)
+        .where(Transactions.user_id == user_id)
+        .order_by(Transactions.date_and_time.desc())
+        .limit(50)
+    )
+    result = await session_db.execute(stms_transactions)
+    transactions = list(result.scalars().all())
+    return transactions

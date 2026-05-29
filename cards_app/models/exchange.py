@@ -134,7 +134,7 @@ class AmuletItem(Base):
 
     amulet_type_id: Mapped[int] = mapped_column(ForeignKey('amulet_types.id'), nullable=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey('profiles.id', use_alter=True), nullable=False)
-    card_id: Mapped[int] = mapped_column(ForeignKey('cards.id'), nullable=True)
+    card_id: Mapped[int | None] = mapped_column(ForeignKey('cards.id', ondelete='SET NULL'), nullable=True)
     upgrades: Mapped[int] = mapped_column(Integer, default=0)
 
     amulet_type = relationship('AmuletType', foreign_keys=[amulet_type_id], back_populates='amulets_in_inventory')
@@ -184,3 +184,5 @@ class Boxes(Base):
     description: Mapped[str] = mapped_column(String(100), nullable=False)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
     image: Mapped[str] = mapped_column(String(255), nullable=True)
+    reward_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    reward_amount: Mapped[int] = mapped_column(Integer, nullable=False)

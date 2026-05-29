@@ -100,7 +100,7 @@ class ViewStartEventUseCase:
             can_get = False
             received = 0
         else:
-            can_get = await can_get_start_event_award(user=current_user)
+            can_get = can_get_start_event_award(user=current_user)
             received = current_user.profile.event_visit
 
         start_event_awards_dto = StartEventAwardsDTO(awards=awards,
@@ -149,7 +149,7 @@ class GetAwardStartEventUseCase:
             return answer_data
 
         # Проверка, что пользователь может получить награду
-        if not await can_get_start_event_award(user=current_user):
+        if not can_get_start_event_award(user=current_user):
             answer_data['error_message'] = f'Вы не можете получить награду стартового события'
             answer_data['status_code'] = 400
             return answer_data

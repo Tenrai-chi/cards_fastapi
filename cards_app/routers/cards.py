@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, Request
+import json
+from json import JSONDecodeError
+
+from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,9 +12,9 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
 from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict, \
-    ViewUserCardsUseCaseDict, ViewTradingUseCaseDict
+    ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict
 from cards_app.use_cases.cards import ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase, ViewUserCardsUseCase, \
-    ViewTradingUseCase
+    ViewTradingUseCase, ViewMergeUseCase, MergeUseCase
 
 from cards_app.models.users import User
 
@@ -173,3 +176,79 @@ async def view_trading(request: Request,
                                           context=context,
                                           status_code=data.get('status_code')
                                           )
+
+
+@router.get(path='/card-{card_id}/merge_menu', name='view_merge_card')
+async def view_merge_card(request: Request,
+                          card_id: int,
+                          session_db: AsyncSession = Depends(get_db_session),
+                          current_user: User | None = Depends(get_current_user_with_profile),
+                          error: str = None,
+                          success: str = None
+                          ):
+    """ Просмотр меню слияния карты """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = ViewMergeUseCase(session_db)
+    data: ViewMergeUseCaseDict = await use_case.execute(current_card_id=card_id,
+                                                        current_user=current_user)
+    if data.get('merge_dto') is not None:
+        context = {'request': request,
+                   'current_user': current_user_dto,
+                   'merge_dto': data.get('merge_dto'),
+                   'error_message': error,
+                   'success_message': success
+                   }
+        return templates.TemplateResponse(request=request,
+                                          name='cards/merge_menu.html',
+                                          context=context,
+                                          status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') in (400, 404, 500):
+            context = {'error': data.get('error_message'),
+                       'error_code': data.get('status_code')}
+            return templates.TemplateResponse(request=request,
+                                              name='errors/error_page.html',
+                                              context=context,
+                                              status_code=data.get('status_code')
+                                              )
+
+
+@router.post('/merge', name='merge_cards')
+async def merge_cards(request: Request,
+                      main_card_id: int = Form(...),
+                      sacrificed_ids: str = Form(...),
+                      session_db: AsyncSession = Depends(get_db_session),
+                      current_user: User | None = Depends(get_current_user_with_profile)):
+    current_user_dto = await user_info_to_dto(current_user)
+    try:
+        cards_for_merge = [int(card_id) for card_id in json.loads(sacrificed_ids)]
+    except (JSONDecodeError, ValueError, TypeError) as _:
+        cards_for_merge = []
+    use_case = MergeUseCase(session_db=session_db)
+    data: MergeUseCaseDict = await use_case.execute(current_user=current_user,
+                                                    current_card_id=main_card_id,
+                                                    cards_for_merge=cards_for_merge
+                                                    )
+    if data.get('success') is True:
+        success_msg = data.get('success_message')
+        encoded_success = quote(success_msg)
+        url = request.url_for('view_card', card_id=main_card_id)
+        full_url = f'{url}?success={encoded_success}'
+        return RedirectResponse(full_url, status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') in (404, 500):
+            context = {'error': data.get('error_message'),
+                       'status_code': data.get('status_code'),
+                       'current_user': current_user_dto}
+            return templates.TemplateResponse(request=request,
+                                              name='errors/error_page.html',
+                                              context=context,
+                                              status_code=data.get('status_code')
+                                              )
+        else:
+            error_msg = data['error_message']
+            encoded_error = quote(error_msg)
+            url = request.url_for('view_card', card_id=main_card_id)
+            full_url = f'{url}?error={encoded_error}'
+            return RedirectResponse(full_url, status_code=303)

@@ -78,3 +78,27 @@ class CardsTradingDTO(BaseModel):
     """ Данные для просмотра торговой площадки """
 
     cards: list[CardDTO]
+
+
+class OneCardForMergeDTO(BaseModel):
+    """ Карты доступные для слияния """
+
+    id: int
+    class_card_name: str
+    rarity_card_name: str
+    type_card_name: str
+    class_card_pic: str
+    level: int
+    max_level: int
+    merger: int
+    max_merger: int
+    enhancement: int
+    max_enhancement: int
+
+
+class CardsForMergeDTO(BaseModel):
+    """ Карты подходящие для слияния """
+
+    current_card: OneCardForMergeDTO
+    cards: list[OneCardForMergeDTO]
+    need_cards: int

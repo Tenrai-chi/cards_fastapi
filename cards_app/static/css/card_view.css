@@ -43,3 +43,17 @@
     box-shadow: var(--shadow);
     filter: brightness(1.05);
 }
+.card-action-btn.disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+.card-action-btn.disabled:hover {
+    transform: none;
+    filter: none;
+}
+.card-action-btn {
+    text-decoration: none;
+}

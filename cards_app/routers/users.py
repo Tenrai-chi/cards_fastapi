@@ -10,10 +10,10 @@ from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
 from cards_app.models.users import User
 from cards_app.types import (ViewProfileUseCaseDict, AddFavoriteUserUseCaseDict, RemoveFavoriteUserUseCaseDict,
-                             FavoriteUsersUseCaseDict)
+                             FavoriteUsersUseCaseDict, UserTransactionsUseCaseDict)
 from cards_app.use_cases.figth import ProcessFightUseCase
 from cards_app.use_cases.profile import (ViewProfileUseCase, AddFavoriteUserUseCase, RemoveFavoriteUserUseCase,
-                                         FavoriteUsersUseCase)
+                                         FavoriteUsersUseCase, UserTransactionsUseCase)
 
 router = APIRouter(prefix='/users', tags=['users'])
 
@@ -42,6 +42,37 @@ async def view_favorite_users(request: Request,
                                           status_code=data.get('status_code'))
     else:
         if data.get('status_code') == 404:
+            return templates.TemplateResponse(request=request,
+                                              name='errors/error_page.html',
+                                              context={'error': data.get('error_message'),
+                                                       'status_code': data.get('status_code'),
+                                                       'current_user': current_user_dto},
+                                              status_code=data.get('status_code')
+                                              )
+
+
+@router.get(path='/transactions', name='transactions')
+async def transactions(request: Request,
+                       session_db: AsyncSession = Depends(get_db_session),
+                       current_user: User | None = Depends(get_current_user_with_profile),
+                       ):
+    """ Просмотр транзакций пользователя """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = UserTransactionsUseCase(session_db)
+    data: UserTransactionsUseCaseDict = await use_case.execute(current_user=current_user)
+    if data.get('transactions_dto'):
+        context = {'request': request,
+                   'current_user': current_user_dto,
+                   'transactions_dto': data['transactions_dto'],
+                   }
+
+        return templates.TemplateResponse(request=request,
+                                          name='users/transactions.html',
+                                          context=context,
+                                          status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') == 400:
             return templates.TemplateResponse(request=request,
                                               name='errors/error_page.html',
                                               context={'error': data.get('error_message'),

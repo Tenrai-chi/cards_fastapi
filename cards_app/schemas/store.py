@@ -48,8 +48,8 @@ class AmuletsStoreDTO(BaseModel):
 
     id: int
     name: str
-    bonus_hp: int
-    bonus_damage: int
+    bonus_hp: float
+    bonus_damage: float
     price: int
     image: str
     discount: int
@@ -75,6 +75,35 @@ class AllStoreDTO(BaseModel):
     amulets: list[AmuletsStoreDTO] | None
     upgrade_items: list[UpgradeItemsStoreDTO] | None
 
+
+class ExpItemRewardDTO(BaseModel):
+    """ Информация о книге полученной из сундука """
+
+    name: str
+    experience_amount: int
+    image: str
+
+
+class AmuletRewardDTO(BaseModel):
+    """ Информация об амулете полученном из сундука """
+
+    name: str
+    bonus_hp: float
+    bonus_damage: float
+    image: str
+    rarity_name: str
+
+
+class OpenBoxAmuletDTO(BaseModel):
+    """ Вывод наград из сундуков амулетов """
+
+    amulets: list[AmuletRewardDTO]
+
+
+class OpenBoxExpItemDTO(BaseModel):
+    """ Вывод наград из сундуков предметов опыта """
+
+    boxs: list[ExpItemRewardDTO]
 
 
 

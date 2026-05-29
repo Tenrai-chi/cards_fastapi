@@ -5,8 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from cards_app.exeptions import NotEnoughSlotsError
-from cards_app.models import UsersInventory, ExperienceItems, User, AmuletItem, AmuletType
+from cards_app.exeptions import NotEnoughSlotsError, AmuletNotFoundError, NotAmuletOwnerError
+from cards_app.models import UsersInventory, ExperienceItems, User, AmuletItem, AmuletType, UpgradeItemsUsers, Card, \
+    UpgradeItemsType
 from cards_app.types import RewardLootAfterFightDict
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def add_experience_book(session_db: AsyncSession,
                               user_profile_id: int,
                               amount: int,
-                              rarity_book: str = None,
+                              book: ExperienceItems = None,
                               name_book: str = None
                               ) -> None:
     """ Добавляет книги опыта в инвентарь пользователя.
@@ -24,18 +25,20 @@ async def add_experience_book(session_db: AsyncSession,
         Принимает в аргументах либо редкость, либо название книги
         Args:
             session_db: сессия базы данных
-            user_profile_id: ID профиля пользователя
+            user_profile_id: ID Profile пользователя
             amount: количество
-            rarity_book: редкость книги
+            book: сущность книги
             name_book: название книги
     """
 
     if name_book:
         stmt_item = select(ExperienceItems).where(ExperienceItems.name == name_book)
+        result = await session_db.execute(stmt_item)
+        item = result.scalar_one_or_none()
+    elif book:
+        item = book
     else:
-        stmt_item = select(ExperienceItems).where(ExperienceItems.rarity == rarity_book)
-    result = await session_db.execute(stmt_item)
-    item = result.scalar_one_or_none()
+        raise ValueError(f'Параметры name и item пусты')
 
     stmt_inv = select(UsersInventory).where(
         UsersInventory.owner_id == user_profile_id,
@@ -47,7 +50,7 @@ async def add_experience_book(session_db: AsyncSession,
     if inventory:
         inventory.amount += amount
         session_db.add(inventory)
-        logger.info(f'Пользователь ID Profile {user_profile_id} получил {name_book or rarity_book}')
+        logger.info(f'Пользователь ID Profile {user_profile_id} получил {item.name} {amount} шт.')
     else:
         new_inventory = UsersInventory(
             owner_id=user_profile_id,
@@ -55,7 +58,42 @@ async def add_experience_book(session_db: AsyncSession,
             amount=amount
         )
         session_db.add(new_inventory)
-        logger.info(f'Пользователь ID Profile {user_profile_id} получил книгу {name_book or rarity_book}')
+        logger.info(f'Пользователь ID Profile {user_profile_id} получил книгу {item.name} {amount} шт.')
+
+
+async def add_upgrade_item_to_user(session_db: AsyncSession,
+                                   user_profile_id: int,
+                                   upgrade_item: UpgradeItemsType,
+                                   ) -> None:
+    """ Добавляет книги опыта в инвентарь пользователя.
+        Если у пользователя уже есть такой предмет – увеличивает количество,
+        иначе создаёт новую запись.
+        Принимает в аргументах либо редкость, либо название книги
+        Args:
+            session_db: сессия базы данных
+            user_profile_id: ID Profile пользователя
+            upgrade_item: сущность предмета усиления
+    """
+
+    stmt_inv = select(UpgradeItemsUsers).where(
+        UpgradeItemsUsers.owner_id == user_profile_id,
+        UpgradeItemsUsers.upgrade_item_type_id == upgrade_item.id
+    )
+    inv_result = await session_db.execute(stmt_inv)
+    inventory = inv_result.scalar_one_or_none()
+
+    if inventory:
+        inventory.amount += 1
+        session_db.add(inventory)
+        logger.info(f'Пользователь ID Profile {user_profile_id} получил {upgrade_item.name}')
+    else:
+        new_inventory = UpgradeItemsUsers(
+            owner_id=user_profile_id,
+            upgrade_item_type_id=upgrade_item.id,
+            amount=1
+        )
+        session_db.add(new_inventory)
+        logger.info(f'Пользователь ID Profile {user_profile_id} получил {upgrade_item.name}')
 
 
 async def can_user_receive_amulet(session_db: AsyncSession,
@@ -73,17 +111,16 @@ async def can_user_receive_amulet(session_db: AsyncSession,
     all_amulets = await get_all_amulets_user(session_db, current_user.profile.id)
     if need_slots > current_user.profile.amulet_slots - len(all_amulets):
         logger.warning(f'Пользователь ID {current_user.profile.id} пытается получить амулет, но не хватает слотов '
-                       f'(нужно {need_slots}, свободно {current_user.profile.card_slots - len(all_amulets)})')
+                       f'(нужно {need_slots}, свободно {current_user.profile.amulet_slots - len(all_amulets)})')
         raise NotEnoughSlotsError('У вас недостаточно места для новых амулетов')
 
 
 async def get_all_amulets_user(session_db: AsyncSession, owner_id: int
                                ) -> list[AmuletItem]:
-
     """ Возвращает список всех амулетов пользователя.
         Args:
             session_db: сессия базы данных
-            owner_id: ID профиля владельца
+            owner_id: ID Profile владельца
 
         Returns:
             list[AmuletItem]: список амулетов, принадлежащих пользователю
@@ -101,17 +138,25 @@ async def get_all_amulets_user(session_db: AsyncSession, owner_id: int
 
 async def give_amulet_to_user(session_db: AsyncSession,
                               owner_id: int,
-                              name_amulet: str) -> None:
+                              name_amulet: str | None = None,
+                              amulet: AmuletType | None = None
+                              ) -> None:
     """ Создает в инвентарь пользователя амулет по названию амулета.
         Args:
             session_db: сессия базы данных
-            owner_id: ID профиля пользователя
+            owner_id: ID Profile пользователя
             name_amulet: название амулета
+            amulet: амулет
     """
 
-    stmt_amulet = select(AmuletType).where(AmuletType.name == name_amulet)
-    result = await session_db.execute(stmt_amulet)
-    amulet_type = result.scalar_one_or_none()
+    if name_amulet:
+        stmt_amulet = select(AmuletType).where(AmuletType.name == name_amulet)
+        result = await session_db.execute(stmt_amulet)
+        amulet_type = result.scalar_one_or_none()
+    elif amulet:
+        amulet_type = amulet
+    else:
+        raise ValueError(f'Параметры name_amulet и amulet пусты')
 
     new_amulet_item = AmuletItem(amulet_type_id=amulet_type.id,
                                  owner_id=owner_id,
@@ -120,6 +165,73 @@ async def give_amulet_to_user(session_db: AsyncSession,
                                  )
     session_db.add(new_amulet_item)
     logger.info(f'Пользователь ID Profile {owner_id} получил амулет "{name_amulet}"')
+
+
+async def delete_amulet(session_db: AsyncSession,
+                        owner_id: int,
+                        amulet_id: int
+                        ) -> int:
+    """ Удаление амулета из инвентаря пользователя.
+        Args:
+            session_db: сессия базы данных
+            owner_id: ID Profile пользователя, который запросил удаление
+            amulet_id: ID амулета
+        Returns:
+            int: 50 % цены удаления (продажи)
+        Raises:
+            - AmuletNotFoundError: если такого амулета нет в базе данных
+            - NotAmuletOwnerError: если пользователь не является владельцем
+    """
+
+    stmt_amulet = (
+        select(AmuletItem)
+        .where(AmuletItem.id == amulet_id)
+        .options(selectinload(AmuletItem.amulet_type))
+    )
+    result = await session_db.execute(stmt_amulet)
+    amulet = result.scalar_one_or_none()
+    if amulet is None:
+        logger.error(f'Амулет ID {amulet_id} не найден')
+        raise AmuletNotFoundError()
+    if amulet.owner_id != owner_id:
+        logger.error(f'Пользователь ID {owner_id} попытался удалить амулет ID {amulet_id}'
+                     f'не являясь владельцем')
+        raise NotAmuletOwnerError()
+    if amulet.card_id:
+        await remove_amulet_from_card(session_db=session_db,
+                                      amulet=amulet)
+    # Удалить амулет и добавить в сессию
+    logger.info(f'Амулет ID {amulet.id} удален')
+    price_for_sell = amulet.amulet_type.price // 2
+    await session_db.delete(amulet)
+    return price_for_sell
+
+
+async def remove_amulet_from_card(session_db: AsyncSession,
+                                  amulet: AmuletItem | None = None,
+                                  card_id: int | None = None,
+                                  ) -> None:
+    """ Снятие амулета с карты
+        Args:
+            session_db: сессия базы данных
+            amulet: Амулет (при необходимости)
+            card_id: ID карты (при необходимости)
+    """
+
+    if amulet:
+        amulet.card_id = None
+        session_db.add(amulet)
+        logger.info(f'Амулет ID {amulet.id} снят с карты')
+
+    elif card_id:
+        stmt_card = select(AmuletItem).where(AmuletItem.card_id == card_id)
+        result = await session_db.execute(stmt_card)
+        amulet = result.scalar_one_or_none()
+        if amulet is None:
+            return
+        amulet.card_id = None
+        session_db.add(amulet)
+        logger.info(f'Амулет ID {amulet.id} снят с карты')
 
 
 async def reward_loot_after_fight(session_db: AsyncSession,
@@ -132,7 +244,7 @@ async def reward_loot_after_fight(session_db: AsyncSession,
         Args:
             session_db: сессия базы данных
             user: User + Profile пользователя
-            buff_value: численное значение бафа, если карта пользователя класса Эльф
+            buff_value: численное значение усиления, если карта пользователя класса Эльф
         Returns:
             RewardLootAfterFightDict:
                 - amulets (list[AmuletType]):
@@ -215,3 +327,77 @@ async def get_all_exp_items(session_db: AsyncSession) -> list[ExperienceItems]:
     result = await session_db.execute(stmt_exp_items)
     exp_items = list(result.scalars().all())
     return exp_items
+
+
+async def get_exp_items_in_user_inventory(session_db: AsyncSession,
+                                          owner_id: int
+                                          ) -> list[UsersInventory]:
+    """ Получает список книг опыта в инвентаре пользователя.
+        Args:
+            session_db: сессия базы данных
+            owner_id: ID Profile пользователя
+        Returns:
+            list[UsersInventory]: список книг опыта
+    """
+
+    stmt_exp_items = (
+        select(UsersInventory)
+        .where(UsersInventory.owner_id == owner_id, UsersInventory.amount > 0)
+        .options(selectinload(UsersInventory.item))
+        .order_by(UsersInventory.item_id)
+    )
+    result = await session_db.execute(stmt_exp_items)
+    exp_items = list(result.scalars().all())
+
+    return exp_items
+
+
+async def get_upgrade_items_in_user_inventory(session_db: AsyncSession,
+                                              owner_id: int
+                                              ) -> list[UpgradeItemsUsers]:
+    """ Получает список предметов усиления в инвентаре пользователя.
+        Args:
+            session_db: сессия базы данных
+            owner_id: ID Profile пользователя
+        Returns:
+            list[UpgradeItemsUsers]: список предметов усиления
+    """
+
+    stmt_upg_items = (
+        select(UpgradeItemsUsers)
+        .where(UpgradeItemsUsers.owner_id == owner_id)
+        .options(selectinload(UpgradeItemsUsers.upgrade_item_type))
+        .order_by(UpgradeItemsUsers.id)
+    )
+    result = await session_db.execute(stmt_upg_items)
+    upg_items = list(result.scalars().all())
+    return upg_items
+
+
+async def get_amulets_in_user_inventory(session_db: AsyncSession,
+                                        owner_id: int
+                                        ) -> list[AmuletItem]:
+    """ Получает список амулетов в инвентаре пользователя.
+        Args:
+            session_db: сессия базы данных
+            owner_id: ID Profile пользователя
+        Returns:
+            list[AmuletItem]: список амулетов
+    """
+
+    stmt_amulets = (
+        select(AmuletItem)
+        .where(AmuletItem.owner_id == owner_id)
+        .options(
+            selectinload(AmuletItem.amulet_type).selectinload(AmuletType.rarity),
+            selectinload(AmuletItem.card).selectinload(Card.class_card),
+            selectinload(AmuletItem.card).selectinload(Card.rarity_card)
+        )
+        .order_by(AmuletItem.id)
+    )
+    result = await session_db.execute(stmt_amulets)
+    amulets = list(result.scalars().all())
+    return amulets
+
+
+

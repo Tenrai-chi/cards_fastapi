@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Открытие сундука — полученные амулеты{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_store.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/store.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="open-box-page">
+    <h1 class="page-title">🎁 Открытие сундука</h1>
+    <p class="page-subtitle">Вы получили следующие амулеты:</p>
+
+<div class="store-grid">
+    {% for amulet in amulets_items_dto.amulets %}
+    <div class="store-card">
+        <div class="card-image">
+            <img src="{{ url_for('static', path=amulet.image) }}" alt="{{ amulet.name }}">
+        </div>
+        <div class="card-info">
+            <div class="card-name">{{ amulet.name }} ({{ amulet.rarity_name }})</div>
+            <div class="card-stats">
+                {% if amulet.bonus_hp != 0 %}
+                <div class="card-stat">
+                    ❤️ {% if amulet.bonus_hp > 0 %}+{% endif %}{{ amulet.bonus_hp }} HP
+                </div>
+                {% endif %}
+                {% if amulet.bonus_damage != 0 %}
+                <div class="card-stat">
+                    ⚔️ {% if amulet.bonus_damage > 0 %}+{% endif %}{{ amulet.bonus_damage }} урон
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+</div>
+{% endblock %}

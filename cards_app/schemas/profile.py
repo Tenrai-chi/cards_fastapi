@@ -96,3 +96,18 @@ class RatingTableDTO(BaseModel):
     size: int
     total_pages: int
 
+
+class RecordTransaction(BaseModel):
+    """ Запись в таблице транзакций """
+
+    date_and_time: datetime
+    before: int
+    after: int
+    comment: str
+    delta: int
+
+
+class TransactionsDTO(BaseModel):
+    """ Транзакции пользователя """
+
+    transactions: list[RecordTransaction] | None = None
