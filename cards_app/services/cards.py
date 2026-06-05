@@ -49,7 +49,7 @@ async def get_card_with_details(session_db: AsyncSession,
     result_card = await session_db.execute(stmt_card)
     card = result_card.scalar_one_or_none()
     if card is None:
-        logger.warning(f'Карта с id={card_id} не найдена в БД')
+        logger.warning(f'Карта ID {card_id} не найдена')
         raise CardNotFoundError(card_id)
     return card
 
@@ -60,7 +60,6 @@ async def get_rarities_and_classes(session_db: AsyncSession
         и вывода полученной информации на страницу получения случайной карты
         Args:
             session_db: сессия базы данных
-
         Returns:
             dict RaritiesAndClassesDict:
                 - rarities (list[Rarity]): список всех редкостей
@@ -160,7 +159,7 @@ async def generate_card_start_event(session_db: AsyncSession,
 
     session_db.add(new_card)
     await session_db.flush()
-    logger.info(f'Сгенерирована карта в стартовом событии: id={new_card.id}, владелец={user_profile_id}')
+    logger.info(f'Сгенерирована карта в стартовом событии: ID {new_card.id}, владелец ID {user_profile_id}')
 
     return new_card.id
 
@@ -188,7 +187,7 @@ async def create_new_card_from_template(session_db: AsyncSession,
 
     session_db.add(new_card)
     await session_db.flush()
-    logger.info(f'Создана карта: id={new_card.id}, владелец={owner_id}')
+    logger.info(f'Создана карта: ID {new_card.id}, владелец ID {owner_id}')
 
     return new_card.id
 
@@ -198,10 +197,8 @@ async def get_temp_card_in_store(session_db: AsyncSession, card_temp_id: int) ->
         Args:
             session_db: сессия базы данных
             card_temp_id: ID карты в магазине
-
         Returns:
             CardStore: объект карты-шаблона, доступной для покупки
-
         Raises:
             CardInStoreNotFoundError: если карта с указанным ID не найдена в магазине.
             CardNotOnSaleError: если карта найдена, но поле sale_now == False (не продаётся в данный момент).
@@ -212,11 +209,11 @@ async def get_temp_card_in_store(session_db: AsyncSession, card_temp_id: int) ->
     temp_card = result_temp_card.scalars().one_or_none()
 
     if temp_card is None:
-        logger.warning(f'Карта в магазине с id={card_temp_id} не найдена')
+        logger.warning(f'Карта в магазине ID {card_temp_id} не найдена')
         raise CardInStoreNotFoundError(card_id=card_temp_id)
 
     if temp_card.sale_now is False:
-        logger.warning(f'Карта в магазине с id={card_temp_id} на данный момент не продается')
+        logger.warning(f'Карта в магазине ID {card_temp_id} на данный момент не продается')
         raise CardNotOnSaleError()
 
     return temp_card
@@ -231,7 +228,6 @@ async def get_all_cards_user(session_db: AsyncSession,
             session_db: сессия базы данных
             owner_id: ID Profile владельца
             with_details: маркер нужно ли подгружать детали
-
         Returns:
             List[Card]: список карт, принадлежащих пользователю
     """
@@ -447,6 +443,8 @@ async def merge_card(session_db: AsyncSession,
     """
 
     if current_card_id in cards_for_merge_ids:
+        logger.warning(f'Попытка пользователя ID Profile {owner_id} '
+                       f'слить в карту ID {current_card_id} саму себя')
         raise SelfMergeError
 
     stmt_current_card = select(Card).where(Card.id == current_card_id)
@@ -454,12 +452,20 @@ async def merge_card(session_db: AsyncSession,
     current_card = result_card.scalar_one_or_none()
 
     if current_card is None:
+        logger.warning(f'Пользователь ID {owner_id} попытался увеличить уровень слияния карты ID {current_card_id}, '
+                       f'но она не существует')
         raise CardNotFoundError(card_id=current_card_id)
     if current_card.owner_id != owner_id:
+        logger.warning(f'ID Pofile {owner_id} не является владельцем карты ID {current_card_id} '
+                       f'и не может повысить ее уровень слияния')
         raise NotCardOwnerError
     if not cards_for_merge_ids:
+        logger.warning(f'Пользователь ID Profile {owner_id} попытался увеличить уровень слияния карты ID {current_card_id} '
+                       f'без подходящих для этого карт')
         raise EmptyCardsForMergeError
     if current_card.max_merger - current_card.merger < len(cards_for_merge_ids):
+        logger.warning(f'Пользователь ID Profile{owner_id} попытался увеличить уровень слияния карты ID {current_card_id} '
+                       f'но было выбрано больше карт, чем необходимо')
         raise TooManyCardsMergeError
 
     stmt_cards_for_merge = (
@@ -471,9 +477,11 @@ async def merge_card(session_db: AsyncSession,
 
     for card_for_merge in cards_for_merge:
         if card_for_merge.owner_id != owner_id:
+            logger.warning(f'Пользователь ID Profile {owner_id} не является владельцем карты, которую выбрал для слияния')
             raise NotCardOwnerError
 
     if len(cards_for_merge_ids) != len(cards_for_merge):
+        logger.warning(f'Пользователь ID {owner_id} попытался слить карту, не являясь ее владельцем')
         raise CardNotFoundError()
 
     # Параллельное удаление карт

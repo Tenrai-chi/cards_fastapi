@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Усиление карты{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/card_store.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/store.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/inventory.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/user_cards.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', path='css/upgrade_card.css') }}">
+
+
+{% endblock %}
+
+{% block content %}
+<div class="inventory-page">
+    <!-- Текущая карта -->
+    <div class="current-card-wrapper">
+        <div class="selected-card" data-card-id="{{ upgrade_dto.card.id }}">
+            <div class="card-image">
+                <img src="{{ url_for('static', path=upgrade_dto.card.image) }}" alt="{{ upgrade_dto.card.class_name }}">
+            </div>
+            <div class="card-info">
+                <div class="card-name">
+                    {{ upgrade_dto.card.class_name }} ({{ upgrade_dto.card.rarity_name }})
+                </div>
+                <div class="card-stats">
+                    <div class="card-stat">❤️ HP: {{ upgrade_dto.card.hp }}</div>
+                    <div class="card-stat">⚔️ Урон: {{ upgrade_dto.card.damage }}</div>
+                    <div class="card-stat">🏷️ Тип: {{ upgrade_dto.card.type_name }}</div>
+                    <div class="card-stat">🛠️ Усиление: {{ upgrade_dto.card.enhancement }}/{{ upgrade_dto.card.max_enhancement }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Предметы усиления -->
+    {% if upgrade_dto.upgrade_items %}
+    <section class="inventory-section">
+        <h2 class="section-title">⚡ Предметы усиления</h2>
+        <div class="store-grid">
+            {% for item in upgrade_dto.upgrade_items %}
+            <div class="store-card">
+                <div class="card-image">
+                    <img src="{{ url_for('static', path=item.image) }}" alt="{{ item.name }}">
+                </div>
+                <div class="card-info">
+                    <div class="card-name">{{ item.name }}</div>
+                    <div class="card-description">{{ item.description }}</div>
+                    <div class="card-stats">
+                        <div class="card-stat">📦 Количество: {{ item.amount }}</div>
+                    </div>
+                    <div class="card-price">
+                        <span class="price-label">Цена использования:</span>
+                        <span class="price
+                            {%- if not current_user or current_user.gold < item.gold_for_use %} price-insufficient
+                            {%- else %} price-sufficient
+                            {%- endif %}">
+                            {{ item.gold_for_use }}
+                        </span>
+                    </div>
+                    <form class="action-form" action="{{ url_for('upgrade_card', card_id=upgrade_dto.card.id, upgrade_id=item.id ) }}" method="post">
+                        <input type="hidden" name="upgrade_item_id" value="{{ item.id }}">
+                        <button type="submit" class="card-action-btn"
+                            {% if not current_user or current_user.gold < item.gold_for_use %}disabled{% endif %}>
+                            Использовать
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <div class="empty-store">
+        <p>😢 У вас нет предметов усиления. Купите их в магазине!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

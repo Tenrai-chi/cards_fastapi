@@ -51,7 +51,7 @@
         {% if card_dto.is_owner %}
 <div class="card-actions-column">
     {% if card_dto.card.enhancement < card_dto.card.max_enhancement %}
-        <a href="" class="card-action-btn">🛠️ Усиление</a>
+        <a href="{{ url_for('view_upgrade_card', card_id=card_dto.card.id) }}" class="card-action-btn">🛠️ Усиление</a>
     {% else %}
         <span class="card-action-btn disabled">🛠️ Усиление</span>
     {% endif %}

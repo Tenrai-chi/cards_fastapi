@@ -67,6 +67,19 @@ class TooManyCardsMergeError(CardException):
         super().__init__(message, status_code=400)
 
 
+class MaxUpgradeCardError(CardException):
+    """ Исключение, возникающее при попытке усилить карту,
+        которая уже имеет максимальное усиление.
+        Возвращает HTTP статус 400 (Bad Request)
+    """
+
+    def __init__(self):
+        """ Формирует сообщение об ошибке """
+
+        message = f'Эта карта уже имеет максимальный уровень усиления'
+        super().__init__(message, status_code=400)
+
+
 class SelfMergeError(CardException):
     """ Исключение, если список карт для слияния больше,
         чем необходимо для максимального уровня слияния.

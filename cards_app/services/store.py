@@ -1,17 +1,17 @@
 import logging
-from random import choices, randint, choice
+from random import choices, choice
 
 from collections import Counter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from cards_app.exeptions import BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError, AmuletNotOnSaleError, \
-    UpgradeItemNotFoundError
+from cards_app.exeptions import (BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError, AmuletNotOnSaleError,
+                                 UpgradeItemNotFoundError)
 from cards_app.models import CardStore, Rarity, Boxes, AmuletType, UpgradeItemsType, ExperienceItems, User, AmuletRarity
 from cards_app.services.cards import generate_max_stat_ur_card, create_record_in_history_receiving_card
-from cards_app.services.inventory import add_experience_book, can_user_receive_amulet, give_amulet_to_user, \
-    add_upgrade_item_to_user
+from cards_app.services.inventory import (add_experience_book, can_user_receive_amulet, give_amulet_to_user,
+                                          add_upgrade_item_to_user)
 from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
 
 logger = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ async def open_box_card(session_db: AsyncSession, user: User) -> int:
         Запускает создание записи о получении карты
         Args:
             session_db: сессия базы данных
-            user: User + Profile
+            user: User + Profile текущего пользователя
         Return:
             int: ID созданной карты
     """
@@ -155,7 +155,7 @@ async def open_box_exp_item(session_db: AsyncSession, user: User
         Возвращает список созданных книг опыта.
         Args:
             session_db: сессия базы данных
-            user: User + Profile
+            user: User + Profile текущего пользователя
         Returns:
             list[ExperienceItems]: список книг, полученных пользователем
     """
@@ -195,7 +195,7 @@ async def open_box_amulet(session_db: AsyncSession, user: User
         Возвращает список созданных книг опыта.
         Args:
             session_db: сессия базы данных
-            user: User + Profile
+            user: User + Profile текущего пользователя
         Returns:
             list[AmuletType]: список амулетов полученных из сундука
     """
@@ -225,7 +225,6 @@ async def open_box_amulet(session_db: AsyncSession, user: User
     reward_amulets = [first_amulet]
 
     for _ in range(4):
-        # Выбираем редкость по весам
         chosen_rarity_name = choices(candidates_rarity, weights=weights, k=1)[0]
         available = amulets_by_rarity.get(chosen_rarity_name, [])
         chosen_amulet = choice(available)
@@ -250,7 +249,7 @@ async def buy_exp_items(session_db: AsyncSession,
             session_db: сессия базы данных
             exp_item_id: ID покупаемой книги
             exp_item_amount: количество покупаемых книг
-            user: User + Profile
+            user: User + Profile текущего пользователя
         Raises:
             ExpItemNotFoundError: если запрашивается покупка несуществующей книги
     """
@@ -259,6 +258,7 @@ async def buy_exp_items(session_db: AsyncSession,
     result = await session_db.execute(stmt_exp_item)
     exp_item = result.scalar_one_or_none()
     if exp_item is None:
+        logger.warning(f'Попытка пользователя ID {user.id} купить несуществующую книгу опыта с ID {exp_item_id}')
         raise ExpItemNotFoundError()
 
     need_gold = exp_item.price * exp_item_amount
@@ -281,11 +281,11 @@ async def buy_amulet(session_db: AsyncSession,
                      amulet_id: int,
                      user: User
                      ) -> None:
-    """ Покупка книг в магазине предметов.
+    """ Покупка амулета в магазине предметов.
         Args:
             session_db: сессия базы данных
             amulet_id: ID покупаемого амулета
-            user: User + Profile
+            user: User + Profile текущего пользователя
         Raises:
             AmuletNotFoundError: если запрашивается покупка несуществующего амулета
             AmuletNotOnSaleError: попытка купить амулет, который не продается
@@ -299,8 +299,11 @@ async def buy_amulet(session_db: AsyncSession,
     result = await session_db.execute(stmt_amulet)
     amulet = result.scalar_one_or_none()
     if amulet is None:
+        logger.warning(f'Пользователь ID {user.id} попытался купить несуществующий амулет ID {amulet_id}')
         raise AmuletNotFoundError()
     if not amulet.sale_now:
+        logger.warning(f'Пользователь ID {user.id} попытался купить амулет '
+                       f'ID {amulet_id}, который находится не в продаже')
         raise AmuletNotOnSaleError()
 
     gold_transaction = await charge_user_gold(session_db=session_db,
@@ -321,11 +324,11 @@ async def buy_upgrade_item(session_db: AsyncSession,
                            upgrade_item_id: int,
                            user: User
                            ) -> None:
-    """ Покупка книг в магазине предметов.
+    """ Покупка предмета усиления в магазине предметов.
         Args:
             session_db: сессия базы данных
             upgrade_item_id: ID предмета усиления
-            user: User + Profile
+            user: User + Profile текущего пользователя
         Raises:
             UpgradeItemNotFoundError: если запрашивается покупка несуществующего предмета усиления
     """
@@ -334,6 +337,8 @@ async def buy_upgrade_item(session_db: AsyncSession,
     result = await session_db.execute(stmt_upgrade_item)
     upgrade_item = result.scalar_one_or_none()
     if upgrade_item is None:
+        logger.warning(f'Пользователь ID {user.id} попытался купить несуществующий'
+                       f'предмет усиления ID {upgrade_item_id}')
         raise UpgradeItemNotFoundError()
 
     gold_transaction = await charge_user_gold(session_db=session_db,

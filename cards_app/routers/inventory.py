@@ -54,17 +54,17 @@ async def inventory(request: Request,
                                           )
 
 
-@router.get(path='/level_up/{card_id}', name='view_level_up')
-async def view_level_up(request: Request,
-                        card_id: int,
-                        session_db: AsyncSession = Depends(get_db_session),
-                        current_user: User | None = Depends(get_current_user_with_profile),
-                        error: str = None,
-                        success: str = None
-                        ):
-    """ Просмотр страницы для улучшения карты """
+# @router.get(path='/level_up/{card_id}', name='view_level_up')
+# async def view_level_up(request: Request,
+#                         card_id: int,
+#                         session_db: AsyncSession = Depends(get_db_session),
+#                         current_user: User | None = Depends(get_current_user_with_profile),
+#                         error: str = None,
+#                         success: str = None
+#                         ):
+#     """ Просмотр страницы для улучшения карты """
     # todo сделать позже
-    pass
+    # pass
     # current_user_dto = await user_info_to_dto(current_user)
     # use_case = ViewInventoryUseCase(session_db)
     # data: ViewInventoryUseCaseDict = await use_case.execute(current_user=current_user,

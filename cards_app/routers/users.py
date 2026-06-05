@@ -126,9 +126,7 @@ async def add_user_favorite(request: Request,
                             session_db: AsyncSession = Depends(get_db_session),
                             current_user: User | None = Depends(get_current_user_with_profile),
                             ):
-    """ Добавление пользователя в список избранных.
-        Редиректит на другие станицы в зависимости от успеха или неудачи.
-    """
+    """ Добавление пользователя в список избранных """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = AddFavoriteUserUseCase(session_db)
@@ -161,9 +159,7 @@ async def remove_user_favorite(request: Request,
                                session_db: AsyncSession = Depends(get_db_session),
                                current_user: User | None = Depends(get_current_user_with_profile),
                                ):
-    """ Добавление пользователя в список избранных.
-        Редиректит на другие станицы в зависимости от успеха или неудачи.
-    """
+    """ Добавление пользователя в список избранных """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = RemoveFavoriteUserUseCase(session_db)
@@ -198,10 +194,7 @@ async def fight_user(request: Request,
                      session_db: AsyncSession = Depends(get_db_session),
                      current_user: User | None = Depends(get_current_user_with_profile),
                      ):
-    """ Рейтинговый бой между участниками.
-        Если бой прошел, то выводит итоги боя
-        Если произошли ошибки, то редиректит
-    """
+    """ Рейтинговый бой между участниками """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ProcessFightUseCase(session_db)
@@ -232,4 +225,3 @@ async def fight_user(request: Request,
             url = request.url_for('user_profile', user_id=user_id)
             full_url = f'{url}?error={encoded_error}'
             return RedirectResponse(full_url, status_code=303)
-

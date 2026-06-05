@@ -104,7 +104,3 @@ class OpenBoxExpItemDTO(BaseModel):
     """ Вывод наград из сундуков предметов опыта """
 
     boxs: list[ExpItemRewardDTO]
-
-
-
-

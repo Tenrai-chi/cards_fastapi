@@ -53,9 +53,11 @@ __all__ = [
     'ExpItemsInventoryDTO',
     'AmuletsInventoryDTO',
     'UpgradeItemsInventoryDTO',
-    'FullInfoLeveling',
+    'FullInfoLevelingDTO',
     'CardsForMergeDTO',
     'OpenBoxAmuletDTO',
-    'OpenBoxExpItemDTO'
+    'OpenBoxExpItemDTO',
+    'FullInfoUpgradingDTO',
+    'CardUpgradingDTO'
 
 ]

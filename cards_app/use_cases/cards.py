@@ -2,13 +2,18 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cards_app.schemas import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
+from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.types import (ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict,
-                             ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict)
+                             ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
+                             ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.exeptions import (NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
-                                 TooManyCardsMergeError, SelfMergeError)
+                                 TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
+                                 InsufficientFundsUserError, MaxUpgradeCardError)
 from cards_app.services.cards import (get_card_with_details, get_rarities_and_classes, generate_random_card,
                                       create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
                                       get_cards_for_merge, merge_card)
+from cards_app.services.inventory import upgrade_card
 
 from cards_app.schemas.cards import (AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard,
                                      UserCardsDTO, CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
@@ -32,17 +37,14 @@ class ViewCardUseCase:
                Args:
                    card_id: ID карты для просмотра.
                    current_user: User + Profile текущего пользователя
-                       Может быть None, если пользователь не авторизован.
-
                Returns:
                    ViewCardUseCaseDict:
                        - card_info_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
                        - error_message (str | None): текст ошибки, если произошла.
-                       - status_code (int): HTTP статус-код (200, 404, 500).
-
+                       - status_code (int): HTTP статус-код.
                Note:
                    - 200: успешное получение данных.
-                   - 404: карта не найдена (CardNotFoundError).
+                   - 404: карта не найдена.
                    - 500: любая другая непредвиденная ошибка.
                """
 
@@ -188,6 +190,7 @@ class GetFreeCardUseCase:
             answer_data['success'] = False
             answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
             answer_data['status_code'] = 400
+            logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
             return answer_data
         try:
             if current_user.profile.receiving_timer is not None:
@@ -195,6 +198,8 @@ class GetFreeCardUseCase:
                                                           need_hours=hours_for_get_free_card)
                 if not check_time:
                     base_message = f'Вы не можете получить бесплатную карту'
+                    logger.warning(f'Попытка пользователя {current_user.id} получить бесплатную карту, '
+                                   f'но прошло недостаточно времени. Осталось: {hours}')
                     raise CooldownNotElapsedError(base_message=base_message, hours=hours)
 
             await check_can_user_receive_card(session_db=self.session_db,
@@ -244,7 +249,7 @@ class ViewUserCardsUseCase:
                    ViewUserCardsUseCaseDict:
                        - user_cards_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
                        - error_message (str | None): текст ошибки, если произошла.
-                       - status_code (int): HTTP статус-код (200, 404, 500).
+                       - status_code (int): HTTP статус-код.
 
                Note:
                    - 200: успешное получение данных.
@@ -308,11 +313,10 @@ class ViewTradingUseCase:
 
     async def execute(self) -> ViewTradingUseCaseDict:
         """ Выполняет получение карты и формирует DTO для отображения.
-               Args:
                Returns:
                    ViewTradingUseCaseDict:
                        - cards_trading_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
-                       - status_code (int): HTTP статус-код (200, 404, 500).
+                       - status_code (int): HTTP статус-код.
 
                Note:
                    - 200: успешное получение данных.
@@ -363,11 +367,13 @@ class ViewMergeUseCase:
                       ) -> ViewMergeUseCaseDict:
         """ Выполняет получение карты и формирует DTO для отображения.
                Args:
+                   current_user: User + Profile текущего пользователя
+                   current_card_id: ID текущей карты
                Returns:
                    ViewMergeUseCaseDict:
                        - merge_dto (CardsForMergeDTO | None): DTO с данными карты, амулета и флагом владельца.
-                       - status_code (int): HTTP статус-код (200, 404, 400, 500).
-                       - error_message (str):
+                       - status_code (int): HTTP статус-код.
+                       - error_message (str): сообщение об ошибке
 
                Note:
                    - 200: успешное получение данных.
@@ -379,6 +385,7 @@ class ViewMergeUseCase:
         answer_data = {'merge_dto': None,
                        'status_code': None,
                        'error_message': None}
+
         if current_user is None:
             answer_data['status_code'] = 400
             answer_data['error_message'] = f'Вы должны быть авторизованы'
@@ -449,10 +456,13 @@ class MergeUseCase:
                       ) -> MergeUseCaseDict:
         """ Выполняет получение карты и формирует DTO для отображения.
                Args:
+                   current_user: User + Profile текущего пользователя
+                   current_card_id: ID текущей карты
+                   cards_for_merge: список ID карт для слияния
                Returns:
                    MergeUseCaseDict:
-                       - status_code (int): HTTP статус-код (200, 404, 400, 500).
-                       - error_message (str):
+                       - status_code (int): HTTP статус-код.
+                       - error_message (str): сообщение об ошибке
 
                Note:
                    - 303: успешное получение данных.
@@ -494,5 +504,161 @@ class MergeUseCase:
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в MergeUseCase: {error}', exc_info=True)
+
+        return answer_data
+
+
+class ViewUpgradeUseCase:
+    """ Use case для просмотра доступных карт для слияния """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self,
+                      current_card_id: int,
+                      current_user: User | None
+                      ) -> ViewUpgradeUseCaseDict:
+        """ Выполняет получение карты и формирует DTO для отображения.
+               Args:
+                   current_user: User + Profile текущего пользователя
+                   current_card_id: ID текущей карты
+               Returns:
+                   ViewUpgradeUseCaseDict:
+                       - upgrade_dto (FullInfoUpgradingDTO | None): DTO с информацией для усиления карты
+                       - status_code (int): HTTP статус-код.
+                       - error_message (str): сообщение об ошибке
+
+               Note:
+                   - 200: успешное получение данных.
+                   - 400: нет прав или пользователь не авторизован
+                   - 404: карта не найдена
+                   - 500: любая другая непредвиденная ошибка.
+               """
+
+        answer_data = {'upgrade_dto': None,
+                       'status_code': None,
+                       'error_message': None}
+
+        if current_user is None:
+            answer_data['status_code'] = 400
+            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            return answer_data
+
+        try:
+            current_card = await get_card_with_details(session_db=self.session_db,
+                                                       card_id=current_card_id)
+            if current_card.enhancement >= current_card.max_enhancement:
+                answer_data['status_code'] = 400
+                answer_data['error_message'] = f'Карта уже имеет максимальный уровень усиления'
+                return answer_data
+            if current_card.owner_id != current_user.profile.id:
+                answer_data['status_code'] = 400
+                answer_data['error_message'] = f'Вы не являетесь владельцем этой карты'
+                return answer_data
+
+            current_card_dto = CardUpgradingDTO(id=current_card.id,
+                                                class_name=current_card.class_card.name,
+                                                rarity_name=current_card.rarity_card.name,
+                                                type_name=current_card.type_card.name,
+                                                hp=current_card.hp,
+                                                damage=current_card.damage,
+                                                image=current_card.class_card.image,
+                                                enhancement=current_card.enhancement,
+                                                max_enhancement=current_card.max_enhancement)
+
+            upgrade_items: list = await get_upgrade_items_in_user_inventory(session_db=self.session_db,
+                                                                            owner_id=current_user.profile.id)
+
+            upgrade_items_dto = [UpgradeItemsInventoryDTO(id=item.upgrade_item_type.id,
+                                                          name=item.upgrade_item_type.name,
+                                                          description=item.upgrade_item_type.description,
+                                                          image=item.upgrade_item_type.image,
+                                                          gold_for_use=item.upgrade_item_type.price_of_use,
+                                                          amount=item.amount)
+                                 for item in upgrade_items
+                                 ]
+            upgrade_dto = FullInfoUpgradingDTO(card=current_card_dto,
+                                               upgrade_items=upgrade_items_dto,
+                                               )
+
+            answer_data['status_code'] = 200
+            answer_data['upgrade_dto'] = upgrade_dto
+            return answer_data
+
+        except (CardNotFoundError, ) as error:
+            answer_data['error_message'] = str(error)
+            answer_data['status_code'] = error.status_code
+
+        except Exception as error:
+            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в ViewUpgradeUseCase: {error}', exc_info=True)
+
+        return answer_data
+
+
+class UpgradeUseCase:
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self,
+                      current_card_id: int,
+                      current_user: User | None,
+                      upgrade_item_id: int
+                      ) -> UpgradeUseCaseDict:
+        """ Выполняет получение карты и формирует DTO для отображения.
+               Args:
+                   current_user: User + Profile текущего пользователя
+                   current_card_id: ID текущей карты
+                   upgrade_item_id: ID предмета усиления в инвентаре
+               Returns:
+                   UpgradeUseCaseDict:
+                       - status_code (int): HTTP статус-код.
+                       - error_message (str | None): сообщение об ошибке
+                       - success (bool): флаг о успехе
+                       - success_message (str | NOne): сообщение об успехе
+
+               Note:
+                   - 303: успешное получение данных.
+                   - 400: нет прав или пользователь не авторизован или не хватает предметов
+                   - 404: карта не найдена
+                   - 500: любая другая непредвиденная ошибка.
+               """
+
+        answer_data = {'status_code': None,
+                       'error_message': None,
+                       'success': None,
+                       'success_message': None}
+
+        if current_user is None:
+            answer_data['success'] = False
+            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            answer_data['status_code'] = 400
+            return answer_data
+
+        try:
+            await upgrade_card(session_db=self.session_db,
+                               card_id=current_card_id,
+                               upgrade_item_id=upgrade_item_id,
+                               user=current_user)
+
+            await self.session_db.commit()
+            answer_data['success'] = True
+            answer_data['status_code'] = 303
+            answer_data['success_message'] = f'Вы успешно улучшили карту'
+
+        except (NotEnoughUpgradeItemsError, NotCardOwnerError, CardNotFoundError,
+                MaxUpgradeCardError, InsufficientFundsUserError) as error:
+            await self.session_db.rollback()
+            answer_data['success'] = False
+            answer_data['error_message'] = str(error)
+            answer_data['status_code'] = error.status_code
+
+        except Exception as error:
+            await self.session_db.rollback()
+            answer_data['success'] = False
+            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['status_code'] = 500
+            logger.error(f'Непредвиденная ошибка в UpgradeUseCase: {error}', exc_info=True)
 
         return answer_data

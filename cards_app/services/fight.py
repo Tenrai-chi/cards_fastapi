@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from random import randint
 
@@ -9,6 +10,8 @@ from cards_app.exeptions import SelfFightError, UserNotFoundError, CooldownNotEl
 from cards_app.models import User, FightHistory, Card, AmuletItem, Profile, Guild, Type
 from cards_app.types import FightNowDataDict
 from cards_app.utils.common import time_difference_check
+
+logger = logging.getLogger(__name__)
 
 
 async def validate_battle_preconditions(session_db: AsyncSession,
@@ -34,6 +37,7 @@ async def validate_battle_preconditions(session_db: AsyncSession,
     answer_data = {'user': None,
                    'enemy': None}
     if user_id == enemy_id:
+        logger.warning(f'Пользователь ID {user_id} попытался бросить вызов самому себе')
         raise SelfFightError()
 
     # Получение user+profile участников битвы
@@ -61,10 +65,14 @@ async def validate_battle_preconditions(session_db: AsyncSession,
     enemy = enemy_result.scalar_one_or_none()
 
     if enemy is None:
+        logger.warning(f'Пользователь ID {user_id} попытался бросить вызов несуществующему пользователю ID {enemy_id}')
         raise UserNotFoundError()
     if not user.profile.current_card_id:
+        logger.warning(f'Пользователь ID {user_id} попытался бросить, не имея избранную карту для битвы')
         raise NoCurrentCardError(user.username)
     if not enemy.profile.current_card_id:
+        logger.warning(f'Пользователь ID {user_id} попытался бросить, пользователю ID {enemy.id}, '
+                       f'который не имеет избранную карту для битвы')
         raise NoCurrentCardError(enemy.username)
 
     await check_last_fight(session_db=session_db,
@@ -115,6 +123,8 @@ async def check_last_fight(session_db: AsyncSession,
         can_fight, hours = time_difference_check(check_time=last_fight.date_and_time, need_hours=6)
         if not can_fight:
             base_message = f'Вы не можете бросить вызов этому пользователю'
+            logger.warning(f'Пользователь ID Profile {user_profile_id} бросил вызов пользователю '
+                           f'ID Profile {enemy_profile_id}, но прошло недостаточно времени')
             raise CooldownNotElapsedError(base_message=base_message, hours=hours)
 
 
@@ -282,6 +292,7 @@ async def fight_now(user: User,
     answer_data['winner'] = winner
     answer_data['loser'] = loser
     answer_data['history_fight'] = history_fight
+    logger.info(f'Произошла битва между ID {user.id} и ID {enemy.id}')
     return answer_data
 
 

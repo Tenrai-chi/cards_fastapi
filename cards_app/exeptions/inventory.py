@@ -40,3 +40,15 @@ class NotAmuletOwnerError(InventoryException):
 
         message = f'Вы не являетесь владельцем этого амулета'
         super().__init__(message, status_code=400)
+
+
+class NotEnoughUpgradeItemsError(InventoryException):
+    """ Исключение, возникающее при недостатке предметов усиления в инвентаре.
+        Возвращает HTTP статус 400 (Bad Request)
+    """
+
+    def __init__(self):
+        """ Формирует сообщение об ошибке """
+
+        message = f'У вас недостаточно предметов усиления'
+        super().__init__(message, status_code=400)

@@ -34,6 +34,7 @@ async def update_guild_points_user(session_db: AsyncSession,
         user.profile.guild_point += draw_points
         user.profile.guild.rating += draw_points
     else:
+        logger.error(f'Получен неверный итог боя между пользователями: {result_battle}')
         raise ValueError(f'Принят неверный результат битвы result_battle: {result_battle}')
 
     session_db.add(user)

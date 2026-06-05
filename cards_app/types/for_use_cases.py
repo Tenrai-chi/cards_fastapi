@@ -2,8 +2,8 @@ from typing import TypedDict
 from cards_app.schemas import (AllStoreDTO, UserCardsDTO, CardsTradingDTO, TransactionsDTO,
                                CardInfoDTO, GetFreeCardDTO, NewsDTO, StartEventAwardsDTO,
                                ProfileResponseDTO, RatingTableDTO, FavoriteUsersPageDTO,
-                               CardStoreDTO, FightDTO, FullInventoryDTO, FullInfoLeveling, CardsForMergeDTO,
-                               OpenBoxExpItemDTO, OpenBoxAmuletDTO)
+                               CardStoreDTO, FightDTO, FullInventoryDTO, FullInfoLevelingDTO, CardsForMergeDTO,
+                               OpenBoxExpItemDTO, OpenBoxAmuletDTO, FullInfoUpgradingDTO)
 
 
 class BaseUseCaseDict(TypedDict):
@@ -149,7 +149,7 @@ class ViewInventoryUseCaseDict(BaseUseCaseDict, ErrorMixin):
 class ViewLevelUpUseCaseDict(BaseUseCaseDict):
     """ Кастомный словарь для возврата данных из ViewLevelUpUseCase """
 
-    info_leveling_dto: FullInfoLeveling | None
+    info_leveling_dto: FullInfoLevelingDTO | None
 
 
 class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
@@ -162,7 +162,17 @@ class ViewMergeUseCaseDict(BaseUseCaseDict, ErrorMixin):
     merge_dto: CardsForMergeDTO | None
 
 
+class ViewUpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin):
+    """ Кастомный словарь для возврата данных из ViewUpgradeUseCase """
+
+    upgrade_dto: FullInfoUpgradingDTO | None
+
+
 class MergeUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+    """ Кастомный словарь для возврата данных из MergeUseCase """
+
+
+class UpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 

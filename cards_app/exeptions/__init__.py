@@ -41,5 +41,10 @@ __all__ = [
     'EmptyCardsForMergeError',
     'TooManyCardsMergeError',
     'SelfMergeError',
-    'BoxNotFoundError'
+    'BoxNotFoundError',
+    'AmuletNotOnSaleError',
+    'UpgradeItemNotFoundError',
+    'ExpItemNotFoundError',
+    'NotEnoughUpgradeItemsError',
+    'MaxUpgradeCardError'
 ]

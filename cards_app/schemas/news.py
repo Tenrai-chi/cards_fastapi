@@ -19,6 +19,3 @@ class NewsDTO(BaseModel):
     page: int
     size: int
     total_pages: int
-
-
-

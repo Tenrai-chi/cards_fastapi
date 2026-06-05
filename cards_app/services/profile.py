@@ -40,7 +40,7 @@ async def get_base_info_profile(session_db: AsyncSession, user_id: int
     result_user = await session_db.execute(stmt_user)
     user = result_user.scalar_one_or_none()
     if user is None:
-        logger.warning(f'Пользователь ID {user_id} не найден')
+        logger.error(f'Пользователь ID {user_id} не найден')
         raise UserNotFoundError(user_id)
     return user
 
@@ -130,7 +130,7 @@ async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_
         .where(FavoriteUsers.user_id == current_profile_id,
                FavoriteUsers.favorite_user_id == target_profile_id
                )
-    )
+        )
     result = await session_db.execute(stmt_user)
     return result.scalar_one_or_none() is not None
 
@@ -254,8 +254,8 @@ async def create_transaction(session_db: AsyncSession,
                                    after=gold_after,
                                    comment=comment)
     session_db.add(new_transaction)
-    logger.debug(f'Создана транзакция для пользователя ID {user_profile_id}: '
-                 f'{comment} (было {gold_before} → стало {gold_after})')
+    logger.info(f'Создана транзакция для пользователя ID {user_profile_id}: '
+                f'{comment} (было {gold_before} → стало {gold_after})')
 
 
 async def add_user_to_favorite(session_db: AsyncSession,
@@ -403,6 +403,7 @@ async def update_win_lose(session_db: AsyncSession,
     loser.profile.lose += 1
     session_db.add(winner)
     session_db.add(loser)
+    logger.info(f'Пользователи ID {winner.id} и ID {loser.id} обновили свою статистику побед/поражений')
 
 
 async def add_gold_for_fight(session_db: AsyncSession,
@@ -422,7 +423,7 @@ async def add_gold_for_fight(session_db: AsyncSession,
                 - gold_after (int): золото после получения награды
                 - comment (str): строка пояснение для создания транзакции
         Raises:
-            ValueError: если итог боя был
+            ValueError: если итог боя невалидный (пришли неверные данные)
     """
 
     gold_for_win = 100
@@ -442,6 +443,7 @@ async def add_gold_for_fight(session_db: AsyncSession,
         comment = 'Награда за ничью в битве'
         reward_gold = gold_for_draw
     else:
+        logger.error(f'Получен неверный итог боя между пользователями: {result_battle}')
         raise ValueError(f'Принят неверный результат битвы result_battle: {result_battle}')
 
     answer_data: dict = await add_user_gold(session_db=session_db,
@@ -471,6 +473,7 @@ async def update_rating_user(session_db: AsyncSession, user: User, user_fight_re
     else:
         user.profile.rating = max(0, user.profile.rating - win_delta)
 
+    logger.info(f'Обновлен рейтинг участника битвы ID {user.id}')
     session_db.add(user)
 
 

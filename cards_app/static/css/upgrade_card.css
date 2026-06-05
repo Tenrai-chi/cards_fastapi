@@ -1,0 +1,15 @@
+.current-card-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.card-stat {
+    font-weight: normal !important;
+}
+
+.current-card-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}

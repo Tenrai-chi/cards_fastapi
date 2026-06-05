@@ -137,7 +137,8 @@ class ViewInventoryUseCase:
 
         upg_items: list = await get_upgrade_items_in_user_inventory(session_db=self.session_db,
                                                                     owner_id=owner_id)
-        upg_items_dto = [UpgradeItemsInventoryDTO(name=item.upgrade_item_type.name,
+        upg_items_dto = [UpgradeItemsInventoryDTO(id=item.id,
+                                                  name=item.upgrade_item_type.name,
                                                   description=item.upgrade_item_type.description,
                                                   image=item.upgrade_item_type.image,
                                                   gold_for_use=item.upgrade_item_type.price_of_use,

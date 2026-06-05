@@ -93,6 +93,7 @@ async def update_profile_event_award_received(session_db: AsyncSession,
     user.profile.event_visit += 1
     user.profile.date_event_visit = datetime.now()
     session_db.add(user)
+    logger.info(f'Пользователь ID {user.id} увеличил счетчик посещений в стартовом событии')
 
 
 async def get_info_award(session_db: AsyncSession,

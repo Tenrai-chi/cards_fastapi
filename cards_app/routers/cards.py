@@ -12,9 +12,10 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
 from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict, \
-    ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict
+    ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict, ViewUpgradeUseCaseDict, \
+    UpgradeUseCaseDict
 from cards_app.use_cases.cards import ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase, ViewUserCardsUseCase, \
-    ViewTradingUseCase, ViewMergeUseCase, MergeUseCase
+    ViewTradingUseCase, ViewMergeUseCase, MergeUseCase, ViewUpgradeUseCase, UpgradeUseCase
 
 from cards_app.models.users import User
 
@@ -220,6 +221,8 @@ async def merge_cards(request: Request,
                       sacrificed_ids: str = Form(...),
                       session_db: AsyncSession = Depends(get_db_session),
                       current_user: User | None = Depends(get_current_user_with_profile)):
+    """ Повышение уровня слияния карты """
+
     current_user_dto = await user_info_to_dto(current_user)
     try:
         cards_for_merge = [int(card_id) for card_id in json.loads(sacrificed_ids)]
@@ -250,5 +253,80 @@ async def merge_cards(request: Request,
             error_msg = data['error_message']
             encoded_error = quote(error_msg)
             url = request.url_for('view_card', card_id=main_card_id)
+            full_url = f'{url}?error={encoded_error}'
+            return RedirectResponse(full_url, status_code=303)
+
+
+@router.get(path='/card-{card_id}/upgrade_menu', name='view_upgrade_card')
+async def view_upgrade_card(request: Request,
+                            card_id: int,
+                            session_db: AsyncSession = Depends(get_db_session),
+                            current_user: User | None = Depends(get_current_user_with_profile),
+                            error: str = None,
+                            success: str = None
+                            ):
+    """ todo Просмотр меню усиления карты """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = ViewUpgradeUseCase(session_db)
+    data: ViewUpgradeUseCaseDict = await use_case.execute(current_card_id=card_id,
+                                                          current_user=current_user)
+    if data.get('upgrade_dto') is not None:
+        context = {'request': request,
+                   'current_user': current_user_dto,
+                   'upgrade_dto': data.get('upgrade_dto'),
+                   'error_message': error,
+                   'success_message': success
+                   }
+        return templates.TemplateResponse(request=request,
+                                          name='cards/upgrade_menu.html',
+                                          context=context,
+                                          status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') in (400, 404, 500):
+            context = {'error': data.get('error_message'),
+                       'error_code': data.get('status_code')}
+            return templates.TemplateResponse(request=request,
+                                              name='errors/error_page.html',
+                                              context=context,
+                                              status_code=data.get('status_code')
+                                              )
+
+
+@router.post(path='/card-{card_id}/upgrade-{upgrade_id}', name='upgrade_card')
+async def upgrade_card(request: Request,
+                       card_id: int,
+                       upgrade_id: int,
+                       session_db: AsyncSession = Depends(get_db_session),
+                       current_user: User | None = Depends(get_current_user_with_profile)):
+    """ Повышение уровня карты """
+
+    print(f'Пришло card_id: {card_id}, upgrade_id: {upgrade_id}')
+    current_user_dto = await user_info_to_dto(current_user)
+    use_case = UpgradeUseCase(session_db=session_db)
+    data: UpgradeUseCaseDict = await use_case.execute(current_user=current_user,
+                                                      current_card_id=card_id,
+                                                      upgrade_item_id=upgrade_id
+                                                      )
+    if data.get('success') is True:
+        success_msg = data.get('success_message')
+        encoded_success = quote(success_msg)
+        url = request.url_for('view_upgrade_card', card_id=card_id)
+        full_url = f'{url}?success={encoded_success}'
+        return RedirectResponse(full_url, status_code=data.get('status_code'))
+    else:
+        if data.get('status_code') in (404, 500):
+            context = {'error': data.get('error_message'),
+                       'status_code': data.get('status_code'),
+                       'current_user': current_user_dto}
+            return templates.TemplateResponse(request=request,
+                                              name='errors/error_page.html',
+                                              context=context,
+                                              status_code=data.get('status_code')
+                                              )
+        else:
+            error_msg = data['error_message']
+            encoded_error = quote(error_msg)
+            url = request.url_for('view_upgrade_card', card_id=card_id)
             full_url = f'{url}?error={encoded_error}'
             return RedirectResponse(full_url, status_code=303)

@@ -35,6 +35,7 @@ class AmuletsInventoryDTO(BaseModel):
 class UpgradeItemsInventoryDTO(BaseModel):
     """ Данные о предметах усиления в инвентаре пользователя """
 
+    id: int
     name: str
     description: str
     image: str
@@ -52,7 +53,7 @@ class FullInventoryDTO(BaseModel):
     max_count_amulets: int | None = None
 
 
-class CardLeveling(BaseModel):
+class CardLevelingDTO(BaseModel):
     """ Информация о карте в меню увеличения уровня """
 
     id: int
@@ -67,10 +68,29 @@ class CardLeveling(BaseModel):
     need_exp: int  # или float
 
 
-class FullInfoLeveling(BaseModel):
+class FullInfoLevelingDTO(BaseModel):
+    """ Информация для вывода на страницу с повышением уровня карты """
 
-    card: CardLeveling
+    card: CardLevelingDTO
     exp_items: list[ExpItemsInventoryDTO]
 
 
+class CardUpgradingDTO(BaseModel):
+    """ Информация о карте в меню усиления """
 
+    id: int
+    class_name: str
+    rarity_name: str
+    type_name: str
+    hp: float
+    damage: float
+    image: str
+    enhancement: int
+    max_enhancement: int
+
+
+class FullInfoUpgradingDTO(BaseModel):
+    """ Информация для вывода на страницу с усилением карты """
+
+    card: CardUpgradingDTO
+    upgrade_items: list[UpgradeItemsInventoryDTO]
