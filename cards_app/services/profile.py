@@ -156,10 +156,12 @@ async def check_can_user_receive_card(session_db: AsyncSession, current_user: Us
             NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
     """
 
-    all_cards = await get_all_cards_user(session_db, current_user.profile.id)
-    if need_slots > current_user.profile.card_slots - len(all_cards):
+    stmt_cards_count = select(func.count()).select_from(Card).where(Card.owner_id == current_user.profile.id)
+    result = await session_db.execute(stmt_cards_count)
+    cards_count = result.scalar_one()
+    if need_slots > current_user.profile.card_slots - cards_count:
         logger.warning(f'Пользователь ID {current_user.profile.id} пытается получить карту, но не хватает слотов '
-                       f'(нужно {need_slots}, свободно {current_user.profile.card_slots - len(all_cards)})')
+                       f'(нужно {need_slots}, свободно {current_user.profile.card_slots - cards_count})')
         raise NotEnoughSlotsError('У вас недостаточно места для новых карт')
 
 
