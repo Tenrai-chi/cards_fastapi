@@ -10,7 +10,7 @@ from cards_app.exeptions import (BoxNotFoundError, ExpItemNotFoundError, AmuletN
                                  UpgradeItemNotFoundError)
 from cards_app.models import CardStore, Rarity, Boxes, AmuletType, UpgradeItemsType, ExperienceItems, User, AmuletRarity
 from cards_app.services.cards import generate_max_stat_ur_card, create_record_in_history_receiving_card
-from cards_app.services.inventory import (add_experience_book, can_user_receive_amulet, give_amulet_to_user,
+from cards_app.services.inventory import (add_experience_books, can_user_receive_amulet, give_amulet_to_user,
                                           add_upgrade_item_to_user)
 from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
 
@@ -179,7 +179,7 @@ async def open_box_exp_item(session_db: AsyncSession, user: User
     counter = Counter(book.id for book in reward_books)
     for book_id, count in counter.items():
         book = next(book for book in all_books if book.id == book_id)
-        await add_experience_book(session_db=session_db,
+        await add_experience_books(session_db=session_db,
                                   user_profile_id=user.profile.id,
                                   amount=count,
                                   book=book
@@ -205,7 +205,7 @@ async def open_box_amulet(session_db: AsyncSession, user: User
                                   current_user=user,
                                   need_slots=5)
 
-    stmt_amulets = select(AmuletType).options(selectinload(AmuletType.rarity))
+    stmt_amulets = select(AmuletType).options(joinedload(AmuletType.rarity))
     result = await session_db.execute(stmt_amulets)
     all_amulets = result.scalars().all()
 
@@ -272,7 +272,7 @@ async def buy_exp_items(session_db: AsyncSession,
                              gold_after=gold_transaction['gold_after'],
                              comment=f'Покупка книг опыта в магазине')
 
-    await add_experience_book(session_db=session_db,
+    await add_experience_books(session_db=session_db,
                               user_profile_id=user.profile.id,
                               amount=exp_item_amount,
                               book=exp_item)

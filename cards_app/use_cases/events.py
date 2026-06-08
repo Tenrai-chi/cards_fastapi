@@ -10,7 +10,7 @@ from cards_app.schemas.news import NewsRecordDTO, NewsDTO
 from cards_app.schemas.start_event import StartEventAwardDTO, StartEventAwardsDTO
 from cards_app.types import ViewNewsUseCaseDict, ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
 from cards_app.models import User
-from cards_app.services.inventory import add_experience_book, can_user_receive_amulet, give_amulet_to_user
+from cards_app.services.inventory import add_experience_books, can_user_receive_amulet, give_amulet_to_user
 from cards_app.services.events import can_get_start_event_award
 from cards_app.services.profile import check_can_user_receive_card, add_user_gold, create_transaction
 
@@ -162,7 +162,7 @@ class GetAwardStartEventUseCase:
 
             books = ['Маленькая книга опыта', 'Средняя книга опыта', 'Большая книга опыта']
             if award_of_day.type_award in books:
-                await add_experience_book(session_db=self.session_db,
+                await add_experience_books(session_db=self.session_db,
                                           user_profile_id=current_user.profile.id,
                                           amount=int(award_of_day.amount_or_rarity_award),
                                           name_book=award_of_day.type_award)

@@ -1,7 +1,7 @@
 import logging
 from random import randint, shuffle, choice
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,12 +16,12 @@ from cards_app.types import RewardLootAfterFightDict
 logger = logging.getLogger(__name__)
 
 
-async def add_experience_book(session_db: AsyncSession,
-                              user_profile_id: int,
-                              amount: int,
-                              book: ExperienceItems = None,
-                              name_book: str = None
-                              ) -> None:
+async def add_experience_books(session_db: AsyncSession,
+                               user_profile_id: int,
+                               amount: int,
+                               book: ExperienceItems = None,
+                               name_book: str = None
+                               ) -> None:
     """ Добавляет книги опыта в инвентарь пользователя.
         Если у пользователя уже есть такой предмет – увеличивает количество,
         иначе создаёт новую запись.
@@ -41,7 +41,7 @@ async def add_experience_book(session_db: AsyncSession,
     elif book:
         item = book
     else:
-        logger.error(f'add_experience_book получила пустые book и name_book')
+        logger.error(f'add_experience_books получила пустые book и name_book')
         raise ValueError(f'Параметры name и item пусты')
 
     stmt_inv = select(UsersInventory).where(
@@ -110,10 +110,12 @@ async def can_user_receive_amulet(session_db: AsyncSession,
             NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
     """
 
-    all_amulets = await get_all_amulets_user(session_db, current_user.profile.id)
-    if need_slots > current_user.profile.amulet_slots - len(all_amulets):
+    stmt_count_amulets = select(func.count()).select_from(AmuletItem).where(AmuletItem.owner_id == current_user.profile.id)
+    result = await session_db.execute(stmt_count_amulets)
+    amulets_count = result.scalar_one()
+    if need_slots > current_user.profile.amulet_slots - amulets_count:
         logger.warning(f'Пользователь ID {current_user.profile.id} пытается получить амулет, но не хватает слотов '
-                       f'(нужно {need_slots}, свободно {current_user.profile.amulet_slots - len(all_amulets)})')
+                       f'(нужно {need_slots}, свободно {current_user.profile.amulet_slots - amulets_count})')
         raise NotEnoughSlotsError('У вас недостаточно места для новых амулетов')
 
 
@@ -283,7 +285,7 @@ async def reward_loot_after_fight(session_db: AsyncSession,
                                       owner_id=user.profile.id,
                                       name_amulet=amulet.name)
 
-    # Запускает получение книг опыта add_experience_book (по редкости)
+    # Запускает получение книг опыта add_experience_books (по редкости)
     all_exp_items: list = await get_all_exp_items(session_db=session_db)
     new_exp_items = []
     for item in all_exp_items:
@@ -293,7 +295,7 @@ async def reward_loot_after_fight(session_db: AsyncSession,
             new_exp_items.append(item)
 
     for new_item in new_exp_items:
-        await add_experience_book(session_db=session_db,
+        await add_experience_books(session_db=session_db,
                                   user_profile_id=user.profile.id,
                                   amount=1,
                                   name_book=new_item.name,
