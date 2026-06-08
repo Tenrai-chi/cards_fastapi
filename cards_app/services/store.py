@@ -70,7 +70,7 @@ async def get_amulets_in_store(session_db: AsyncSession) -> list[AmuletType]:
     stmt_amulets = (
         select(AmuletType)
         .where(AmuletType.sale_now == True)
-        .options(selectinload(AmuletType.rarity))
+        .options(joinedload(AmuletType.rarity))
         .order_by(AmuletType.rarity_id.desc())
     )
     result = await session_db.execute(stmt_amulets)

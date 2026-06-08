@@ -208,7 +208,7 @@ class ViewItemStoreUseCase:
                                     upgrade_items=await self._get_upgrade_items_dto()
                                     )
 
-        elif store_filter == 'exp_item':
+        elif store_filter == 'exp_items':
             store_dto = AllStoreDTO(boxes=None,
                                     exp_items=await self._get_exp_items_dto(),
                                     amulets=None,
