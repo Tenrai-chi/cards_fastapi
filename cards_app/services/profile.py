@@ -376,7 +376,7 @@ async def get_favorite_user(session_db: AsyncSession, user_profile_id: int
         select(FavoriteUsers)
         .where(FavoriteUsers.user_id == user_profile_id)
         .options(
-            selectinload(FavoriteUsers.favorite_user).selectinload(Profile.user)
+            joinedload(FavoriteUsers.favorite_user).joinedload(Profile.user)
         )
     )
     result = await session_db.execute(stmt_fav_users)
