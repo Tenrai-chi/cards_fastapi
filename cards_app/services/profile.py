@@ -491,7 +491,7 @@ async def get_rating_users(session_db: AsyncSession, limit: int, offset: int
         .join(Profile, User.id == Profile.user_id)
         .where(Profile.current_card_id.is_not(None))
         .order_by(Profile.rating.desc())
-        .options(selectinload(User.profile))
+        .options(joinedload(User.profile))
         .limit(limit)
         .offset(offset)
     )
