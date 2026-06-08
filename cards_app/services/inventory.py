@@ -3,7 +3,7 @@ from random import randint, shuffle, choice
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from cards_app.exeptions import (NotEnoughSlotsError, AmuletNotFoundError, NotAmuletOwnerError,
                                  NotEnoughUpgradeItemsError, CardNotFoundError, NotCardOwnerError, MaxUpgradeCardError)
@@ -371,7 +371,7 @@ async def get_upgrade_items_in_user_inventory(session_db: AsyncSession,
     stmt_upg_items = (
         select(UpgradeItemsUsers)
         .where(UpgradeItemsUsers.owner_id == owner_id)
-        .options(selectinload(UpgradeItemsUsers.upgrade_item_type))
+        .options(joinedload(UpgradeItemsUsers.upgrade_item_type))
         .order_by(UpgradeItemsUsers.id)
     )
     result = await session_db.execute(stmt_upg_items)
@@ -396,7 +396,7 @@ async def get_upgrade_item_in_inventory(session_db: AsyncSession,
         select(UpgradeItemsUsers)
         .where(UpgradeItemsUsers.owner_id == owner_id,
                UpgradeItemsUsers.upgrade_item_type_id == upgrade_item_type_id)
-        .options(selectinload(UpgradeItemsUsers.upgrade_item_type))
+        .options(joinedload(UpgradeItemsUsers.upgrade_item_type))
     )
     result = await session_db.execute(stmt_upg_item)
     upg_item = result.scalar_one_or_none()
@@ -418,9 +418,9 @@ async def get_amulets_in_user_inventory(session_db: AsyncSession,
         select(AmuletItem)
         .where(AmuletItem.owner_id == owner_id)
         .options(
-            selectinload(AmuletItem.amulet_type).selectinload(AmuletType.rarity),
-            selectinload(AmuletItem.card).selectinload(Card.class_card),
-            selectinload(AmuletItem.card).selectinload(Card.rarity_card)
+            joinedload(AmuletItem.amulet_type).joinedload(AmuletType.rarity),
+            joinedload(AmuletItem.card).joinedload(Card.class_card),
+            joinedload(AmuletItem.card).joinedload(Card.rarity_card)
         )
         .order_by(AmuletItem.id)
     )

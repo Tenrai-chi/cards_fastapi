@@ -40,7 +40,7 @@ class ViewInventoryUseCase:
                        'status_code': None,
                        'error_message': None}
         if current_user is None:
-            answer_data['error_message'] = f'Для просмотра транзакций необходимо быть авторизован'
+            answer_data['error_message'] = f'Для просмотра инвентаря необходимо быть авторизованным'
             answer_data['status_code'] = 400
             return answer_data
 
