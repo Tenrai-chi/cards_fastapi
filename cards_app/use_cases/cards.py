@@ -461,7 +461,7 @@ class MergeUseCase:
                    cards_for_merge: список ID карт для слияния
                Returns:
                    MergeUseCaseDict:
-                       - status_code (int): HTTP статус-код.
+                       - status_code (int): HTTP статус-код
                        - error_message (str): сообщение об ошибке
 
                Note:

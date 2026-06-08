@@ -5,7 +5,7 @@ from math import ceil
 
 from sqlalchemy import func, or_, select, desc, case, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, SelfFavoriteError,
                                  DuplicateFavoriteError, UserNotFoundError, SelfFavoriteRemoveError,
@@ -32,10 +32,8 @@ async def get_base_info_profile(session_db: AsyncSession, user_id: int
     stmt_user = (
         select(User)
         .where(User.id == user_id)
-        .options(
-            selectinload(User.profile)
-            .selectinload(Profile.guild)
-        )
+        .options(joinedload(User.profile)
+                 .joinedload(Profile.guild))
     )
     result_user = await session_db.execute(stmt_user)
     user = result_user.scalar_one_or_none()
@@ -99,13 +97,13 @@ async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limi
         .order_by(desc(FightHistory.date_and_time))
         .limit(limit)
         .options(
-            selectinload(FightHistory.participant1).selectinload(Profile.user),
-            selectinload(FightHistory.participant2).selectinload(Profile.user),
-            selectinload(FightHistory.winner),
-            selectinload(FightHistory.card1).selectinload(Card.class_card),
-            selectinload(FightHistory.card1).selectinload(Card.type_card),
-            selectinload(FightHistory.card2).selectinload(Card.class_card),
-            selectinload(FightHistory.card2).selectinload(Card.type_card),
+            joinedload(FightHistory.participant1).joinedload(Profile.user),
+            joinedload(FightHistory.participant2).joinedload(Profile.user),
+            joinedload(FightHistory.winner),  # winner – тоже Profile
+            selectinload(FightHistory.card1).joinedload(Card.class_card),
+            selectinload(FightHistory.card1).joinedload(Card.type_card),
+            selectinload(FightHistory.card2).joinedload(Card.class_card),
+            selectinload(FightHistory.card2).joinedload(Card.type_card),
         )
     )
     result = await session_db.execute(stmt_battle_history)

@@ -1,15 +1,27 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi_sqlalchemy_monitor import SQLAlchemyMonitor
+from fastapi_sqlalchemy_monitor.action import WarnMaxTotalInvocation, PrintStatistics
 
 from cards_app.config.settings import settings
 from cards_app.config.logging import setup_logging
+from cards_app.config.database import engine
 
 from cards_app.routers import auth, users, cards, events, store, inventory
 
 setup_logging(settings.LOG_LEVEL)
 
 app = FastAPI(debug=True)
+
+app.add_middleware(
+    SQLAlchemyMonitor,
+    engine=engine,
+    actions=[
+        WarnMaxTotalInvocation(max_invocations=10),  # Warn if too many queries
+        PrintStatistics()  # Print statistics after each request
+    ]
+)
 
 app.mount(settings.STATIC_URL,
           StaticFiles(directory=str(settings.STATIC_DIR)),

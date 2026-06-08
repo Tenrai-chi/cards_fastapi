@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from cards_app.config.database import get_db_session
 from cards_app.config.security import decode_token
@@ -30,7 +30,8 @@ async def get_current_user_with_profile(request: Request,
 
     result = await db.execute(select(User)
                               .where(User.id == int(user_id))
-                              .options(selectinload(User.profile)))
+                              .options(joinedload(User.profile))
+                              )
     user = result.scalar_one_or_none()
     if not user:
         return None

@@ -8,7 +8,7 @@ from typing import List, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from cards_app.types import RaritiesAndClassesDict
 from cards_app.exeptions import (CardInStoreNotFoundError, CardNotOnSaleError, CardNotFoundError, NotCardOwnerError,
@@ -40,10 +40,10 @@ async def get_card_with_details(session_db: AsyncSession,
         select(Card)
         .where(Card.id == card_id)
         .options(
-            selectinload(Card.class_card),
-            selectinload(Card.rarity_card),
-            selectinload(Card.type_card),
-            selectinload(Card.amulet).selectinload(AmuletItem.amulet_type)
+            joinedload(Card.class_card),
+            joinedload(Card.rarity_card),
+            joinedload(Card.type_card),
+            joinedload(Card.amulet).joinedload(AmuletItem.amulet_type),
         )
     )
     result_card = await session_db.execute(stmt_card)

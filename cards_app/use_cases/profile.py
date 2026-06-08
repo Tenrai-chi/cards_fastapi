@@ -54,6 +54,7 @@ class ViewProfileUseCase:
                        'status_code': None}
 
         try:
+            # Для просмотра своей страницы все равно вызывается загрузка профиля, так как нужна еще и гильдия
             target_user = await get_base_info_profile(session_db=self.session_db,
                                                       user_id=target_user_id)
         except UserNotFoundError as error:
