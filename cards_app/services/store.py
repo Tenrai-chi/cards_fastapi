@@ -4,7 +4,7 @@ from random import choices, choice
 from collections import Counter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload, contains_eager
 
 from cards_app.exeptions import (BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError, AmuletNotOnSaleError,
                                  UpgradeItemNotFoundError)
@@ -31,12 +31,13 @@ async def get_cards_in_store(session_db: AsyncSession) -> list[CardStore]:
 
     stmt_cards = (
         select(CardStore)
-        .where(CardStore.sale_now == True)
         .join(CardStore.rarity_card)
+        .where(CardStore.sale_now == True)
         .options(
-            selectinload(CardStore.rarity_card),
-            selectinload(CardStore.type_card),
-            selectinload(CardStore.class_card)
+            # загружено в основном запросе для сортировки
+            contains_eager(CardStore.rarity_card),
+            joinedload(CardStore.type_card),
+            joinedload(CardStore.class_card)
         )
         .order_by(Rarity.name.desc())
     )
