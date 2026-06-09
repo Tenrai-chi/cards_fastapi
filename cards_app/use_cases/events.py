@@ -8,9 +8,10 @@ from cards_app.services.events import (get_total_news_count, get_paginated_news,
                                        get_info_award, update_profile_event_award_received)
 from cards_app.schemas.news import NewsRecordDTO, NewsDTO
 from cards_app.schemas.start_event import StartEventAwardDTO, StartEventAwardsDTO
+from cards_app.services.store import get_book_by_name
 from cards_app.types import ViewNewsUseCaseDict, ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
 from cards_app.models import User
-from cards_app.services.inventory import add_experience_books, can_user_receive_amulet, give_amulet_to_user
+from cards_app.services.inventory import add_experience_books_batch, can_user_receive_amulet, give_amulet_to_user
 from cards_app.services.events import can_get_start_event_award
 from cards_app.services.profile import check_can_user_receive_card, add_user_gold, create_transaction
 
@@ -162,10 +163,11 @@ class GetAwardStartEventUseCase:
 
             books = ['Маленькая книга опыта', 'Средняя книга опыта', 'Большая книга опыта']
             if award_of_day.type_award in books:
-                await add_experience_books(session_db=self.session_db,
-                                          user_profile_id=current_user.profile.id,
-                                          amount=int(award_of_day.amount_or_rarity_award),
-                                          name_book=award_of_day.type_award)
+                book = await get_book_by_name(session_db=self.session_db, book_name=award_of_day.type_award)
+                await add_experience_books_batch(session_db=self.session_db,
+                                                 user_profile_id=current_user.profile.id,
+                                                 items_amount={book.id: int(award_of_day.amount_or_rarity_award)})
+
                 answer_data['success_message'] = (f'Вы получили в награду {award_of_day.type_award} '
                                                   f'{award_of_day.amount_or_rarity_award} шт.')
                 answer_data['status_code'] = 303

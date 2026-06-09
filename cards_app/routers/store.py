@@ -186,7 +186,7 @@ async def buy_book_in_store(request: Request,
     if data.get('success') is True:
         success_msg = data['success_message']
         encoded_success = quote(success_msg)
-        url = request.url_for('item_store', store_filter='exp_item')
+        url = request.url_for('item_store', store_filter='exp_items')
         full_url = f'{url}?success={encoded_success}'
         return RedirectResponse(full_url, status_code=303)
     else:
@@ -202,7 +202,7 @@ async def buy_book_in_store(request: Request,
         else:
             error_msg = data['error_message']
             encoded_error = quote(error_msg)
-            url = request.url_for('item_store', store_filter='exp_item')
+            url = request.url_for('item_store', store_filter='exp_items')
             full_url = f'{url}?error={encoded_error}'
             return RedirectResponse(full_url, status_code=303)
 

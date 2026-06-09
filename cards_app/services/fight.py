@@ -3,7 +3,7 @@ from datetime import datetime
 from random import randint
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy import select, or_, desc, and_
 
 from cards_app.exeptions import SelfFightError, UserNotFoundError, CooldownNotElapsedError, NoCurrentCardError
@@ -144,14 +144,14 @@ async def get_cards_participants(session_db: AsyncSession,
     """
 
     stmt_cards = (
-        select(Card).where(
-            Card.id.in_([user_card_id, enemy_card_id])
-        ).options(
-            selectinload(Card.amulet).selectinload(AmuletItem.amulet_type),
-            selectinload(Card.class_card),
-            selectinload(Card.type_card).selectinload(Type.better),  # подгружаем better
-            selectinload(Card.type_card).selectinload(Type.worst),
-            selectinload(Card.rarity_card)
+        select(Card)
+        .where(Card.id.in_([user_card_id, enemy_card_id]))
+        .options(
+            joinedload(Card.amulet).joinedload(AmuletItem.amulet_type),
+            joinedload(Card.class_card),
+            joinedload(Card.type_card).joinedload(Type.better),
+            joinedload(Card.type_card).joinedload(Type.worst),
+            joinedload(Card.rarity_card),
         )
     )
 

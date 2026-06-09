@@ -4,13 +4,13 @@ from random import choices, choice
 from collections import Counter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, joinedload, contains_eager
+from sqlalchemy.orm import joinedload, contains_eager
 
 from cards_app.exeptions import (BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError, AmuletNotOnSaleError,
                                  UpgradeItemNotFoundError)
 from cards_app.models import CardStore, Rarity, Boxes, AmuletType, UpgradeItemsType, ExperienceItems, User, AmuletRarity
 from cards_app.services.cards import generate_max_stat_ur_card, create_record_in_history_receiving_card
-from cards_app.services.inventory import (add_experience_books, can_user_receive_amulet, give_amulet_to_user,
+from cards_app.services.inventory import (add_experience_books_batch, can_user_receive_amulet, give_amulet_to_user,
                                           add_upgrade_item_to_user)
 from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
 
@@ -177,13 +177,10 @@ async def open_box_exp_item(session_db: AsyncSession, user: User
         reward_books.append(chosen)
 
     counter = Counter(book.id for book in reward_books)
-    for book_id, count in counter.items():
-        book = next(book for book in all_books if book.id == book_id)
-        await add_experience_books(session_db=session_db,
-                                  user_profile_id=user.profile.id,
-                                  amount=count,
-                                  book=book
-                                  )
+    await add_experience_books_batch(session_db=session_db,
+                                     user_profile_id=user.profile.id,
+                                     items_amount=dict(counter)
+                                     )
     return reward_books
 
 
@@ -272,10 +269,9 @@ async def buy_exp_items(session_db: AsyncSession,
                              gold_after=gold_transaction['gold_after'],
                              comment=f'Покупка книг опыта в магазине')
 
-    await add_experience_books(session_db=session_db,
-                              user_profile_id=user.profile.id,
-                              amount=exp_item_amount,
-                              book=exp_item)
+    await add_experience_books_batch(session_db=session_db,
+                                     user_profile_id=user.profile.id,
+                                     items_amount={exp_item_id: exp_item_amount})
 
 
 async def buy_amulet(session_db: AsyncSession,
@@ -354,3 +350,19 @@ async def buy_upgrade_item(session_db: AsyncSession,
     await add_upgrade_item_to_user(session_db=session_db,
                                    user_profile_id=user.profile.id,
                                    upgrade_item=upgrade_item)
+
+
+async def get_book_by_name(session_db: AsyncSession, book_name: str
+                           ) -> ExperienceItems:
+    """ Получить книгу опыта по ее названию.
+        Args:
+            session_db: сессия базы данных
+            book_name: название книги
+        Returns:
+            ExperienceItems: книга опыта
+    """
+
+    stmt = select(ExperienceItems).where(ExperienceItems.name == book_name)
+    result = await session_db.execute(stmt)
+    book = result.scalar_one_or_none()
+    return book

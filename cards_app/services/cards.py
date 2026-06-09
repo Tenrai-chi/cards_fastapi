@@ -334,12 +334,12 @@ async def get_cards_in_trading(session_db: AsyncSession) -> list[Card]:
         .join(Card.rarity_card)
         .where(Card.sale_status == True)
         .options(
-            selectinload(Card.class_card),
-            selectinload(Card.type_card),
-            selectinload(Card.rarity_card),
-            selectinload(Card.owner).selectinload(Profile.user)
+            joinedload(Card.class_card),
+            joinedload(Card.type_card),
+            joinedload(Card.rarity_card),
+            joinedload(Card.owner).joinedload(Profile.user)
         )
-        .order_by(Rarity.id, Card.id)
+        .order_by(Card.rarity_id, Card.id)
     )
 
     result = await session_db.execute(stmt_cards)

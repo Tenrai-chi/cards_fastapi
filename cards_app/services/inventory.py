@@ -15,53 +15,43 @@ from cards_app.types import RewardLootAfterFightDict
 
 logger = logging.getLogger(__name__)
 
-
-async def add_experience_books(session_db: AsyncSession,
-                               user_profile_id: int,
-                               amount: int,
-                               book: ExperienceItems = None,
-                               name_book: str = None
-                               ) -> None:
+async def add_experience_books_batch(session_db: AsyncSession,
+                                     user_profile_id: int,
+                                     items_amount: dict[int, int]
+                                     ) -> None:
     """ Добавляет книги опыта в инвентарь пользователя.
         Если у пользователя уже есть такой предмет – увеличивает количество,
         иначе создаёт новую запись.
-        Принимает в аргументах либо редкость, либо название книги
         Args:
             session_db: сессия базы данных
             user_profile_id: ID Profile пользователя
-            amount: количество
-            book: сущность книги
-            name_book: название книги
+            items_amount: словарь с ID типа книги и количеством
     """
 
-    if name_book:
-        stmt_item = select(ExperienceItems).where(ExperienceItems.name == name_book)
-        result = await session_db.execute(stmt_item)
-        item = result.scalar_one_or_none()
-    elif book:
-        item = book
-    else:
-        logger.error(f'add_experience_books получила пустые book и name_book')
-        raise ValueError(f'Параметры name и item пусты')
+    if not items_amount:
+        logger.error(f'Принят пустой словарь в добавлении книг опыта в инвентарь пользователя')
+        return
 
-    stmt_inv = select(UsersInventory).where(
-        UsersInventory.owner_id == user_profile_id,
-        UsersInventory.item_id == item.id
+    stmt_inventory = (
+        select(UsersInventory)
+        .where(UsersInventory.owner_id == user_profile_id,
+               UsersInventory.item_id.in_(items_amount.keys())
+               )
     )
-    inv_result = await session_db.execute(stmt_inv)
-    inventory = inv_result.scalar_one_or_none()
+    result_inventory = await session_db.execute(stmt_inventory)
+    inventory_map = {inventory.item_id: inventory for inventory in result_inventory.scalars().all()}
 
-    if inventory:
-        inventory.amount += amount
-        session_db.add(inventory)
-    else:
-        new_inventory = UsersInventory(
-            owner_id=user_profile_id,
-            item_id=item.id,
-            amount=amount
-        )
-        session_db.add(new_inventory)
-    logger.info(f'Пользователь ID Profile {user_profile_id} получил книгу {item.name} {amount} шт.')
+    for item_id, add_amount in items_amount.items():
+        if item_id in result_inventory:
+            inventory_map[item_id].amount += add_amount
+            session_db.add(inventory_map[item_id])
+        else:
+            new_inv = UsersInventory(owner_id=user_profile_id,
+                                     item_id=item_id,
+                                     amount=add_amount
+                                     )
+            session_db.add(new_inv)
+    logger.info(f'Пользователь ID Profile {user_profile_id} получил книги')
 
 
 async def add_upgrade_item_to_user(session_db: AsyncSession,
@@ -258,18 +248,18 @@ async def reward_loot_after_fight(session_db: AsyncSession,
 
     answer_data = {'exp_items': [],
                    'amulets': []}
-    # Вычисляет сколько амулетов может получить пользователь
-    all_amulets_user = await get_all_amulets_user(session_db=session_db,
-                                                  owner_id=user.profile.id)
-    free_amulet_slots = user.profile.amulet_slots - len(all_amulets_user)
+
+    count_stmt = select(func.count()).select_from(AmuletItem).where(AmuletItem.owner_id == user.profile.id)
+    count = (await session_db.execute(count_stmt)).scalar_one()
+    free_slots = user.profile.amulet_slots - count
     new_amulets = []
-    if free_amulet_slots > 0:
+    if free_slots > 0:
         # Создание списка для получения
         all_amulets: list = await get_all_types_amulets(session_db=session_db)
         shuffle(all_amulets)
 
         for amulet in all_amulets:
-            if len(new_amulets) >= free_amulet_slots or len(new_amulets) == 2:
+            if len(new_amulets) >= free_slots or len(new_amulets) == 2:
                 break
             chance = randint(1, 100)
             base_chance_drop = amulet.rarity.chance_drop_on_fight
@@ -287,21 +277,20 @@ async def reward_loot_after_fight(session_db: AsyncSession,
 
     # Запускает получение книг опыта add_experience_books (по редкости)
     all_exp_items: list = await get_all_exp_items(session_db=session_db)
-    new_exp_items = []
+    books_counter = {}
     for item in all_exp_items:
         chance = randint(1, 100)
         chance_drop = item.chance_drop_on_fight + (buff_value or 0)
         if chance <= chance_drop:
-            new_exp_items.append(item)
+            books_counter[item.id] = books_counter.get(item.id, 0) + 1
+            answer_data['exp_items'].append(item)
 
-    for new_item in new_exp_items:
-        await add_experience_books(session_db=session_db,
-                                  user_profile_id=user.profile.id,
-                                  amount=1,
-                                  name_book=new_item.name,
-                                  )
+    if books_counter:
+        await add_experience_books_batch(session_db=session_db,
+                                         user_profile_id=user.profile.id,
+                                         items_amount=books_counter)
+
     answer_data['amulets'] = new_amulets
-    answer_data['exp_items'] = new_exp_items
 
     return answer_data
 
