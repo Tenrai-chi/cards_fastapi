@@ -15,6 +15,7 @@ from cards_app.types import RewardLootAfterFightDict
 
 logger = logging.getLogger(__name__)
 
+
 async def add_experience_books_batch(session_db: AsyncSession,
                                      user_profile_id: int,
                                      items_amount: dict[int, int]
