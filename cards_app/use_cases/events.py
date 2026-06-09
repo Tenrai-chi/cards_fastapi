@@ -8,10 +8,10 @@ from cards_app.services.events import (get_total_news_count, get_paginated_news,
                                        get_info_award, update_profile_event_award_received)
 from cards_app.schemas.news import NewsRecordDTO, NewsDTO
 from cards_app.schemas.start_event import StartEventAwardDTO, StartEventAwardsDTO
-from cards_app.services.store import get_book_by_name
+from cards_app.services.store import get_book_by_name, get_amulet_by_name
 from cards_app.types import ViewNewsUseCaseDict, ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
 from cards_app.models import User
-from cards_app.services.inventory import add_experience_books_batch, can_user_receive_amulet, give_amulet_to_user
+from cards_app.services.inventory import add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch
 from cards_app.services.events import can_get_start_event_award
 from cards_app.services.profile import check_can_user_receive_card, add_user_gold, create_transaction
 
@@ -176,9 +176,10 @@ class GetAwardStartEventUseCase:
                 await can_user_receive_amulet(session_db=self.session_db,
                                               current_user=current_user,
                                               need_slots=1)
-                await give_amulet_to_user(session_db=self.session_db,
-                                          owner_id=current_user.profile.id,
-                                          name_amulet=award_of_day.amount_or_rarity_award)
+                amulet = await get_amulet_by_name(session_db=self.session_db, name=award_of_day.amount_or_rarity_award)
+                await give_amulets_to_user_butch(session_db=self.session_db,
+                                                 owner_id=current_user.profile.id,
+                                                 amulets_amount={amulet.id: 1})
                 answer_data['success_message'] = (f'Вы получили в награду {award_of_day.type_award} '
                                                   f'"{award_of_day.amount_or_rarity_award}"')
                 answer_data['status_code'] = 303

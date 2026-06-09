@@ -1,7 +1,7 @@
 import logging
 from random import randint, shuffle, choice
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
@@ -131,36 +131,29 @@ async def get_all_amulets_user(session_db: AsyncSession, owner_id: int
     return amulets
 
 
-async def give_amulet_to_user(session_db: AsyncSession,
-                              owner_id: int,
-                              name_amulet: str | None = None,
-                              amulet: AmuletType | None = None
-                              ) -> None:
+async def give_amulets_to_user_butch(session_db: AsyncSession,
+                                     owner_id: int,
+                                     amulets_amount: dict[int, int]
+                                     ) -> None:
     """ Создает в инвентарь пользователя амулет по названию амулета.
         Args:
             session_db: сессия базы данных
             owner_id: ID Profile пользователя
-            name_amulet: название амулета
-            amulet: амулет
+            amulets_amount: словарь с айди амулетов и количеством копий
     """
 
-    if name_amulet:
-        stmt_amulet = select(AmuletType).where(AmuletType.name == name_amulet)
-        result = await session_db.execute(stmt_amulet)
-        amulet_type = result.scalar_one_or_none()
-    elif amulet:
-        amulet_type = amulet
-    else:
-        logger.error(f'give_amulet_to_user получила пустые name_amulet и amulet')
-        raise ValueError(f'Параметры name_amulet и amulet пусты')
+    if not amulets_amount:
+        return
 
-    new_amulet_item = AmuletItem(amulet_type_id=amulet_type.id,
-                                 owner_id=owner_id,
-                                 card_id=None,
-                                 upgrades=0
-                                 )
-    session_db.add(new_amulet_item)
-    logger.info(f'Пользователь ID Profile {owner_id} получил амулет "{amulet_type.name}"')
+    values = []
+    for amulet_type_id, quantity in amulets_amount.items():
+        values.extend([
+            {'amulet_type_id': amulet_type_id, 'owner_id': owner_id, 'card_id': None, 'upgrades': 0}
+            for _ in range(quantity)
+        ])
+
+    await session_db.execute(insert(AmuletItem).values(values))
+    logger.info(f'Пользователь Profile {owner_id} получил {sum(amulets_amount.values())} амулетов')
 
 
 async def delete_amulet(session_db: AsyncSession,
@@ -271,10 +264,11 @@ async def reward_loot_after_fight(session_db: AsyncSession,
                 new_amulets.append(amulet)
 
         # Начисление амулетов
-        for amulet in new_amulets:
-            await give_amulet_to_user(session_db=session_db,
-                                      owner_id=user.profile.id,
-                                      name_amulet=amulet.name)
+        if new_amulets:
+            amulets_amount = {amulet.id: 1 for amulet in new_amulets}
+            await give_amulets_to_user_butch(session_db=session_db,
+                                             owner_id=user.profile.id,
+                                             amulets_amount=amulets_amount)
 
     # Запускает получение книг опыта add_experience_books (по редкости)
     all_exp_items: list = await get_all_exp_items(session_db=session_db)

@@ -8,9 +8,9 @@ from sqlalchemy.orm import joinedload, contains_eager
 
 from cards_app.exeptions import (BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError, AmuletNotOnSaleError,
                                  UpgradeItemNotFoundError)
-from cards_app.models import CardStore, Rarity, Boxes, AmuletType, UpgradeItemsType, ExperienceItems, User, AmuletRarity
+from cards_app.models import CardStore, Rarity, Boxes, AmuletType, UpgradeItemsType, ExperienceItems, User
 from cards_app.services.cards import generate_max_stat_ur_card, create_record_in_history_receiving_card
-from cards_app.services.inventory import (add_experience_books_batch, can_user_receive_amulet, give_amulet_to_user,
+from cards_app.services.inventory import (add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch,
                                           add_upgrade_item_to_user)
 from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
 
@@ -76,6 +76,21 @@ async def get_amulets_in_store(session_db: AsyncSession) -> list[AmuletType]:
     result = await session_db.execute(stmt_amulets)
     amulets = list(result.scalars().all())
     return amulets
+
+
+async def get_amulet_by_name(session_db: AsyncSession, name: str) -> AmuletType:
+    """ Получает тип амулета по его имени
+        Args:
+            session_db: сессия базы данных
+            name: название амулета
+        Returns:
+            AmuletType: список амулетов, доступных к покупке
+    """
+
+    stmt_amulet = select(AmuletType).where(AmuletType.name == name)
+    result = await session_db.execute(stmt_amulet)
+    amulet = result.scalar_one_or_none()
+    return amulet
 
 
 async def get_upgrade_items_in_store(session_db: AsyncSession) -> list[UpgradeItemsType]:
@@ -211,12 +226,12 @@ async def open_box_amulet(session_db: AsyncSession, user: User
         name = amulet.rarity.name
         amulets_by_rarity.setdefault(name, []).append(amulet)
 
-    stmt_rarities = select(AmuletRarity).where(AmuletRarity.name.in_(['R', 'SR', 'UR']))
-    result = await session_db.execute(stmt_rarities)
-    rarities = {r.name: r for r in result.scalars().all()}
-
     candidates_rarity = ['R', 'SR', 'UR']
-    weights = [rarities[r].chance_drop_on_box for r in candidates_rarity]
+    weights = []
+    for rarity_name in candidates_rarity:
+        sample = amulets_by_rarity.get(rarity_name)[0]
+        if sample:
+            weights.append(sample.rarity.chance_drop_on_box)
 
     ur_amulets = amulets_by_rarity.get('UR', [])
     first_amulet = choice(ur_amulets)
@@ -228,11 +243,8 @@ async def open_box_amulet(session_db: AsyncSession, user: User
         chosen_amulet = choice(available)
         reward_amulets.append(chosen_amulet)
 
-    for amulet in reward_amulets:
-        await give_amulet_to_user(session_db=session_db,
-                                  owner_id=user.profile.id,
-                                  amulet=amulet
-                                  )
+    amulets_amount = {amulet.id: 1 for amulet in reward_amulets}
+    await give_amulets_to_user_butch(session_db, user.profile.id, amulets_amount)
 
     return reward_amulets
 
@@ -312,9 +324,9 @@ async def buy_amulet(session_db: AsyncSession,
                              gold_after=gold_transaction['gold_after'],
                              comment=f'Покупка книг опыта в магазине')
 
-    await give_amulet_to_user(session_db=session_db,
-                              owner_id=user.profile.id,
-                              amulet=amulet)
+    await give_amulets_to_user_butch(session_db=session_db,
+                                     owner_id=user.profile.id,
+                                     amulets_amount={amulet.id: 1})
 
 
 async def buy_upgrade_item(session_db: AsyncSession,
