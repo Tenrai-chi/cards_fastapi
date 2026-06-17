@@ -61,6 +61,5 @@ async def get_profile_for_update(session_db: AsyncSession, user_id: int) -> Prof
                     )
     result = await session_db.execute(stmt_profile)
     profile = result.scalar_one_or_none()
-    print(type(profile))
 
     return profile
