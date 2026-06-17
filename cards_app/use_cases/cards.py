@@ -1,6 +1,4 @@
 import logging
-from typing import cast
-from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -280,7 +278,8 @@ class ViewUserCardsUseCase:
 
         answer_data: ViewUserCardsUseCaseDict = {'user_cards_dto': None,
                                                  'error_message': None,
-                                                 'status_code': None}
+                                                 'status_code': None,
+                                                 }
         try:
             owner: User = await get_base_info_profile(session_db=self.session_db,
                                                       user_id=user_id)

@@ -18,6 +18,15 @@ class ErrorMixin(TypedDict):
     """
 
     error_message: str | None
+
+
+class ErrorWithUserMixin(ErrorMixin):
+    """ Миксин для словарей, которые должны содержать информацию о пользователе при ошибке.
+        Используется в use case, где возможна ошибка, требующая пояснения пользователю
+        и информации о профиле для вывода в шапку сайта.
+        Должен использоваться при статус-кодах: 400, 404, 500
+    """
+
     current_user_dto: CurrentUserForMenuDTO | None
 
 
@@ -49,7 +58,7 @@ class ViewGetFreeCardUseCaseDict(BaseUseCaseDict):
     get_free_card_dto: GetFreeCardDTO | None
 
 
-class GetFreeCardUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin):
+class GetFreeCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):
     """ Кастомный словарь для возврата данных из GetFreeCardUseCase """
 
     new_card_id: int | None
