@@ -148,6 +148,7 @@ async def update_user_receiving_timer(session_db: AsyncSession, current_user: Us
 async def check_can_user_receive_card(session_db: AsyncSession, current_user: User, need_slots: int
                                       ) -> None:
     """ Проверяет, хватит ли у пользователя места в инвентаре для новых карт.
+        Блокирует строки карт для избежания ситуации race condition
         Args:
             session_db: сессия базы данных
             current_user: объект User + Profile текущего пользователя
@@ -155,6 +156,9 @@ async def check_can_user_receive_card(session_db: AsyncSession, current_user: Us
         Raises:
             NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
     """
+
+    lock_stmt = select(Card).where(Card.owner_id == current_user.profile.id).with_for_update()
+    await session_db.execute(lock_stmt)
 
     stmt_cards_count = select(func.count()).select_from(Card).where(Card.owner_id == current_user.profile.id)
     result = await session_db.execute(stmt_cards_count)

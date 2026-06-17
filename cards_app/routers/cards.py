@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import quote
 
-from cards_app.auth.dependencies import get_current_user_with_profile
+from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
@@ -85,13 +85,12 @@ async def view_free_card(request: Request,
 @router.post(path='/generate_new_card', name='create_card')
 async def get_free_card(request: Request,
                         session_db: AsyncSession = Depends(get_db_session),
-                        current_user: User | None = Depends(get_current_user_with_profile),
+                        current_user_id: int | None = Depends(get_current_user_id),
                         ):
     """ Обработка запроса получения бесплатной карты """
 
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = GetFreeCardUseCase(session_db)
-    data: GetFreeCardUseCaseDict = await use_case.execute(current_user)
+    data: GetFreeCardUseCaseDict = await use_case.execute(current_user_id)
 
     if data.get('success') is True:
         new_card_id = data.get('new_card_id')
@@ -101,7 +100,7 @@ async def get_free_card(request: Request,
         if data.get('status_code') in (404, 500):
             context = {'error': data.get('error_message'),
                        'status_code': data.get('status_code'),
-                       'current_user': current_user_dto}
+                       'current_user': data.get('current_user_dto')}
             return templates.TemplateResponse(request=request,
                                               name='errors/error_page.html',
                                               context=context,

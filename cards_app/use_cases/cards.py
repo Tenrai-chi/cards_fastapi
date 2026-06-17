@@ -1,9 +1,12 @@
 import logging
+from typing import cast
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.schemas import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
+from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
 from cards_app.types import (ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict,
                              ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
@@ -50,7 +53,8 @@ class ViewCardUseCase:
 
         answer_data = {'card_info_dto': None,
                        'error_message': None,
-                       'status_code': None}
+                       'status_code': None,
+                       }
         try:
             card = await get_card_with_details(session_db=self.session_db,
                                                card_id=card_id)
@@ -163,37 +167,54 @@ class GetFreeCardUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None
+    async def execute(self, current_user_id: int | None
                       ) -> GetFreeCardUseCaseDict:
         """ Выполняет получение бесплатной карты для авторизованного пользователя.
             Args:
-                current_user: User + Profile текущего пользователя
+                current_user_id: ID User текущего пользователя или None
             Returns:
                 GetFreeCardUseCaseDict:
-                    - success (bool): True при успешном получении карты.
-                    - new_card_id (int | None): ID новой карты (при успехе).
-                    - error_message (str | None): сообщение об ошибке.
+                    - success (bool): True при успешном получении карты
+                    - new_card_id (int | None): ID новой карты (при успехе)
+                    - error_message (str | None): сообщение об ошибке
                     - status_code (int): HTTP статус-код
+                    - current_user_dto (CurrentUserForMenuDTO | None): при ошибках 400, 404 и 500
            Note:
                - 303: успешное получение данных и перенаправление
                - 400: ошибка доступа
-               - 500: любая другая непредвиденная ошибка.
+               - 500: любая другая непредвиденная ошибка
         """
 
         hours_for_get_free_card = 6
         answer_data = {'success': None,
                        'new_card_id': None,
                        'error_message': None,
-                       'status_code': None}
+                       'status_code': None,
+                       'current_user_dto': None}
 
-        if current_user is None:
+        if current_user_id is None:
             answer_data['success'] = False
             answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
             answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
             return answer_data
         try:
-            if current_user.profile.receiving_timer is not None:
+            # Получение и блокировка данных для транзакции
+            profile = await get_profile_for_update(session_db=self.session_db,
+                                                   user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['success'] = False
+                answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
+                return answer_data
+
+            if profile.receiving_timer is not None:
                 check_time, hours = time_difference_check(check_time=current_user.profile.receiving_timer,
                                                           need_hours=hours_for_get_free_card)
                 if not check_time:

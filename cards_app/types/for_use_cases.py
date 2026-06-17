@@ -3,7 +3,7 @@ from cards_app.schemas import (AllStoreDTO, UserCardsDTO, CardsTradingDTO, Trans
                                CardInfoDTO, GetFreeCardDTO, NewsDTO, StartEventAwardsDTO,
                                ProfileResponseDTO, RatingTableDTO, FavoriteUsersPageDTO,
                                CardStoreDTO, FightDTO, FullInventoryDTO, FullInfoLevelingDTO, CardsForMergeDTO,
-                               OpenBoxExpItemDTO, OpenBoxAmuletDTO, FullInfoUpgradingDTO)
+                               OpenBoxExpItemDTO, OpenBoxAmuletDTO, FullInfoUpgradingDTO, CurrentUserForMenuDTO)
 
 
 class BaseUseCaseDict(TypedDict):
@@ -18,6 +18,7 @@ class ErrorMixin(TypedDict):
     """
 
     error_message: str | None
+    current_user_dto: CurrentUserForMenuDTO | None
 
 
 class SuccessMessageMixin(TypedDict):

@@ -10,6 +10,7 @@ from sqlalchemy.orm import joinedload
 from cards_app.config.database import get_db_session
 from cards_app.config.security import decode_token
 from cards_app.models.users import User
+from cards_app.services.users import get_user_with_profile
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login', auto_error=False)
 
@@ -45,7 +46,6 @@ async def get_current_user_id(request: Request,
     user_id = payload.get('sub')
     if not user_id:
         return None
-
     try:
         return int(user_id)
     except (ValueError, TypeError):
@@ -55,7 +55,8 @@ async def get_current_user_id(request: Request,
 
 async def get_current_user_with_profile(request: Request,
                                         token: str = Depends(oauth2_scheme),
-                                        db: AsyncSession = Depends(get_db_session)) -> User | None:
+                                        session_db: AsyncSession = Depends(get_db_session)
+                                        ) -> User | None:
     """ Зависимость для GET-запросов.
         Получает текущего пользователя или None, если он не авторизован
     """
@@ -78,14 +79,11 @@ async def get_current_user_with_profile(request: Request,
         logger.warning(f'Получен невалидный user_id: {user_id}')
         return None
 
-    result = await db.execute(select(User)
-                              .where(User.id == int(user_id))
-                              .options(joinedload(User.profile))
-                              )
-    user = result.scalar_one_or_none()
-
+    user = await get_user_with_profile(session_db=session_db,
+                                       user_id=user_id)
     if not user:
         return None
+
     if not user.is_active:
         raise HTTPException(status_code=403, detail='Пользователь заблокирован')
     return user
