@@ -27,6 +27,7 @@ async def get_card_with_details(session_db: AsyncSession,
          Args:
             session_db: сессия базы данных
             card_id: ID карты, которую нужно получить
+            for_update: флаг о том, что запрос на получение данных для изменения
         Returns:
             Card: Объект карты с подгруженными атрибутами:
                 - class_card (ClassCard)

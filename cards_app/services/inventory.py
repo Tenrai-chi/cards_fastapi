@@ -457,13 +457,15 @@ async def upgrade_card(session_db: AsyncSession,
                        card_id: int,
                        upgrade_item_id: int,
                        user: User
-                       ) -> None:
+                       ) -> int:
     """ Использует предмет усиления на карте.
         Args:
             session_db: сессия базы данных
             card_id: ID карты
             upgrade_item_id: ID типа предмета усиления
             user: User + Profile пользователя
+        Returns:
+            int: Стоимость использоваения предмета усиления
         Raises:
             NotEnoughUpgradeItemsError: если предметов недостаточно
             NotCardOwnerError: пользователь не является владельцем карты
@@ -494,15 +496,8 @@ async def upgrade_card(session_db: AsyncSession,
                        f'имеющую максимальный уровень усиления')
         raise MaxUpgradeCardError
 
-    for_transaction: dict = await charge_user_gold(session_db=session_db,
-                                                   current_user=user,
-                                                   need_gold=upg_item.upgrade_item_type.price_of_use)
-    await create_transaction(session_db=session_db,
-                             gold_before=for_transaction['gold_before'],
-                             gold_after=for_transaction['gold_after'],
-                             user_profile_id=user.profile.id,
-                             comment='Усиление карты')
-
     await upgrade_card_stats_and_level(session_db=session_db,
                                        card=card,
                                        upgrade_item=upg_item)
+
+    return upg_item.upgrade_item_type.price_of_use

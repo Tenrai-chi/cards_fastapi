@@ -11,11 +11,12 @@ from cards_app.auth.dependencies import get_current_user_with_profile, get_curre
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict, \
-    ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict, ViewUpgradeUseCaseDict, \
-    UpgradeUseCaseDict
-from cards_app.use_cases.cards import ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase, ViewUserCardsUseCase, \
-    ViewTradingUseCase, ViewMergeUseCase, MergeUseCase, ViewUpgradeUseCase, UpgradeUseCase
+from cards_app.types import (ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict,
+                             ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
+                             ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
+from cards_app.use_cases.cards import (ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase,
+                                       ViewUserCardsUseCase, ViewTradingUseCase, ViewMergeUseCase,
+                                       MergeUseCase, ViewUpgradeUseCase, UpgradeUseCase)
 
 from cards_app.models.users import User
 
@@ -32,7 +33,7 @@ async def view_card(request: Request,
                     error: str = None,
                     success: str = None
                     ):
-    """ Просмотр карты """
+    """ Просмотр конкретной карты """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewCardUseCase(session_db)
@@ -87,7 +88,7 @@ async def get_free_card(request: Request,
                         session_db: AsyncSession = Depends(get_db_session),
                         current_user_id: int | None = Depends(get_current_user_id),
                         ):
-    """ Обработка запроса получения бесплатной карты """
+    """ Обработка запроса на получение бесплатной карты """
 
     use_case = GetFreeCardUseCase(session_db)
     data: GetFreeCardUseCaseDict = await use_case.execute(current_user_id)
@@ -97,7 +98,7 @@ async def get_free_card(request: Request,
         url = request.url_for('view_card', card_id=new_card_id)
         return RedirectResponse(url, status_code=data.get('status_code'))
     else:
-        if data.get('status_code') in (404, 500):
+        if data.get('status_code') == 500:
             context = {'error': data.get('error_message'),
                        'status_code': data.get('status_code'),
                        'current_user': data.get('current_user_dto')}
@@ -152,7 +153,7 @@ async def view_trading(request: Request,
                        error: str = None,
                        success: str = None
                        ):
-    """ Просмотр торговой площадки """
+    """ Просмотр торговой площадки с картами """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewTradingUseCase(session_db)
@@ -220,9 +221,8 @@ async def merge_cards(request: Request,
                       sacrificed_ids: str = Form(...),
                       session_db: AsyncSession = Depends(get_db_session),
                       current_user_id: int | None = Depends(get_current_user_id)):
-    """ Повышение уровня слияния карты """
+    """ Обработка запроса на повышение уровня слияния карты """
 
-    # current_user_dto = await user_info_to_dto(current_user)
     try:
         cards_for_merge = [int(card_id) for card_id in json.loads(sacrificed_ids)]
     except (JSONDecodeError, ValueError, TypeError) as _:
@@ -264,7 +264,7 @@ async def view_upgrade_card(request: Request,
                             error: str = None,
                             success: str = None
                             ):
-    """ todo Просмотр меню усиления карты """
+    """ Просмотр меню усиления карты """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewUpgradeUseCase(session_db)
@@ -298,7 +298,7 @@ async def upgrade_card(request: Request,
                        upgrade_id: int,
                        session_db: AsyncSession = Depends(get_db_session),
                        current_user_id: int | None = Depends(get_current_user_id)):
-    """ Повышение уровня карты """
+    """ Обработка запроса на повышение уровня карты """
 
     use_case = UpgradeUseCase(session_db=session_db)
     data: UpgradeUseCaseDict = await use_case.execute(current_user_id=current_user_id,

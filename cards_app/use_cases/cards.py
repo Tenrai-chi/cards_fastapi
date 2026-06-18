@@ -18,7 +18,8 @@ from cards_app.services.inventory import upgrade_card
 
 from cards_app.schemas.cards import (AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard,
                                      UserCardsDTO, CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
-from cards_app.services.profile import update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile
+from cards_app.services.profile import update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile, \
+    charge_user_gold, create_transaction
 
 from cards_app.utils.common import calculate_need_exp, time_difference_check
 from cards_app.models.users import User
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class ViewCardUseCase:
-    """ Use case для просмотра карты """
+    """ Use case для просмотра информации о конкретной карте """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
@@ -49,25 +50,26 @@ class ViewCardUseCase:
                    - 500: любая другая непредвиденная ошибка.
                """
 
-        answer_data = {'card_info_dto': None,
-                       'error_message': None,
-                       'status_code': None,
-                       }
+        answer_data: ViewCardUseCaseDict = {'card_info_dto': None,
+                                            'error_message': None,
+                                            'status_code': None,
+                                            }
         try:
             card = await get_card_with_details(session_db=self.session_db,
                                                card_id=card_id)
+
         except CardNotFoundError as error:
             answer_data['error_message'] = str(error)
             answer_data['status_code'] = error.status_code
             return answer_data
+
         except Exception as error:
             answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewCardUseCase: {error}', exc_info=True)
             return answer_data
 
-        need_exp = calculate_need_exp(level=card.level)
-        amulet_dto = None
+        need_exp: int = calculate_need_exp(level=card.level)
         card_dto = CardDTO(id=card.id,
                            class_card_name=card.class_card.name,
                            rarity_card_name=card.rarity_card.name,
@@ -84,12 +86,15 @@ class ViewCardUseCase:
                            max_enhancement=card.max_enhancement,
                            current_exp=card.experience_bar,
                            need_exp=need_exp)
+
+        amulet_dto = None
         if card.amulet:
             amulet_dto = AmuletDTO(id=card.amulet.id,
                                    name=card.amulet.amulet_type.name,
                                    bonus_hp=card.amulet.amulet_type.bonus_hp,
                                    bonus_damage=card.amulet.amulet_type.bonus_damage,
                                    )
+
         if current_user:
             is_owner = True if current_user.profile.id == card.owner_id else False
         else:
@@ -124,10 +129,11 @@ class ViewGetFreeCardUseCase:
         """
 
         answer_data = {'get_free_card_dto': None,
-                       'status_code': None}
+                       'status_code': 200}
+
         data_for_page: dict = await get_rarities_and_classes(session_db=self.session_db)
-        all_classes = data_for_page['classes']
-        all_rarities = data_for_page['rarities']
+        all_classes: list = data_for_page['classes']
+        all_rarities: list = data_for_page['rarities']
 
         classes_card = [
             ClassCard(name=class_card.name, skill_description=class_card.description)
@@ -139,10 +145,11 @@ class ViewGetFreeCardUseCase:
             for rarity_card in all_rarities
         ]
 
-        can_get_card = False
+        can_get_card: bool = False
         if current_user and current_user.profile.receiving_timer is not None:
             hours_for_get_free_card = 6
-            check_time, _ = time_difference_check(current_user.profile.receiving_timer, hours_for_get_free_card)
+            check_time, _ = time_difference_check(check_time=current_user.profile.receiving_timer,
+                                                  need_hours=hours_for_get_free_card)
             if check_time:
                 can_get_card = True
         elif current_user:
@@ -150,7 +157,6 @@ class ViewGetFreeCardUseCase:
         else:
             can_get_card = False
 
-        answer_data['status_code'] = 200
         answer_data['get_free_card_dto'] = GetFreeCardDTO(all_classes=classes_card,
                                                           all_rarities=rarities_card,
                                                           can_get_free_card=can_get_card)
@@ -158,7 +164,7 @@ class ViewGetFreeCardUseCase:
 
 
 class GetFreeCardUseCase:
-    """ Use case для получения случайной бесплатной карты.
+    """ Use case для получения случайной карты пользователем.
         Проверяет авторизацию, таймер ожидания, наличие слотов, генерирует карту и записывает историю.
     """
 
@@ -176,7 +182,7 @@ class GetFreeCardUseCase:
                     - new_card_id (int | None): ID новой карты (при успехе)
                     - error_message (str | None): сообщение об ошибке
                     - status_code (int): HTTP статус-код
-                    - current_user_dto (CurrentUserForMenuDTO | None): при ошибках 400, 404 и 500
+                    - current_user_dto (CurrentUserForMenuDTO | None): при ошибках 400 и 500
            Note:
                - 303: успешное получение данных и перенаправление
                - 400: ошибка доступа
@@ -198,8 +204,8 @@ class GetFreeCardUseCase:
             return answer_data
         try:
             # Получение и блокировка данных для транзакции
-            profile = await get_profile_for_update(session_db=self.session_db,
-                                                   user_id=current_user_id)
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
             # current_user получит профиль из сессии при запросе (используется для создания DTO)
             current_user = await get_user_with_profile(session_db=self.session_db,
                                                        user_id=current_user_id)
@@ -212,7 +218,7 @@ class GetFreeCardUseCase:
                 logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
                 return answer_data
 
-            if profile.receiving_timer is not None:
+            if current_user.profile.receiving_timer is not None:
                 check_time, hours = time_difference_check(check_time=current_user.profile.receiving_timer,
                                                           need_hours=hours_for_get_free_card)
                 if not check_time:
@@ -487,7 +493,7 @@ class MergeUseCase:
                Note:
                    - 303: успешное получение данных.
                    - 400: нет прав или пользователь не авторизован
-                   - 404: карта не найдена
+                   - 404: карта(ы) не найдена(ы)
                    - 500: любая другая непредвиденная ошибка.
                """
 
@@ -505,8 +511,8 @@ class MergeUseCase:
             return answer_data
 
         try:
-            profile = await get_profile_for_update(session_db=self.session_db,
-                                                   user_id=current_user_id)
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
             # current_user получит профиль из сессии при запросе (используется для создания DTO)
             current_user = await get_user_with_profile(session_db=self.session_db,
                                                        user_id=current_user_id)
@@ -676,8 +682,9 @@ class UpgradeUseCase:
             return answer_data
 
         try:
-            profile = await get_profile_for_update(session_db=self.session_db,
-                                                   user_id=current_user_id)
+            # Блокирует профиль, чтобы избежать гонок
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
             # current_user получит профиль из сессии при запросе (используется для создания DTO)
             current_user = await get_user_with_profile(session_db=self.session_db,
                                                        user_id=current_user_id)
@@ -691,10 +698,18 @@ class UpgradeUseCase:
                 logger.warning(f'Попытка неавторизованного пользователя усилить карту')
                 return answer_data
 
-            await upgrade_card(session_db=self.session_db,
-                               card_id=current_card_id,
-                               upgrade_item_id=upgrade_item_id,
-                               user=current_user)
+            price: int = await upgrade_card(session_db=self.session_db,
+                                            card_id=current_card_id,
+                                            upgrade_item_id=upgrade_item_id,
+                                            user=current_user)
+            for_transaction: dict = await charge_user_gold(session_db=self.session_db,
+                                                           current_user=current_user,
+                                                           need_gold=price)
+            await create_transaction(session_db=self.session_db,
+                                     gold_before=for_transaction['gold_before'],
+                                     gold_after=for_transaction['gold_after'],
+                                     user_profile_id=current_user.profile.id,
+                                     comment='Усиление карты')
 
             await self.session_db.commit()
             answer_data['success'] = True
