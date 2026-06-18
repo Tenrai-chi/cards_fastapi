@@ -182,7 +182,7 @@ class GetFreeCardUseCase:
                     - new_card_id (int | None): ID новой карты (при успехе)
                     - error_message (str | None): сообщение об ошибке
                     - status_code (int): HTTP статус-код
-                    - current_user_dto (CurrentUserForMenuDTO | None): при ошибках 400 и 500
+                    - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя
            Note:
                - 303: успешное получение данных и перенаправление
                - 400: ошибка доступа
@@ -275,7 +275,6 @@ class ViewUserCardsUseCase:
                        - user_cards_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
                        - error_message (str | None): текст ошибки, если произошла.
                        - status_code (int): HTTP статус-код.
-
                Note:
                    - 200: успешное получение данных.
                    - 404: пользователь не найден (UserNotFound).
@@ -343,7 +342,6 @@ class ViewTradingUseCase:
                    ViewTradingUseCaseDict:
                        - cards_trading_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
                        - status_code (int): HTTP статус-код.
-
                Note:
                    - 200: успешное получение данных.
                    - 500: любая другая непредвиденная ошибка.
@@ -400,7 +398,6 @@ class ViewMergeUseCase:
                        - merge_dto (CardsForMergeDTO | None): DTO с данными карты, амулета и флагом владельца.
                        - status_code (int): HTTP статус-код.
                        - error_message (str): сообщение об ошибке
-
                Note:
                    - 200: успешное получение данных.
                    - 400: нет прав или пользователь не авторизован
@@ -489,7 +486,7 @@ class MergeUseCase:
                    MergeUseCaseDict:
                        - status_code (int): HTTP статус-код
                        - error_message (str): сообщение об ошибке
-
+                       - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя
                Note:
                    - 303: успешное получение данных.
                    - 400: нет прав или пользователь не авторизован
@@ -570,7 +567,6 @@ class ViewUpgradeUseCase:
                        - upgrade_dto (FullInfoUpgradingDTO | None): DTO с информацией для усиления карты
                        - status_code (int): HTTP статус-код.
                        - error_message (str): сообщение об ошибке
-
                Note:
                    - 200: успешное получение данных.
                    - 400: нет прав или пользователь не авторизован
@@ -660,7 +656,7 @@ class UpgradeUseCase:
                        - error_message (str | None): сообщение об ошибке
                        - success (bool): флаг о успехе
                        - success_message (str | NOne): сообщение об успехе
-                       - current_user_dto (CurrentUserForMenuDTO | None):  при ошибках 400, 404 и 500
+                       - current_user_dto (CurrentUserForMenuDTO | None):  DTO текущего пользователя
                Note:
                    - 303: успешное получение данных.
                    - 400: нет прав или пользователь не авторизован или не хватает предметов

@@ -38,6 +38,7 @@ async def add_experience_books_batch(session_db: AsyncSession,
         .where(UsersInventory.owner_id == user_profile_id,
                UsersInventory.item_id.in_(items_amount.keys())
                )
+        .with_for_update()
     )
     result_inventory = await session_db.execute(stmt_inventory)
     inventory_map = {inventory.item_id: inventory for inventory in result_inventory.scalars().all()}
@@ -101,7 +102,10 @@ async def can_user_receive_amulet(session_db: AsyncSession,
             NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
     """
 
-    stmt_count_amulets = select(func.count()).select_from(AmuletItem).where(AmuletItem.owner_id == current_user.profile.id)
+    stmt_count_amulets = (select(func.count())
+                          .select_from(AmuletItem)
+                          .where(AmuletItem.owner_id == current_user.profile.id)
+                          )
     result = await session_db.execute(stmt_count_amulets)
     amulets_count = result.scalar_one()
     if need_slots > current_user.profile.amulet_slots - amulets_count:

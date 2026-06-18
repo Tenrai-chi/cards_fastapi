@@ -76,7 +76,7 @@ class ViewStartEventUseCaseDict(BaseUseCaseDict):
     start_event_awards_dto: StartEventAwardsDTO | None
 
 
-class GetAwardStartEventUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMessageMixin):
+class GetAwardStartEventUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из GetAwardStartEventUseCase """
 
     new_card_id: int | None

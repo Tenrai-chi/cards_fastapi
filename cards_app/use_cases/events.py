@@ -9,6 +9,7 @@ from cards_app.services.events import (get_total_news_count, get_paginated_news,
 from cards_app.schemas.news import NewsRecordDTO, NewsDTO
 from cards_app.schemas.start_event import StartEventAwardDTO, StartEventAwardsDTO
 from cards_app.services.store import get_book_by_name, get_amulet_by_name
+from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
 from cards_app.types import ViewNewsUseCaseDict, ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
 from cards_app.models import User
 from cards_app.services.inventory import add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch
@@ -120,11 +121,11 @@ class GetAwardStartEventUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None
+    async def execute(self, current_user_id: int | None
                       ) -> GetAwardStartEventUseCaseDict:
         """ Выполняет получение награды в стартовом событии.
            Args:
-               current_user: User + Profile текущего пользователя
+               current_user_id: ID User
 
            Returns:
                GetAwardStartEventUseCaseDict:
@@ -132,6 +133,7 @@ class GetAwardStartEventUseCase:
                    - error_message (str | None): сообщение об ошибке.
                    - new_card_id (int | None): ID созданной карты, если награда была картой
                    - status_code (int): HTTP статус-код.
+                   - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя
            Note:
                - 303: успешное получение (перенаправление на просмотр карты или на ту же страницу).
                - 400: ошибка доступа (пользователь не авторизован, либо он не может получить награду)
@@ -141,21 +143,35 @@ class GetAwardStartEventUseCase:
         answer_data = {'success_message': None,
                        'error_message': None,
                        'new_card_id': None,
-                       'status_code': None}
+                       'status_code': None,
+                       'current_user_dto': None}
 
         # Проверка, что пользователь авторизован
-        if current_user is None:
+        if current_user_id is None:
             answer_data['error_message'] = f'Для получения награды вы должны быть авторизованы'
             answer_data['status_code'] = 400
             return answer_data
 
-        # Проверка, что пользователь может получить награду
-        if not can_get_start_event_award(user=current_user):
-            answer_data['error_message'] = f'Вы не можете получить награду стартового события'
-            answer_data['status_code'] = 400
-            return answer_data
-
         try:
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['error_message'] = f'Для получения награды вы должны быть авторизованы'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя получить награду стартового события')
+                return answer_data
+
+            # Проверка, что пользователь может получить награду
+            if not can_get_start_event_award(user=current_user):
+                answer_data['error_message'] = f'Для получения награды вы должны быть авторизованы'
+                answer_data['status_code'] = 400
+                return answer_data
             # Получение информации о награде дня
             day_visit = (current_user.profile.event_visit or 0) + 1
             award_of_day = await get_info_award(session_db=self.session_db,
