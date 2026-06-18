@@ -178,7 +178,7 @@ class ViewUpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin):
     upgrade_dto: FullInfoUpgradingDTO | None
 
 
-class MergeUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+class MergeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 

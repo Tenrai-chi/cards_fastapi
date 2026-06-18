@@ -404,10 +404,10 @@ async def get_cards_for_merge(session_db: AsyncSession,
     return current_card, cards_for_merge
 
 
-async def increase_merger(session_db: AsyncSession,
-                          card: Card,
-                          add_merge: int
-                          ) -> None:
+async def _increase_merger(session_db: AsyncSession,
+                           card: Card,
+                           add_merge: int
+                           ) -> None:
     """ Повышает уровень слияния карты на add_merge
         Args:
             session_db: сессия базы данных
@@ -426,7 +426,7 @@ async def merge_card(session_db: AsyncSession,
                      owner_id: int
                      ) -> None:
     """ Процесс слияния карт.
-        Получает текущую карту и карты для слияния.
+        Получает текущую карту и карты для слияния и блокирует их.
         Проверяет, что пользователь является владельцем всех карт и они существуют.
         Запускает увеличение уровня слияния текущей карты
         и параллельное удаление карт для слияния
@@ -447,7 +447,10 @@ async def merge_card(session_db: AsyncSession,
                        f'слить в карту ID {current_card_id} саму себя')
         raise SelfMergeError
 
-    stmt_current_card = select(Card).where(Card.id == current_card_id)
+    stmt_current_card = (select(Card)
+                         .where(Card.id == current_card_id)
+                         .with_for_update()
+                         )
     result_card = await session_db.execute(stmt_current_card)
     current_card = result_card.scalar_one_or_none()
 
@@ -455,23 +458,26 @@ async def merge_card(session_db: AsyncSession,
         logger.warning(f'Пользователь ID {owner_id} попытался увеличить уровень слияния карты ID {current_card_id}, '
                        f'но она не существует')
         raise CardNotFoundError(card_id=current_card_id)
+
     if current_card.owner_id != owner_id:
         logger.warning(f'ID Pofile {owner_id} не является владельцем карты ID {current_card_id} '
                        f'и не может повысить ее уровень слияния')
         raise NotCardOwnerError
+
     if not cards_for_merge_ids:
         logger.warning(f'Пользователь ID Profile {owner_id} попытался увеличить уровень слияния карты ID {current_card_id} '
                        f'без подходящих для этого карт')
         raise EmptyCardsForMergeError
+
     if current_card.max_merger - current_card.merger < len(cards_for_merge_ids):
         logger.warning(f'Пользователь ID Profile{owner_id} попытался увеличить уровень слияния карты ID {current_card_id} '
                        f'но было выбрано больше карт, чем необходимо')
         raise TooManyCardsMergeError
 
-    stmt_cards_for_merge = (
-        select(Card)
-        .where(Card.id.in_(cards_for_merge_ids))
-    )
+    stmt_cards_for_merge = (select(Card)
+                            .where(Card.id.in_(cards_for_merge_ids))
+                            .with_for_update()
+                            )
     result_cards_for_merge = await session_db.execute(stmt_cards_for_merge)
     cards_for_merge = result_cards_for_merge.scalars().all()
 
@@ -488,9 +494,9 @@ async def merge_card(session_db: AsyncSession,
     update_tasks = [clear_owner_card(session_db, card) for card in cards_for_merge]
     await asyncio.gather(*update_tasks)
 
-    await increase_merger(session_db=session_db,
-                          card=current_card,
-                          add_merge=len(cards_for_merge))
+    await _increase_merger(session_db=session_db,
+                           card=current_card,
+                           add_merge=len(cards_for_merge))
 
 
 async def clear_owner_card(session_db: AsyncSession,
