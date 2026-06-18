@@ -640,12 +640,12 @@ class UpgradeUseCase:
 
     async def execute(self,
                       current_card_id: int,
-                      current_user: User | None,
+                      current_user_id: int | None,
                       upgrade_item_id: int
                       ) -> UpgradeUseCaseDict:
-        """ Выполняет получение карты и формирует DTO для отображения.
+        """ Улучшение карты с помощью предмета усиления
                Args:
-                   current_user: User + Profile текущего пользователя
+                   current_user_id: ID User текущего пользователя
                    current_card_id: ID текущей карты
                    upgrade_item_id: ID предмета усиления в инвентаре
                Returns:
@@ -654,7 +654,7 @@ class UpgradeUseCase:
                        - error_message (str | None): сообщение об ошибке
                        - success (bool): флаг о успехе
                        - success_message (str | NOne): сообщение об успехе
-
+                       - current_user_dto (CurrentUserForMenuDTO | None):  при ошибках 400, 404 и 500
                Note:
                    - 303: успешное получение данных.
                    - 400: нет прав или пользователь не авторизован или не хватает предметов
@@ -665,15 +665,32 @@ class UpgradeUseCase:
         answer_data = {'status_code': None,
                        'error_message': None,
                        'success': None,
-                       'success_message': None}
+                       'success_message': None,
+                       'current_user_dto': None}
 
-        if current_user is None:
+        if current_user_id is None:
             answer_data['success'] = False
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
             answer_data['status_code'] = 400
+            logger.warning(f'Попытка неавторизованного пользователя усилить карту')
             return answer_data
 
         try:
+            profile = await get_profile_for_update(session_db=self.session_db,
+                                                   user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['success'] = False
+                answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя усилить карту')
+                return answer_data
+
             await upgrade_card(session_db=self.session_db,
                                card_id=current_card_id,
                                upgrade_item_id=upgrade_item_id,

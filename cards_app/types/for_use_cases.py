@@ -182,7 +182,7 @@ class MergeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, Succes
     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 
-class UpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+class UpgradeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 

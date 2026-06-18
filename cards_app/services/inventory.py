@@ -381,6 +381,7 @@ async def get_upgrade_item_in_inventory(session_db: AsyncSession,
         .where(UpgradeItemsUsers.owner_id == owner_id,
                UpgradeItemsUsers.upgrade_item_type_id == upgrade_item_type_id)
         .options(joinedload(UpgradeItemsUsers.upgrade_item_type))
+        .with_for_update(of=UpgradeItemsUsers)
     )
     result = await session_db.execute(stmt_upg_item)
     upg_item = result.scalar_one_or_none()
@@ -478,7 +479,8 @@ async def upgrade_card(session_db: AsyncSession,
         raise NotEnoughUpgradeItemsError
 
     card = await get_card_with_details(session_db=session_db,
-                                       card_id=card_id)
+                                       card_id=card_id,
+                                       for_update=True)
     if card is None:
         logger.warning(f'Карта ID {card_id} не найдена')
         raise CardNotFoundError
@@ -504,6 +506,3 @@ async def upgrade_card(session_db: AsyncSession,
     await upgrade_card_stats_and_level(session_db=session_db,
                                        card=card,
                                        upgrade_item=upg_item)
-
-
-

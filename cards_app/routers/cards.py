@@ -297,13 +297,11 @@ async def upgrade_card(request: Request,
                        card_id: int,
                        upgrade_id: int,
                        session_db: AsyncSession = Depends(get_db_session),
-                       current_user: User | None = Depends(get_current_user_with_profile)):
+                       current_user_id: int | None = Depends(get_current_user_id)):
     """ Повышение уровня карты """
 
-    print(f'Пришло card_id: {card_id}, upgrade_id: {upgrade_id}')
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = UpgradeUseCase(session_db=session_db)
-    data: UpgradeUseCaseDict = await use_case.execute(current_user=current_user,
+    data: UpgradeUseCaseDict = await use_case.execute(current_user_id=current_user_id,
                                                       current_card_id=card_id,
                                                       upgrade_item_id=upgrade_id
                                                       )
@@ -317,7 +315,7 @@ async def upgrade_card(request: Request,
         if data.get('status_code') in (404, 500):
             context = {'error': data.get('error_message'),
                        'status_code': data.get('status_code'),
-                       'current_user': current_user_dto}
+                       'current_user': data.get('current_user_dto')}
             return templates.TemplateResponse(request=request,
                                               name='errors/error_page.html',
                                               context=context,

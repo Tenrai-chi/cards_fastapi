@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 async def get_card_with_details(session_db: AsyncSession,
-                                card_id: int
+                                card_id: int,
+                                for_update: bool = False
                                 ) -> Card:
     """ Возвращает карту с подгруженными амулетом, классом, типом и редкостью.
          Args:
@@ -46,6 +47,9 @@ async def get_card_with_details(session_db: AsyncSession,
             joinedload(Card.amulet).joinedload(AmuletItem.amulet_type),
         )
     )
+    if for_update:
+        stmt_card.with_for_update(of=Card)
+
     result_card = await session_db.execute(stmt_card)
     card = result_card.scalar_one_or_none()
     if card is None:
