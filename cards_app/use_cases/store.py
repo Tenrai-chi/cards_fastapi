@@ -15,6 +15,7 @@ from cards_app.services.profile import check_can_user_receive_card, charge_user_
 from cards_app.services.store import (get_cards_in_store, get_box_in_store, get_amulets_in_store,
                                       get_upgrade_items_in_store, get_exp_items_in_store, get_box_info, open_box_card,
                                       open_box_exp_item, open_box_amulet, buy_exp_items, buy_amulet, buy_upgrade_item)
+from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
 from cards_app.types import (ViewCardStoreUseCaseDict, BuyStoreCardUseCaseDict, ViewItemStoreUseCaseDict,
                              BuyBoxUseCaseDict, BuyItemUseCaseDict)
 from cards_app.utils.common import calculate_final_price
@@ -73,12 +74,12 @@ class BuyStoreCardUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User | None,
+                      current_user_id: int | None,
                       temp_card_id: int,
                       ) -> BuyStoreCardUseCaseDict:
         """ Выполняет покупку карты в магазине.
            Args:
-               current_user: User + Profile текущего пользователя
+               current_user_id: ID User текущего пользователя
                temp_card_id: ID карты-шаблона в магазине
 
            Returns:
@@ -96,15 +97,32 @@ class BuyStoreCardUseCase:
         answer_data = {'success': None,
                        'error_message': None,
                        'new_card_id': None,
-                       'status_code': None}
+                       'status_code': None,
+                       'current_user_dto': None}
 
         # Проверка, что пользователь авторизован
-        if current_user is None:
+        if current_user_id is None:
             answer_data['success'] = False
-            answer_data['error_message'] = f'Для покупки карты нужно быть авторизованным'
+            answer_data['error_message'] = f'Для покупки карты вы должны быть авторизованны'
             answer_data['status_code'] = 400
             return answer_data
         try:
+            # Блокирует профиль, чтобы избежать гонок
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['success'] = False
+                answer_data['error_message'] = f'Для покупки карты вы должны быть авторизованны'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя купить карту в магазине')
+                return answer_data
+
             # Проверка, что у пользователя хватает места
             await check_can_user_receive_card(session_db=self.session_db,
                                               current_user=current_user,

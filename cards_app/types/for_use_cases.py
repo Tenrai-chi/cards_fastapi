@@ -108,7 +108,7 @@ class ViewCardStoreUseCaseDict(BaseUseCaseDict):
     card_store_dto: CardStoreDTO | None
 
 
-class BuyStoreCardUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin):
+class BuyStoreCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):
     """ Кастомный словарь для возврата данных из BuyStoreCardUseCase """
 
     new_card_id: int | None

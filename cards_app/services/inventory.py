@@ -193,7 +193,7 @@ async def delete_amulet(session_db: AsyncSession,
     if amulet.card_id:
         await remove_amulet_from_card(session_db=session_db,
                                       amulet=amulet)
-    # Удалить амулет и добавить в сессию
+
     logger.info(f'Амулет ID {amulet.id} удален')
     price_for_sell = amulet.amulet_type.price // 2
     await session_db.delete(amulet)
