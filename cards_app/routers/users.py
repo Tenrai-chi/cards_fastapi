@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import quote
 
-from cards_app.auth.dependencies import get_current_user_with_profile
+from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
@@ -124,13 +124,12 @@ async def view_user_profile(request: Request,
 async def add_user_favorite(request: Request,
                             user_id: int,
                             session_db: AsyncSession = Depends(get_db_session),
-                            current_user: User | None = Depends(get_current_user_with_profile),
+                            current_user_id: int | None = Depends(get_current_user_id),
                             ):
     """ Добавление пользователя в список избранных """
 
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = AddFavoriteUserUseCase(session_db)
-    data: AddFavoriteUserUseCaseDict = await use_case.execute(current_user=current_user,
+    data: AddFavoriteUserUseCaseDict = await use_case.execute(current_user_id=current_user_id,
                                                               target_user_id=user_id)
     if data.get('success') is True:
         url = request.url_for('user_profile', user_id=user_id)
@@ -142,7 +141,7 @@ async def add_user_favorite(request: Request,
                                               name='errors/error_page.html',
                                               context={'error': data.get('error_message'),
                                                        'status_code': data.get('status_code'),
-                                                       'current_user': current_user_dto},
+                                                       'current_user': data.get('current_user_dto')},
                                               status_code=data.get('status_code')
                                               )
         else:

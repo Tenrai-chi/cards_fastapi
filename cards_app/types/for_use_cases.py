@@ -88,7 +88,7 @@ class ViewProfileUseCaseDict(BaseUseCaseDict, ErrorMixin):
     user_info: ProfileResponseDTO | None
 
 
-class AddFavoriteUserUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+class AddFavoriteUserUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из AddFavoriteUserUseCase """
 
 

@@ -14,6 +14,7 @@ from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, Guild
                                        RecordTransaction)
 from cards_app.models.users import User
 from cards_app.exeptions import UserNotFoundError, NotEnoughSlotsError
+from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
 from cards_app.types import (ViewProfileUseCaseDict, AddFavoriteUserUseCaseDict, RemoveFavoriteUserUseCaseDict,
                              FavoriteUsersUseCaseDict, ViewUsersRatingDict, UserTransactionsUseCaseDict)
 
@@ -201,12 +202,12 @@ class AddFavoriteUserUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User | None,
+                      current_user_id: int | None,
                       target_user_id: int
                       ) -> AddFavoriteUserUseCaseDict:
         """ Добавляет целевого пользователя в избранное текущего.
             Args:
-                current_user: User + Profile текущего пользователя
+                current_user_id: ID User текущего пользователя
                 target_user_id: ID Profile пользователя, которого нужно добавить в избранное.
             Returns:
                 AddFavoriteUserUseCaseDict:
@@ -223,15 +224,32 @@ class AddFavoriteUserUseCase:
         answer_data = {'success': None,
                        'error_message': None,
                        'status_code': None,
-                       'success_message': None}
+                       'success_message': None,
+                       'current_user_dto': None}
 
-        if current_user is None:
+        if current_user_id is None:
             answer_data['success'] = False
-            answer_data['error_message'] = 'Для данного действия необходимо авторизоваться'
+            answer_data['error_message'] = 'Для добавления пользователя в список избранных вы должны быть авторизованны'
             answer_data['status_code'] = 400
             return answer_data
 
         try:
+            # Блокирует профиль, чтобы избежать гонок
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['success'] = False
+                answer_data['error_message'] = f'Для добавления пользователя в список избранных вы должны быть авторизованны'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя добавить пользователя в список избранных')
+                return answer_data
+
             await ensure_favorite_slot_available(self.session_db, current_user)
             await add_user_to_favorite(session_db=self.session_db,
                                        current_user_id=current_user.profile.id,

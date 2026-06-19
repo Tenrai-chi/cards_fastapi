@@ -354,12 +354,10 @@ async def ensure_favorite_slot_available(session_db: AsyncSession, current_user:
             NotEnoughSlotsError: недостаточно места для добавления в избранное нового пользователя
     """
 
-    stmt_count_fav_users = (
-        select(func.count())
-        .select_from(FavoriteUsers)
-        .where(FavoriteUsers.user_id == current_user.profile.id
-               )
-    )
+    stmt_count_fav_users = (select(func.count())
+                            .select_from(FavoriteUsers)
+                            .where(FavoriteUsers.user_id == current_user.profile.id)
+                            )
     result = await session_db.execute(stmt_count_fav_users)
     favorites_count = result.scalar_one()
 
