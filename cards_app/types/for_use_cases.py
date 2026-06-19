@@ -194,7 +194,7 @@ class BuyBoxUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
     card_id: int | None
 
 
-class BuyItemUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+class BuyItemUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных
         из BuyExpItemUseCase, BuyAmuletUseCase, BuyUpgradeItemUseCase
     """

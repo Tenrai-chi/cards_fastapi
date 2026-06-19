@@ -171,13 +171,12 @@ async def buy_book_in_store(request: Request,
                             book_id: int,
                             amount: int = Form(...),
                             session_db: AsyncSession = Depends(get_db_session),
-                            current_user: User | None = Depends(get_current_user_with_profile),
+                            current_user_id: int | None = Depends(get_current_user_id),
                             ):
     """ Покупка книги в магазине """
 
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = BuyExpItemUseCase(session_db)
-    data: BuyItemUseCaseDict = await use_case.execute(current_user=current_user,
+    data: BuyItemUseCaseDict = await use_case.execute(current_user_id=current_user_id,
                                                       exp_item_id=book_id,
                                                       amount=amount,
                                                       )
@@ -192,7 +191,7 @@ async def buy_book_in_store(request: Request,
         if data.get('status_code') in (404, 500):
             context = {'error': data.get('error_message'),
                        'status_code': data.get('status_code'),
-                       'current_user': current_user_dto}
+                       'current_user': data.get('current_user_dto')}
             return templates.TemplateResponse(request=request,
                                               name='errors/error_page.html',
                                               context=context,

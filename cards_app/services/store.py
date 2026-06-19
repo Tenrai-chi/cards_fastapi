@@ -248,18 +248,20 @@ async def buy_exp_items(session_db: AsyncSession,
                         exp_item_id: int,
                         exp_item_amount: int,
                         user: User
-                        ) -> None:
+                        ) -> int:
     """ Покупка книг в магазине предметов.
         Args:
             session_db: сессия базы данных
             exp_item_id: ID покупаемой книги
             exp_item_amount: количество покупаемых книг
             user: User + Profile текущего пользователя
+        Returns:
+            int: Количество золота необходимое для покупки
         Raises:
             ExpItemNotFoundError: если запрашивается покупка несуществующей книги
     """
 
-    stmt_exp_item = select(ExperienceItems).where(ExperienceItems.id == exp_item_id)
+    stmt_exp_item = select(ExperienceItems).where(ExperienceItems.id == exp_item_id).with_for_update()
     result = await session_db.execute(stmt_exp_item)
     exp_item = result.scalar_one_or_none()
     if exp_item is None:
@@ -267,18 +269,11 @@ async def buy_exp_items(session_db: AsyncSession,
         raise ExpItemNotFoundError()
 
     need_gold = exp_item.price * exp_item_amount
-    gold_transaction = await charge_user_gold(session_db=session_db,
-                                              current_user=user,
-                                              need_gold=need_gold)
-    await create_transaction(session_db=session_db,
-                             user_profile_id=user.profile.id,
-                             gold_before=gold_transaction['gold_before'],
-                             gold_after=gold_transaction['gold_after'],
-                             comment=f'Покупка книг опыта в магазине')
 
     await add_experience_books_batch(session_db=session_db,
                                      user_profile_id=user.profile.id,
                                      items_amount={exp_item_id: exp_item_amount})
+    return need_gold
 
 
 async def buy_amulet(session_db: AsyncSession,

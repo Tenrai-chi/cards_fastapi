@@ -439,13 +439,13 @@ class BuyExpItemUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User | None,
+                      current_user_id: int | None,
                       exp_item_id: int,
                       amount: int
                       ) -> BuyItemUseCaseDict:
         """ Выполняет
             Args:
-               current_user: User + Profile
+               current_user_id: ID User текущего пользователя
                exp_item_id: ID книги опыта
                amount: количество книг
             Returns:
@@ -464,20 +464,45 @@ class BuyExpItemUseCase:
         answer_data = {'status_code': None,
                        'error_message': None,
                        'success': None,
-                       'success_message': None
+                       'success_message': None,
+                       'current_user_dto': None
                        }
 
-        if current_user is None:
+        if current_user_id is None:
             answer_data['success'] = False
             answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            answer_data['error_message'] = f'Для покупки книг опыта вы должны быть авторизованы'
             return answer_data
 
         try:
-            await buy_exp_items(session_db=self.session_db,
-                                exp_item_id=exp_item_id,
-                                exp_item_amount=amount,
-                                user=current_user)
+            # Блокирует профиль, чтобы избежать гонок
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['success'] = False
+                answer_data['error_message'] = f'Для покупки книг опыта вы должны быть авторизованы'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя купить книгу опыта')
+                return answer_data
+
+            need_gold = await buy_exp_items(session_db=self.session_db,
+                                            exp_item_id=exp_item_id,
+                                            exp_item_amount=amount,
+                                            user=current_user)
+            gold_transaction = await charge_user_gold(session_db=self.session_db,
+                                                      current_user=current_user,
+                                                      need_gold=need_gold)
+            await create_transaction(session_db=self.session_db,
+                                     user_profile_id=current_user.profile.id,
+                                     gold_before=gold_transaction['gold_before'],
+                                     gold_after=gold_transaction['gold_after'],
+                                     comment=f'Покупка книг опыта в магазине')
 
             answer_data['status_code'] = 303
             answer_data['success'] = True
