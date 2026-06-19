@@ -322,11 +322,11 @@ class BuyBoxUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User | None,
+                      current_user_id: int | None,
                       box_id: int) -> BuyBoxUseCaseDict:
         """ Выполняет
             Args:
-               current_user: User + Profile
+               current_user_id: ID User текущего пользователя
                box_id: ID сундука из магазина
             Returns:
                 BuyBoxUseCaseDict:
@@ -343,14 +343,30 @@ class BuyBoxUseCase:
                        'error_message': None,
                        'exp_items_dto': None,
                        'amulets_items_dto': None,
-                       'card_id': None}
+                       'card_id': None,
+                       'current_user_dto': None}
 
-        if current_user is None:
+        if current_user_id is None:
             answer_data['status_code'] = 400
             answer_data['error_message'] = f'Вы должны быть авторизованы'
             return answer_data
 
         try:
+            # Блокирует профиль, чтобы избежать гонок
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя усилить карту')
+                return answer_data
+
             box_info = await get_box_info(session_db=self.session_db, box_id=box_id)
             gold_transaction: dict = await charge_user_gold(session_db=self.session_db,
                                                             current_user=current_user,
@@ -364,6 +380,10 @@ class BuyBoxUseCase:
             if box_info.reward_type == 'card':
                 new_card_id: int = await open_box_card(session_db=self.session_db,
                                                        user=current_user)
+                await create_record_in_history_receiving_card(session_db=self.session_db,
+                                                              card_id=new_card_id,
+                                                              user_profile_id=current_user.profile.id,
+                                                              method_receiving=f'Открытие сундука')
                 answer_data['card_id'] = new_card_id
                 answer_data['status_code'] = 303
 

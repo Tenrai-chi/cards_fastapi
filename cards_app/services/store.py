@@ -141,7 +141,6 @@ async def open_box_card(session_db: AsyncSession, user: User) -> int:
     """ Открытие сундука с картой.
         Проверяет, может ли пользователь получить награду из сундука.
         Запускает создание карты.
-        Запускает создание записи о получении карты
         Args:
             session_db: сессия базы данных
             user: User + Profile текущего пользователя
@@ -154,10 +153,6 @@ async def open_box_card(session_db: AsyncSession, user: User) -> int:
                                       need_slots=1)
     new_card_id = await generate_max_stat_ur_card(session_db=session_db,
                                                   user_profile_id=user.profile.id)
-    await create_record_in_history_receiving_card(session_db=session_db,
-                                                  card_id=new_card_id,
-                                                  user_profile_id=user.profile.id,
-                                                  method_receiving=f'Открытие сундука')
 
     return new_card_id
 

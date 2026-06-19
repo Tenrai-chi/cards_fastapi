@@ -186,7 +186,7 @@ class UpgradeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, Succ
     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 
-class BuyBoxUseCaseDict(BaseUseCaseDict, ErrorMixin):
+class BuyBoxUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
     """ Кастомный словарь для возврата данных из BuyBoxUseCase """
 
     exp_items_dto: OpenBoxExpItemDTO | None
