@@ -114,7 +114,7 @@ class BuyStoreCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin)
     new_card_id: int | None
 
 
-class ProcessFightUseCaseDict(BaseUseCaseDict, ErrorMixin):
+class ProcessFightUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
     """ Кастомный словарь для возврата данных из ProcessFightUseCase """
 
     fight_dto: FightDTO | None

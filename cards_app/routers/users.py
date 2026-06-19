@@ -190,17 +190,16 @@ async def remove_user_favorite(request: Request,
 async def fight_user(request: Request,
                      user_id: int,
                      session_db: AsyncSession = Depends(get_db_session),
-                     current_user: User | None = Depends(get_current_user_with_profile),
+                     current_user_id: int | None = Depends(get_current_user_id),
                      ):
     """ Рейтинговый бой между участниками """
 
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = ProcessFightUseCase(session_db)
-    data: dict = await use_case.execute(user=current_user,
+    data: dict = await use_case.execute(user_id=current_user_id,
                                         enemy_id=user_id)
     if data.get('fight_dto'):
         context = {'request': request,
-                   'current_user': current_user_dto,
+                   'current_user': data.get('current_user_dto'),
                    'fight_dto': data.get('fight_dto'),
                    }
 
@@ -214,7 +213,7 @@ async def fight_user(request: Request,
                                               name='errors/error_page.html',
                                               context={'error': data.get('error_message'),
                                                        'status_code': data.get('status_code'),
-                                                       'current_user': current_user_dto},
+                                                       'current_user': data.get('current_user_dto')},
                                               status_code=data.get('status_code')
                                               )
         else:

@@ -10,6 +10,7 @@ from cards_app.services.fight import (validate_battle_preconditions, get_cards_p
 from cards_app.services.guild import update_guild_points_user
 from cards_app.services.inventory import reward_loot_after_fight
 from cards_app.services.profile import update_win_lose, add_gold_for_fight, create_transaction, update_rating_user
+from cards_app.services.users import user_info_to_dto
 from cards_app.types import ProcessFightUseCaseDict, AddGoldForFightDict, RewardLootAfterFightDict
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class ProcessFightUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, user: User | None, enemy_id: int
+    async def execute(self, user_id: int | None, enemy_id: int
                       ) -> ProcessFightUseCaseDict:
         """ Оркестрирует процесс рейтинговой битвы.
             1. Проверяет возможность битвы
@@ -31,7 +32,7 @@ class ProcessFightUseCase:
             3. Начисляет золото и опыт и награды, обновляет статистику пользователей
             4. Создает запись в FightHistory
             Args:
-                user: объект текущего пользователя (User) с подгруженным профилем
+                user_id: ID User текущего пользователя
                 enemy_id: ID User противника
             Returns:
                 ProcessFightUseCaseDict
@@ -47,17 +48,18 @@ class ProcessFightUseCase:
 
         answer_data = {'fight_dto': None,
                        'error_message': None,
-                       'status_code': None}
+                       'status_code': None,
+                       'current_user_dto': None}
 
-        if user is None:
+        if user_id is None:
             answer_data['error_message'] = f'Для участия в битве вы должны быть авторизованы'
             answer_data['status_code'] = 400
-
             return answer_data
+
         try:
             # 1. Проверка, что бой может состояться
             participants: dict = await validate_battle_preconditions(self.session_db,
-                                                                     user_id=user.id,
+                                                                     user_id=user_id,
                                                                      enemy_id=enemy_id)
             user = participants.get('user')
             enemy = participants.get('enemy')
@@ -160,6 +162,7 @@ class ProcessFightUseCase:
                                                 reward_amulet_user=user_loot.get('amulets'),
                                                 winner_id=winner.id if is_victory else None)
             answer_data['status_code'] = 200
+            answer_data['current_user_dto'] = await user_info_to_dto(user=user)
             await self.session_db.commit()
 
         except (UserNotFoundError, NoCurrentCardError, CooldownNotElapsedError) as error:
