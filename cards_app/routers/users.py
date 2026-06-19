@@ -156,13 +156,12 @@ async def add_user_favorite(request: Request,
 async def remove_user_favorite(request: Request,
                                user_id: int,
                                session_db: AsyncSession = Depends(get_db_session),
-                               current_user: User | None = Depends(get_current_user_with_profile),
+                               current_user_id: int | None = Depends(get_current_user_id),
                                ):
     """ Добавление пользователя в список избранных """
 
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = RemoveFavoriteUserUseCase(session_db)
-    data: RemoveFavoriteUserUseCaseDict = await use_case.execute(current_user=current_user,
+    data: RemoveFavoriteUserUseCaseDict = await use_case.execute(current_user_id=current_user_id,
                                                                  target_user_id=user_id)
 
     if data.get('success') is True:
@@ -173,7 +172,7 @@ async def remove_user_favorite(request: Request,
         if data.get('status_code') in (404, 500):
             context = {'error': data.get('error_message'),
                        'status_code': data.get('status_code'),
-                       'current_user': current_user_dto}
+                       'current_user': data.get('current_user_dto')}
             return templates.TemplateResponse(request=request,
                                               name='errors/error_page.html',
                                               context=context,

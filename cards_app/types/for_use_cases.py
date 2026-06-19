@@ -92,7 +92,7 @@ class AddFavoriteUserUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMix
     """ Кастомный словарь для возврата данных из AddFavoriteUserUseCase """
 
 
-class RemoveFavoriteUserUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+class RemoveFavoriteUserUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из RemoveFavoriteUserUseCase """
 
 
