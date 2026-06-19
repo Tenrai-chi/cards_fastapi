@@ -209,13 +209,12 @@ async def buy_book_in_store(request: Request,
 async def buy_amulet_in_store(request: Request,
                               amulet_id: int,
                               session_db: AsyncSession = Depends(get_db_session),
-                              current_user: User | None = Depends(get_current_user_with_profile),
+                              current_user_id: int | None = Depends(get_current_user_id),
                               ):
     """ Покупка амулета в магазине """
 
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = BuyAmuletUseCase(session_db)
-    data: BuyItemUseCaseDict = await use_case.execute(current_user=current_user,
+    data: BuyItemUseCaseDict = await use_case.execute(current_user_id=current_user_id,
                                                       amulet_id=amulet_id,
                                                       )
 
@@ -229,7 +228,7 @@ async def buy_amulet_in_store(request: Request,
         if data.get('status_code') in (404, 500):
             context = {'error': data.get('error_message'),
                        'status_code': data.get('status_code'),
-                       'current_user': current_user_dto}
+                       'current_user': data.get('current_user_dto')}
             return templates.TemplateResponse(request=request,
                                               name='errors/error_page.html',
                                               context=context,
@@ -247,13 +246,12 @@ async def buy_amulet_in_store(request: Request,
 async def buy_upgrade_item_in_store(request: Request,
                                     upgrade_item_id: int,
                                     session_db: AsyncSession = Depends(get_db_session),
-                                    current_user: User | None = Depends(get_current_user_with_profile),
+                                    current_user_id: int | None = Depends(get_current_user_id),
                                     ):
     """ Покупка амулета в магазине """
 
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = BuyUpgradeItemUseCase(session_db)
-    data: BuyItemUseCaseDict = await use_case.execute(current_user=current_user,
+    data: BuyItemUseCaseDict = await use_case.execute(current_user_id=current_user_id,
                                                       upgrade_item_id=upgrade_item_id,
                                                       )
 
@@ -267,7 +265,7 @@ async def buy_upgrade_item_in_store(request: Request,
         if data.get('status_code') in (404, 500):
             context = {'error': data.get('error_message'),
                        'status_code': data.get('status_code'),
-                       'current_user': current_user_dto}
+                       'current_user': data.get('current_user_dto')}
             return templates.TemplateResponse(request=request,
                                               name='errors/error_page.html',
                                               context=context,

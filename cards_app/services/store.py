@@ -279,12 +279,14 @@ async def buy_exp_items(session_db: AsyncSession,
 async def buy_amulet(session_db: AsyncSession,
                      amulet_id: int,
                      user: User
-                     ) -> None:
+                     ) -> int:
     """ Покупка амулета в магазине предметов.
         Args:
             session_db: сессия базы данных
             amulet_id: ID покупаемого амулета
             user: User + Profile текущего пользователя
+        Returns:
+            int: цена амулета при покупке
         Raises:
             AmuletNotFoundError: если запрашивается покупка несуществующего амулета
             AmuletNotOnSaleError: попытка купить амулет, который не продается
@@ -305,29 +307,23 @@ async def buy_amulet(session_db: AsyncSession,
                        f'ID {amulet_id}, который находится не в продаже')
         raise AmuletNotOnSaleError()
 
-    gold_transaction = await charge_user_gold(session_db=session_db,
-                                              current_user=user,
-                                              need_gold=amulet.price)
-    await create_transaction(session_db=session_db,
-                             user_profile_id=user.profile.id,
-                             gold_before=gold_transaction['gold_before'],
-                             gold_after=gold_transaction['gold_after'],
-                             comment=f'Покупка книг опыта в магазине')
-
     await give_amulets_to_user_butch(session_db=session_db,
                                      owner_id=user.profile.id,
                                      amulets_amount={amulet.id: 1})
+    return amulet.price
 
 
 async def buy_upgrade_item(session_db: AsyncSession,
                            upgrade_item_id: int,
                            user: User
-                           ) -> None:
+                           ) -> int:
     """ Покупка предмета усиления в магазине предметов.
         Args:
             session_db: сессия базы данных
             upgrade_item_id: ID предмета усиления
             user: User + Profile текущего пользователя
+        Returns:
+            int: цена покупки предмета усиления
         Raises:
             UpgradeItemNotFoundError: если запрашивается покупка несуществующего предмета усиления
     """
@@ -340,18 +336,11 @@ async def buy_upgrade_item(session_db: AsyncSession,
                        f'предмет усиления ID {upgrade_item_id}')
         raise UpgradeItemNotFoundError()
 
-    gold_transaction = await charge_user_gold(session_db=session_db,
-                                              current_user=user,
-                                              need_gold=upgrade_item.price)
-    await create_transaction(session_db=session_db,
-                             user_profile_id=user.profile.id,
-                             gold_before=gold_transaction['gold_before'],
-                             gold_after=gold_transaction['gold_after'],
-                             comment=f'Покупка книг опыта в магазине')
-
     await add_upgrade_item_to_user(session_db=session_db,
                                    user_profile_id=user.profile.id,
                                    upgrade_item=upgrade_item)
+
+    return upgrade_item.price
 
 
 async def get_book_by_name(session_db: AsyncSession, book_name: str

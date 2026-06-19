@@ -132,20 +132,20 @@ class BuyStoreCardUseCase:
             card_temp = await get_temp_card_in_store(session_db=self.session_db,
                                                      card_temp_id=temp_card_id)
             if card_temp.discount_now:
-                final_price_card = calculate_final_price(price=card_temp.price,
-                                                         discount=card_temp.discount)
+                final_price_card: int = calculate_final_price(price=card_temp.price,
+                                                              discount=card_temp.discount)
             else:
-                final_price_card = card_temp.price
+                final_price_card: int = card_temp.price
 
             # Снятие денег
-            gold_transaction = await charge_user_gold(session_db=self.session_db,
-                                                      current_user=current_user,
-                                                      need_gold=final_price_card)
+            gold_transaction: dict = await charge_user_gold(session_db=self.session_db,
+                                                            current_user=current_user,
+                                                            need_gold=final_price_card)
 
             # Создание карты
-            new_card_id = await create_new_card_from_template(session_db=self.session_db,
-                                                              owner_id=current_user.profile.id,
-                                                              card_temp=card_temp)
+            new_card_id: int = await create_new_card_from_template(session_db=self.session_db,
+                                                                   owner_id=current_user.profile.id,
+                                                                   card_temp=card_temp)
 
             # Создание транзакции
             await create_transaction(session_db=self.session_db,
@@ -491,13 +491,13 @@ class BuyExpItemUseCase:
                 logger.warning(f'Попытка неавторизованного пользователя купить книгу опыта')
                 return answer_data
 
-            need_gold = await buy_exp_items(session_db=self.session_db,
-                                            exp_item_id=exp_item_id,
-                                            exp_item_amount=amount,
-                                            user=current_user)
-            gold_transaction = await charge_user_gold(session_db=self.session_db,
-                                                      current_user=current_user,
-                                                      need_gold=need_gold)
+            need_gold: int = await buy_exp_items(session_db=self.session_db,
+                                                 exp_item_id=exp_item_id,
+                                                 exp_item_amount=amount,
+                                                 user=current_user)
+            gold_transaction: dict = await charge_user_gold(session_db=self.session_db,
+                                                            current_user=current_user,
+                                                            need_gold=need_gold)
             await create_transaction(session_db=self.session_db,
                                      user_profile_id=current_user.profile.id,
                                      gold_before=gold_transaction['gold_before'],
@@ -532,12 +532,12 @@ class BuyAmuletUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User | None,
+                      current_user_id: int | None,
                       amulet_id: int,
                       ) -> BuyItemUseCaseDict:
         """ Выполняет
             Args:
-               current_user: User + Profile
+               current_user_id: ID User текущего пользователя
                amulet_id: ID амулета
             Returns:
                 BuyItemUseCaseDict:
@@ -555,19 +555,44 @@ class BuyAmuletUseCase:
         answer_data = {'status_code': None,
                        'error_message': None,
                        'success': None,
-                       'success_message': None
+                       'success_message': None,
+                       'current_user_dto': None
                        }
 
-        if current_user is None:
+        if current_user_id is None:
             answer_data['success'] = False
             answer_data['status_code'] = 400
             answer_data['error_message'] = f'Вы должны быть авторизованы'
             return answer_data
 
         try:
-            await buy_amulet(session_db=self.session_db,
-                             amulet_id=amulet_id,
-                             user=current_user)
+            # Блокирует профиль, чтобы избежать гонок
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['success'] = False
+                answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя усилить карту')
+                return answer_data
+
+            amulet_price: int = await buy_amulet(session_db=self.session_db,
+                                                 amulet_id=amulet_id,
+                                                 user=current_user)
+            gold_transaction: dict = await charge_user_gold(session_db=self.session_db,
+                                                            current_user=current_user,
+                                                            need_gold=amulet_price)
+            await create_transaction(session_db=self.session_db,
+                                     user_profile_id=current_user.profile.id,
+                                     gold_before=gold_transaction['gold_before'],
+                                     gold_after=gold_transaction['gold_after'],
+                                     comment=f'Покупка книг опыта в магазине')
 
             answer_data['status_code'] = 303
             answer_data['success'] = True
@@ -598,12 +623,12 @@ class BuyUpgradeItemUseCase:
         self.session_db = session_db
 
     async def execute(self,
-                      current_user: User | None,
+                      current_user_id: int | None,
                       upgrade_item_id: int,
                       ) -> BuyItemUseCaseDict:
-        """ Выполняет
+        """ Выполняет покупку предмета усиления в магазине
             Args:
-               current_user: User + Profile
+               current_user_id: ID User текущего пользователя
                upgrade_item_id: ID предмета усиления
             Returns:
                 BuyItemUseCaseDict:
@@ -621,19 +646,44 @@ class BuyUpgradeItemUseCase:
         answer_data = {'status_code': None,
                        'error_message': None,
                        'success': None,
-                       'success_message': None
+                       'success_message': None,
+                       'current_user_dto': None
                        }
 
-        if current_user is None:
+        if current_user_id is None:
             answer_data['success'] = False
             answer_data['status_code'] = 400
             answer_data['error_message'] = f'Вы должны быть авторизованы'
             return answer_data
 
         try:
-            await buy_upgrade_item(session_db=self.session_db,
-                                   upgrade_item_id=upgrade_item_id,
-                                   user=current_user)
+            # Блокирует профиль, чтобы избежать гонок
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['success'] = False
+                answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя усилить карту')
+                return answer_data
+
+            need_gold: int = await buy_upgrade_item(session_db=self.session_db,
+                                                    upgrade_item_id=upgrade_item_id,
+                                                    user=current_user)
+            gold_transaction = await charge_user_gold(session_db=self.session_db,
+                                                      current_user=current_user,
+                                                      need_gold=need_gold)
+            await create_transaction(session_db=self.session_db,
+                                     user_profile_id=current_user.profile.id,
+                                     gold_before=gold_transaction['gold_before'],
+                                     gold_after=gold_transaction['gold_after'],
+                                     comment=f'Покупка книг опыта в магазине')
 
             answer_data['status_code'] = 303
             answer_data['success'] = True

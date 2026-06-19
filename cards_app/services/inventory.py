@@ -70,9 +70,13 @@ async def add_upgrade_item_to_user(session_db: AsyncSession,
             upgrade_item: сущность предмета усиления
     """
 
-    stmt_inv = select(UpgradeItemsUsers).where(
-        UpgradeItemsUsers.owner_id == user_profile_id,
-        UpgradeItemsUsers.upgrade_item_type_id == upgrade_item.id
+    stmt_inv = (
+        select(UpgradeItemsUsers)
+        .where(
+            UpgradeItemsUsers.owner_id == user_profile_id,
+            UpgradeItemsUsers.upgrade_item_type_id == upgrade_item.id
+        )
+        .with_for_update()
     )
     inv_result = await session_db.execute(stmt_inv)
     inventory = inv_result.scalar_one_or_none()
