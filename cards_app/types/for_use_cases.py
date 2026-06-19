@@ -162,7 +162,7 @@ class ViewLevelUpUseCaseDict(BaseUseCaseDict):
     info_leveling_dto: FullInfoLevelingDTO | None
 
 
-class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorMixin, SuccessMixin, SuccessMessageMixin):
+class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из SaleAmuletUseCase """
 
 

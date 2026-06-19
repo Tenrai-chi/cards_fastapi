@@ -48,14 +48,13 @@ class ViewNewsUseCase:
         total = await get_total_news_count(self.session_db)
         total_pages = (total + size - 1) // size
 
-        news_records = [
-            NewsRecordDTO(title=item.title,
-                          theme=item.theme,
-                          text=item.text,
-                          date_and_time=item.date_time_create
-                          )
-            for item in news_models
-        ]
+        news_records = [NewsRecordDTO(title=item.title,
+                                      theme=item.theme,
+                                      text=item.text,
+                                      date_and_time=item.date_time_create
+                                      )
+                        for item in news_models
+                        ]
 
         news_dto = NewsDTO(items=news_records,
                            total=total,
@@ -125,8 +124,7 @@ class GetAwardStartEventUseCase:
                       ) -> GetAwardStartEventUseCaseDict:
         """ Выполняет получение награды в стартовом событии.
            Args:
-               current_user_id: ID User
-
+               current_user_id: ID User текущего пользователя
            Returns:
                GetAwardStartEventUseCaseDict:
                    - success_message (str | None): при удачном получении награды, кроме карты
@@ -172,6 +170,7 @@ class GetAwardStartEventUseCase:
                 answer_data['error_message'] = f'Для получения награды вы должны быть авторизованы'
                 answer_data['status_code'] = 400
                 return answer_data
+
             # Получение информации о награде дня
             day_visit = (current_user.profile.event_visit or 0) + 1
             award_of_day = await get_info_award(session_db=self.session_db,

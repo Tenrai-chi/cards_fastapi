@@ -9,6 +9,7 @@ from cards_app.schemas import ExpItemsInventoryDTO, UpgradeItemsInventoryDTO, Am
 from cards_app.services.inventory import (get_amulets_in_user_inventory, get_upgrade_items_in_user_inventory,
                                           get_exp_items_in_user_inventory, delete_amulet)
 from cards_app.services.profile import add_user_gold, create_transaction
+from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
 from cards_app.types import ViewInventoryUseCaseDict, SaleAmuletUseCaseDict
 
 logger = logging.getLogger(__name__)
@@ -154,11 +155,11 @@ class SaleAmuletUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None, amulet_id: int
+    async def execute(self, current_user_id: int | None, amulet_id: int
                       ) -> SaleAmuletUseCaseDict:
         """ Формирует InventoryDTO пользователя
            Args:
-               current_user: User + Profile текущего пользователя
+               current_user_id: ID
                amulet_id: ID амулета
            Returns:
                SaleAmuletUseCaseDict:
@@ -175,15 +176,32 @@ class SaleAmuletUseCase:
         answer_data = {'success': None,
                        'status_code': None,
                        'error_message': None,
-                       'success_message': None}
+                       'success_message': None,
+                       'current_user_dto': None}
 
-        if current_user is None:
-            answer_data['error_message'] = f'Вы должны авторизоваться'
+        if current_user_id is None:
+            answer_data['error_message'] = f'Для продажи амулета вы должны быть авторизованы'
             answer_data['status_code'] = 400
             answer_data['success'] = False
             return answer_data
 
         try:
+            # Блокирует профиль, чтобы избежать гонок
+            await get_profile_for_update(session_db=self.session_db,
+                                         user_id=current_user_id)
+            # current_user получит профиль из сессии при запросе (используется для создания DTO)
+            current_user = await get_user_with_profile(session_db=self.session_db,
+                                                       user_id=current_user_id)
+
+            if current_user:
+                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
+            else:
+                answer_data['success'] = False
+                answer_data['error_message'] = f'Для продажи амулета вы должны быть авторизованы'
+                answer_data['status_code'] = 400
+                logger.warning(f'Попытка неавторизованного пользователя продать амулет')
+                return answer_data
+
             # Удаление амулета
             add_gold_for_sell: int = await delete_amulet(session_db=self.session_db,
                                                          owner_id=current_user.profile.id,

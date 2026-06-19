@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import RedirectResponse
 from urllib.parse import quote
 
-from cards_app.auth.dependencies import get_current_user_with_profile
+from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.services.users import user_info_to_dto
@@ -96,13 +96,13 @@ async def inventory(request: Request,
 async def sell_amulet(request: Request,
                       amulet_id: int,
                       session_db: AsyncSession = Depends(get_db_session),
-                      current_user: User | None = Depends(get_current_user_with_profile),
+                      current_user_id: int | None = Depends(get_current_user_id),
                       ):
     """ Продажа амулета """
 
-    current_user_dto = await user_info_to_dto(current_user)
     use_case = SaleAmuletUseCase(session_db)
-    data: SaleAmuletUseCaseDict = await use_case.execute(current_user, amulet_id=amulet_id)
+    data: SaleAmuletUseCaseDict = await use_case.execute(current_user_id=current_user_id,
+                                                         amulet_id=amulet_id)
     if data.get('success'):
         success_msg = data.get('success_message')
         encoded_success = quote(success_msg)
@@ -122,6 +122,6 @@ async def sell_amulet(request: Request,
                                           name='errors/error_page.html',
                                           context={'error': data.get('error_message'),
                                                    'status_code': data.get('status_code'),
-                                                   'current_user': current_user_dto},
+                                                   'current_user': data.get('current_user_dto')},
                                           status_code=data.get('status_code')
                                           )

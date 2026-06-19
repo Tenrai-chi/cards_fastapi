@@ -176,11 +176,11 @@ async def delete_amulet(session_db: AsyncSession,
             - NotAmuletOwnerError: если пользователь не является владельцем
     """
 
-    stmt_amulet = (
-        select(AmuletItem)
-        .where(AmuletItem.id == amulet_id)
-        .options(selectinload(AmuletItem.amulet_type))
-    )
+    stmt_amulet = (select(AmuletItem)
+                   .where(AmuletItem.id == amulet_id)
+                   .options(selectinload(AmuletItem.amulet_type))
+                   .with_for_update()
+                   )
     result = await session_db.execute(stmt_amulet)
     amulet = result.scalar_one_or_none()
     if amulet is None:
