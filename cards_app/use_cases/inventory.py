@@ -231,7 +231,7 @@ class SaleAmuletUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в SaleAmuletUseCase: {error}', exc_info=True)
         return answer_data

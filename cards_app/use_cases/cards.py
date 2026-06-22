@@ -18,8 +18,8 @@ from cards_app.services.inventory import upgrade_card
 
 from cards_app.schemas.cards import (AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard,
                                      UserCardsDTO, CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
-from cards_app.services.profile import update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile, \
-    charge_user_gold, create_transaction
+from cards_app.services.profile import (update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
+                                        charge_user_gold, create_transaction)
 
 from cards_app.utils.common import calculate_need_exp, time_difference_check
 from cards_app.models.users import User
@@ -64,7 +64,7 @@ class ViewCardUseCase:
             return answer_data
 
         except Exception as error:
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewCardUseCase: {error}', exc_info=True)
             return answer_data
@@ -198,7 +198,7 @@ class GetFreeCardUseCase:
 
         if current_user_id is None:
             answer_data['success'] = False
-            answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
+            answer_data['error_message'] = f'Для получения бесплатной карты вы должны быть авторизованны'
             answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
             return answer_data
@@ -213,7 +213,7 @@ class GetFreeCardUseCase:
                 answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
             else:
                 answer_data['success'] = False
-                answer_data['error_message'] = f'Для получения бесплатной карты нужно быть авторизованным'
+                answer_data['error_message'] = f'Для получения бесплатной карты вы должны быть авторизованны'
                 answer_data['status_code'] = 400
                 logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
                 return answer_data
@@ -252,7 +252,7 @@ class GetFreeCardUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в GetFreeCardUseCase: {error}', exc_info=True)
 
@@ -293,7 +293,7 @@ class ViewUserCardsUseCase:
             answer_data['status_code'] = error.status_code
             return answer_data
         except Exception as error:
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewUserCardsUseCase: {error}', exc_info=True)
             return answer_data
@@ -461,7 +461,7 @@ class ViewMergeUseCase:
             answer_data['status_code'] = error.status_code
 
         except Exception as error:
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewMergeUseCase: {error}', exc_info=True)
 
@@ -541,7 +541,7 @@ class MergeUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в MergeUseCase: {error}', exc_info=True)
 
@@ -629,7 +629,7 @@ class ViewUpgradeUseCase:
             answer_data['status_code'] = error.status_code
 
         except Exception as error:
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewUpgradeUseCase: {error}', exc_info=True)
 
@@ -722,7 +722,7 @@ class UpgradeUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в UpgradeUseCase: {error}', exc_info=True)
 

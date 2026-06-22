@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
                                  CardInStoreNotFoundError, BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError,
                                  AmuletNotOnSaleError)
-from cards_app.models import User
 from cards_app.schemas.store import (CardInStoreDTO, CardStoreDTO, BoxStoreDTO, AllStoreDTO, AmuletsStoreDTO,
                                      UpgradeItemsStoreDTO, ExpItemsStoreDTO, ExpItemRewardDTO, OpenBoxExpItemDTO,
                                      OpenBoxAmuletDTO, AmuletRewardDTO)
@@ -173,7 +172,7 @@ class BuyStoreCardUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в BuyStoreCardUseCase: {error}', exc_info=True)
 
@@ -425,7 +424,7 @@ class BuyBoxUseCase:
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в BuyBoxUseCase: {error}', exc_info=True)
 
@@ -518,7 +517,7 @@ class BuyExpItemUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в BuyExpItemUseCase: {error}', exc_info=True)
 
@@ -609,7 +608,7 @@ class BuyAmuletUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в BuyAmuletUseCase: {error}', exc_info=True)
 
@@ -699,7 +698,7 @@ class BuyUpgradeItemUseCase:
         except Exception as error:
             await self.session_db.rollback()
             answer_data['success'] = False
-            answer_data['error_message'] = f'Произошла непредвиденная ошибка: {str(error)}'
+            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
             answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в BuyUpgradeItemUseCase: {error}', exc_info=True)
 
