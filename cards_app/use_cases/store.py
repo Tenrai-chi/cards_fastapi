@@ -102,8 +102,9 @@ class BuyStoreCardUseCase:
         # Проверка, что пользователь авторизован
         if current_user_id is None:
             answer_data['success'] = False
-            answer_data['error_message'] = f'Для покупки карты вы должны быть авторизованны'
+            answer_data['error_message'] = f'Для покупки карты вы должны быть авторизованы'
             answer_data['status_code'] = 400
+            logger.warning(f'Попытка неавторизованного пользователя купить карту в магазине')
             return answer_data
         try:
             # Блокирует профиль, чтобы избежать гонок
@@ -117,7 +118,7 @@ class BuyStoreCardUseCase:
                 answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
             else:
                 answer_data['success'] = False
-                answer_data['error_message'] = f'Для покупки карты вы должны быть авторизованны'
+                answer_data['error_message'] = f'Для покупки карты вы должны быть авторизованы'
                 answer_data['status_code'] = 400
                 logger.warning(f'Попытка неавторизованного пользователя купить карту в магазине')
                 return answer_data
@@ -347,7 +348,8 @@ class BuyBoxUseCase:
 
         if current_user_id is None:
             answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            answer_data['error_message'] = f'Для покупки сундука вы должны быть авторизованы'
+            logger.warning(f'Попытка неавторизованного пользователя купить сундук в магазине предметов')
             return answer_data
 
         try:
@@ -361,9 +363,9 @@ class BuyBoxUseCase:
             if current_user:
                 answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
             else:
-                answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
+                answer_data['error_message'] = f'Для покупки сундука вы должны быть авторизованы'
                 answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя усилить карту')
+                logger.warning(f'Попытка неавторизованного пользователя купить сундук в магазине предметов')
                 return answer_data
 
             box_info = await get_box_info(session_db=self.session_db, box_id=box_id)
@@ -471,6 +473,7 @@ class BuyExpItemUseCase:
             answer_data['success'] = False
             answer_data['status_code'] = 400
             answer_data['error_message'] = f'Для покупки книг опыта вы должны быть авторизованы'
+            logger.warning(f'Попытка неавторизованного пользователя купить книгу опыта')
             return answer_data
 
         try:
@@ -576,9 +579,9 @@ class BuyAmuletUseCase:
                 answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
             else:
                 answer_data['success'] = False
-                answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
+                answer_data['error_message'] = f'Для покупки амулета вы должны быть авторизованы'
                 answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя усилить карту')
+                logger.warning(f'Попытка неавторизованного пользователя купить амулет')
                 return answer_data
 
             amulet_price: int = await buy_amulet(session_db=self.session_db,
@@ -652,7 +655,8 @@ class BuyUpgradeItemUseCase:
         if current_user_id is None:
             answer_data['success'] = False
             answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            answer_data['error_message'] = f'Для покупки предмета усиления вы должны быть авторизованы'
+            logger.warning(f'Попытка неавторизованного пользователя купить предмет усиления')
             return answer_data
 
         try:
@@ -667,9 +671,9 @@ class BuyUpgradeItemUseCase:
                 answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
             else:
                 answer_data['success'] = False
-                answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
+                answer_data['error_message'] = f'Для покупки предмета усиления вы должны быть авторизованы'
                 answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя усилить карту')
+                logger.warning(f'Попытка неавторизованного пользователя купить предмет усиления')
                 return answer_data
 
             need_gold: int = await buy_upgrade_item(session_db=self.session_db,

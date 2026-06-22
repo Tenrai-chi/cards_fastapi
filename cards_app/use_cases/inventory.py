@@ -43,6 +43,7 @@ class ViewInventoryUseCase:
         if current_user is None:
             answer_data['error_message'] = f'Для просмотра инвентаря необходимо быть авторизованным'
             answer_data['status_code'] = 400
+            logger.warning(f'Попытка неавторизованного пользователя просмотреть инвентарь')
             return answer_data
 
         if inventory_filter == 'exp_items':
@@ -159,7 +160,7 @@ class SaleAmuletUseCase:
                       ) -> SaleAmuletUseCaseDict:
         """ Формирует InventoryDTO пользователя
            Args:
-               current_user_id: ID
+               current_user_id: ID User текущего пользователя
                amulet_id: ID амулета
            Returns:
                SaleAmuletUseCaseDict:
@@ -183,6 +184,7 @@ class SaleAmuletUseCase:
             answer_data['error_message'] = f'Для продажи амулета вы должны быть авторизованы'
             answer_data['status_code'] = 400
             answer_data['success'] = False
+            logger.warning(f'Попытка неавторизованного пользователя продать амулет')
             return answer_data
 
         try:

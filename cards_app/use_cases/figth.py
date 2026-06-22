@@ -52,6 +52,7 @@ class ProcessFightUseCase:
 
         if user_id is None:
             answer_data['error_message'] = f'Для участия в битве вы должны быть авторизованы'
+            logger.warning(f'Попытка неавторизованного пользователя участвовать в рейтинговой битве')
             answer_data['status_code'] = 400
             return answer_data
 

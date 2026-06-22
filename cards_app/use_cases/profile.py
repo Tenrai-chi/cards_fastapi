@@ -229,8 +229,9 @@ class AddFavoriteUserUseCase:
 
         if current_user_id is None:
             answer_data['success'] = False
-            answer_data['error_message'] = 'Для добавления пользователя в список избранных вы должны быть авторизованны'
+            answer_data['error_message'] = 'Для добавления пользователя в список избранных вы должны быть авторизованы'
             answer_data['status_code'] = 400
+            logger.warning(f'Попытка неавторизованного пользователя добавить пользователя в избранное')
             return answer_data
 
         try:
@@ -245,7 +246,7 @@ class AddFavoriteUserUseCase:
                 answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
             else:
                 answer_data['success'] = False
-                answer_data['error_message'] = f'Для добавления пользователя в список избранных вы должны быть авторизованны'
+                answer_data['error_message'] = f'Для добавления пользователя в список избранных вы должны быть авторизованы'
                 answer_data['status_code'] = 400
                 logger.warning(f'Попытка неавторизованного пользователя добавить пользователя в список избранных')
                 return answer_data
@@ -316,6 +317,7 @@ class RemoveFavoriteUserUseCase:
             answer_data['success'] = False
             answer_data['error_message'] = f'Для удаления пользователя из списка избранных вы должны быть авторизованы'
             answer_data['status_code'] = 400
+            logger.warning(f'Попытка неавторизованного пользователя удить пользователя из списка избранных')
             return answer_data
 
         try:
@@ -475,7 +477,7 @@ class UserTransactionsUseCase:
                        'status_code': None}
 
         if current_user is None:
-            answer_data['error_message'] = f'Для просмотра транзакций необходимо быть авторизован'
+            answer_data['error_message'] = f'Для просмотра транзакций вы должны быть авторизованы'
             answer_data['status_code'] = 400
             return answer_data
 

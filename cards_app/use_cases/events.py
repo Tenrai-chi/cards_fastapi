@@ -167,7 +167,7 @@ class GetAwardStartEventUseCase:
 
             # Проверка, что пользователь может получить награду
             if not can_get_start_event_award(user=current_user):
-                answer_data['error_message'] = f'Для получения награды вы должны быть авторизованы'
+                answer_data['error_message'] = f'Вы не можете получить награду дня стартового события'
                 answer_data['status_code'] = 400
                 return answer_data
 

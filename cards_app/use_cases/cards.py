@@ -198,7 +198,7 @@ class GetFreeCardUseCase:
 
         if current_user_id is None:
             answer_data['success'] = False
-            answer_data['error_message'] = f'Для получения бесплатной карты вы должны быть авторизованны'
+            answer_data['error_message'] = f'Для получения бесплатной карты вы должны быть авторизованы'
             answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
             return answer_data
@@ -213,7 +213,7 @@ class GetFreeCardUseCase:
                 answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
             else:
                 answer_data['success'] = False
-                answer_data['error_message'] = f'Для получения бесплатной карты вы должны быть авторизованны'
+                answer_data['error_message'] = f'Для получения бесплатной карты вы должны быть авторизованы'
                 answer_data['status_code'] = 400
                 logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
                 return answer_data
@@ -411,7 +411,8 @@ class ViewMergeUseCase:
 
         if current_user is None:
             answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            answer_data['error_message'] = f'Для слияния карты вы должны быть авторизованы'
+            logger.warning(f'Попытка неавторизованного пользователя просмотреть меню слияния карты')
             return answer_data
 
         try:
@@ -518,9 +519,9 @@ class MergeUseCase:
                 answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
             else:
                 answer_data['success'] = False
-                answer_data['error_message'] = f'Вы должны быть авторизованы'
+                answer_data['error_message'] = f'Для слияния карты вы должны быть авторизованы'
                 answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя слить карты')
+                logger.warning(f'Попытка неавторизованного пользователя повысить уровень слияния карты')
                 return answer_data
 
             await merge_card(session_db=self.session_db,
@@ -580,7 +581,8 @@ class ViewUpgradeUseCase:
 
         if current_user is None:
             answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
+            answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
+            logger.warning(f'Для просмотра меню усиления карт, вы должны быть авторизованы')
             return answer_data
 
         try:
