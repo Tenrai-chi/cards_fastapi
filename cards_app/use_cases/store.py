@@ -679,9 +679,9 @@ class BuyUpgradeItemUseCase:
             need_gold: int = await buy_upgrade_item(session_db=self.session_db,
                                                     upgrade_item_id=upgrade_item_id,
                                                     user=current_user)
-            gold_transaction = await charge_user_gold(session_db=self.session_db,
-                                                      current_user=current_user,
-                                                      need_gold=need_gold)
+            gold_transaction: dict = await charge_user_gold(session_db=self.session_db,
+                                                            current_user=current_user,
+                                                            need_gold=need_gold)
             await create_transaction(session_db=self.session_db,
                                      user_profile_id=current_user.profile.id,
                                      gold_before=gold_transaction['gold_before'],

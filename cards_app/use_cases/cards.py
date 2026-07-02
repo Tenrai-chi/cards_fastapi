@@ -232,8 +232,8 @@ class GetFreeCardUseCase:
                                               need_slots=1)
             await update_user_receiving_timer(session_db=self.session_db,
                                               current_user=current_user)
-            new_card_id = await generate_random_card(session_db=self.session_db,
-                                                     owner_id=current_user.profile.id)
+            new_card_id: int = await generate_random_card(session_db=self.session_db,
+                                                          owner_id=current_user.profile.id)
             await create_record_in_history_receiving_card(session_db=self.session_db,
                                                           card_id=new_card_id,
                                                           user_profile_id=current_user.profile.id,
