@@ -3,6 +3,8 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.schemas import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
+from cards_app.schemas.base import AmuletBase
+from cards_app.schemas.response import ViewCardUseCaseResponse
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
 from cards_app.types import (ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict,
@@ -15,8 +17,9 @@ from cards_app.services.cards import (get_card_with_details, get_rarities_and_cl
                                       create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
                                       get_cards_for_merge, merge_card)
 from cards_app.services.inventory import upgrade_card
+from cards_app.schemas.cards_new import CardDTO, CardInfoDTO
 
-from cards_app.schemas.cards import (AmuletDTO, CardInfoDTO, CardDTO, GetFreeCardDTO, RarityCard, ClassCard,
+from cards_app.schemas.cards import (AmuletDTO, GetFreeCardDTO, RarityCard, ClassCard,
                                      UserCardsDTO, CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
 from cards_app.services.profile import (update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
                                         charge_user_gold, create_transaction)
@@ -34,14 +37,14 @@ class ViewCardUseCase:
         self.session_db = session_db
 
     async def execute(self, card_id: int, current_user: User | None
-                      ) -> ViewCardUseCaseDict:
+                      ) -> ViewCardUseCaseResponse:
         """ Выполняет получение карты и формирует DTO для отображения.
                Args:
                    card_id: ID карты для просмотра.
                    current_user: User + Profile текущего пользователя
                Returns:
-                   ViewCardUseCaseDict:
-                       - card_info_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
+                   ViewCardUseCaseResponse:
+                       - card_info (CardDTO | None): DTO с данными карты, амулета и флагом владельца.
                        - error_message (str | None): текст ошибки, если произошла.
                        - status_code (int): HTTP статус-код.
                Note:
@@ -50,24 +53,24 @@ class ViewCardUseCase:
                    - 500: любая другая непредвиденная ошибка.
                """
 
-        answer_data: ViewCardUseCaseDict = {'card_info_dto': None,
-                                            'error_message': None,
-                                            'status_code': None,
-                                            }
         try:
             card = await get_card_with_details(session_db=self.session_db,
                                                card_id=card_id)
 
         except CardNotFoundError as error:
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
-            return answer_data
+            return ViewCardUseCaseResponse(
+                status_code=error.status_code,
+                error_message=str(error),
+                card_info=None
+            )
 
         except Exception as error:
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewCardUseCase: {error}', exc_info=True)
-            return answer_data
+            return ViewCardUseCaseResponse(
+                status_code=500,
+                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                card_info=None
+            )
 
         need_exp: int = calculate_need_exp(level=card.level)
         card_dto = CardDTO(id=card.id,
@@ -89,24 +92,27 @@ class ViewCardUseCase:
 
         amulet_dto = None
         if card.amulet:
-            amulet_dto = AmuletDTO(id=card.amulet.id,
-                                   name=card.amulet.amulet_type.name,
-                                   bonus_hp=card.amulet.amulet_type.bonus_hp,
-                                   bonus_damage=card.amulet.amulet_type.bonus_damage,
-                                   )
+            amulet_dto = AmuletBase(id=card.amulet.id,
+                                    name=card.amulet.amulet_type.name,
+                                    bonus_hp=card.amulet.amulet_type.bonus_hp,
+                                    bonus_damage=card.amulet.amulet_type.bonus_damage,
+                                    )
 
         if current_user:
             is_owner = True if current_user.profile.id == card.owner_id else False
         else:
             is_owner = False
 
-        card_info_dto = CardInfoDTO(card=card_dto,
-                                    amulet=amulet_dto,
-                                    is_owner=is_owner
-                                    )
-        answer_data['card_info_dto'] = card_info_dto
-        answer_data['status_code'] = 200
-        return answer_data
+        card_info = CardInfoDTO(card=card_dto,
+                                amulet=amulet_dto,
+                                is_owner=is_owner
+                                )
+
+        return ViewCardUseCaseResponse(
+            status_code=200,
+            card_info=card_info,
+            error_message=None
+        )
 
 
 class ViewGetFreeCardUseCase:

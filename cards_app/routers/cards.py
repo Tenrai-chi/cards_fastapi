@@ -10,6 +10,7 @@ from urllib.parse import quote
 from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
+from cards_app.schemas.response import ViewCardUseCaseResponse
 from cards_app.services.users import user_info_to_dto
 from cards_app.types import (ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict,
                              ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
@@ -37,26 +38,27 @@ async def view_card(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewCardUseCase(session_db)
-    data: ViewCardUseCaseDict = await use_case.execute(card_id, current_user)
-    if data.get('card_info_dto') is not None:
+    data: ViewCardUseCaseResponse = await use_case.execute(card_id, current_user)
+    if data.card_info is not None:
         context = {'request': request,
                    'current_user': current_user_dto,
-                   'card_dto': data.get('card_info_dto'),
+                   'card_dto': data.card_info,
                    'error_message': error,
                    'success_message': success
                    }
         return templates.TemplateResponse(request=request,
                                           name='cards/card.html',
                                           context=context,
-                                          status_code=data.get('status_code'))
+                                          status_code=data.status_code)
     else:
-        if data.get('status_code') in (404, 500):
-            context = {'error': data.get('error_message'),
-                       'error_code': data.get('status_code')}
+        if data.status_code in (404, 500):
+            context = {'error': data.error_message,
+                       'error_code': data.status_code,
+                       'current_user': current_user_dto}
             return templates.TemplateResponse(request=request,
                                               name='errors/error_page.html',
                                               context=context,
-                                              status_code=data.get('status_code')
+                                              status_code=data.status_code
                                               )
 
 
