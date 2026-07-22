@@ -1,8 +1,8 @@
 from .base import (
-    UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin
+    UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin
 )
 
-from .cards_new import (
+from .cards import (
     CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
 )
 
@@ -42,4 +42,8 @@ class ViewMergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
     """ Ответ для получения списка карт, доступных для слияния """
 
     merge: CardsForMergeDTO | None
+
+
+class MergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin):
+    """ Ответ на попытку слить карты. Пустой, потому что все данные наследуются из миксин. """
 

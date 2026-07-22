@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from cards_app.schemas.base import AmuletBase
-from cards_app.schemas.cards_new import CardDTO
+from cards_app.schemas.cards import CardDTO
 
 
 class GuildDTO(BaseModel):

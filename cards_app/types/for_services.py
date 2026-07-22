@@ -1,7 +1,7 @@
 from typing import TypedDict
 from cards_app.models import *
 from cards_app.schemas import *
-from cards_app.schemas.cards_new import RarityCard
+from cards_app.schemas.cards import RarityCard
 
 
 class RaritiesAndClassesDict(TypedDict):

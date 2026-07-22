@@ -4,12 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.schemas.base import AmuletBase
 from cards_app.schemas.inventory import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
-from cards_app.schemas.response import ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse, \
-    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse
+from cards_app.schemas.response import (
+    ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,
+    MergeUseCaseResponse
+)
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
-from cards_app.types import (MergeUseCaseDict,
-                             ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
+from cards_app.types import (ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.exeptions import (NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
                                  TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
                                  InsufficientFundsUserError, MaxUpgradeCardError)
@@ -17,7 +19,7 @@ from cards_app.services.cards import (get_card_with_details, get_rarities_and_cl
                                       create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
                                       get_cards_for_merge, merge_card)
 from cards_app.services.inventory import upgrade_card
-from cards_app.schemas.cards_new import (
+from cards_app.schemas.cards import (
     CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard, UserCardsDTO,
     CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO
 )
@@ -513,14 +515,14 @@ class MergeUseCase:
                       current_card_id: int,
                       current_user_id: int | None,
                       cards_for_merge: list[int]
-                      ) -> MergeUseCaseDict:
+                      ) -> MergeUseCaseResponse:
         """ Выполняет получение карты и формирует DTO для отображения.
                Args:
                    current_user_id: ID User текущего пользователя
                    current_card_id: ID текущей карты
                    cards_for_merge: список ID карт для слияния
                Returns:
-                   MergeUseCaseDict:
+                   MergeUseCaseResponse:
                        - status_code (int): HTTP статус-код
                        - error_message (str): сообщение об ошибке
                        - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя
@@ -531,58 +533,66 @@ class MergeUseCase:
                    - 500: любая другая непредвиденная ошибка.
                """
 
-        answer_data = {'status_code': None,
-                       'error_message': None,
-                       'success': None,
-                       'success_message': None,
-                       'current_user_dto': None}
-
         if current_user_id is None:
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
-            answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя слить карты')
-            return answer_data
+            return MergeUseCaseResponse(
+                status_code=400,
+                error_message=f'Для слияния карты вы должны быть авторизованы',
+                current_user=None,
+                success=False,
+                success_message=None
+            )
+        await get_profile_for_update(session_db=self.session_db,
+                                     user_id=current_user_id)
+        # current_user получит профиль из сессии при запросе (используется для создания DTO)
+        current_user = await get_user_with_profile(session_db=self.session_db,
+                                                   user_id=current_user_id)
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
+            return MergeUseCaseResponse(
+                status_code=400,
+                error_message=f'Для слияния карты вы должны быть авторизованы',
+                current_user=None,
+                success=False,
+                success_message=None
+            )
+        else:
+            current_user_dto = await user_info_to_dto(user=current_user)
 
         try:
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
-
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для слияния карты вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя повысить уровень слияния карты')
-                return answer_data
-
             await merge_card(session_db=self.session_db,
                              current_card_id=current_card_id,
                              cards_for_merge_ids=cards_for_merge,
                              owner_id=current_user.profile.id)
             await self.session_db.commit()
-            answer_data['success'] = True
-            answer_data['status_code'] = 303
-            answer_data['success_message'] = f'Вы успешно повысили уровень слияния карты'
+            return MergeUseCaseResponse(
+                status_code=303,
+                error_message=None,
+                current_user=current_user_dto,
+                success=True,
+                success_message=f'Вы успешно повысили уровень слияния карты'
+            )
 
         except (CardNotFoundError, NotCardOwnerError, TooManyCardsMergeError, SelfMergeError) as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return MergeUseCaseResponse(
+                status_code=error.status_code,
+                error_message=str(error),
+                current_user=current_user_dto,
+                success=False,
+                success_message=None
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в MergeUseCase: {error}', exc_info=True)
-
-        return answer_data
+            return MergeUseCaseResponse(
+                status_code=500,
+                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                current_user=current_user_dto,
+                success=False,
+                success_message=None
+            )
 
 
 class ViewUpgradeUseCase:

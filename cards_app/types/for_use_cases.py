@@ -1,5 +1,4 @@
 from typing import TypedDict
-
 from cards_app.schemas.fight import FightDTO
 from cards_app.schemas.inventory import FullInventoryDTO, FullInfoLevelingDTO, FullInfoUpgradingDTO
 from cards_app.schemas.news import NewsDTO
@@ -170,8 +169,8 @@ class ViewUpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin):
     upgrade_dto: FullInfoUpgradingDTO | None
 
 
-class MergeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
-    """ Кастомный словарь для возврата данных из MergeUseCase """
+# class MergeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
+#     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 
 class UpgradeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):

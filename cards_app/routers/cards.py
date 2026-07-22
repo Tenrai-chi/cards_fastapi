@@ -12,10 +12,11 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.schemas.response import (
     ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
-    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,
+    MergeUseCaseResponse
 )
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import (MergeUseCaseDict,
+from cards_app.types import (
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.use_cases.cards import (ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase,
                                        ViewUserCardsUseCase, ViewTradingUseCase, ViewMergeUseCase,
@@ -264,26 +265,29 @@ async def merge_cards(request: Request,
     except (JSONDecodeError, ValueError, TypeError) as _:
         cards_for_merge = []
     use_case = MergeUseCase(session_db=session_db)
-    data: MergeUseCaseDict = await use_case.execute(current_user_id=current_user_id,
-                                                    current_card_id=main_card_id,
-                                                    cards_for_merge=cards_for_merge
-                                                    )
-    if data.get('success') is True:
-        success_msg = data.get('success_message')
+    data: MergeUseCaseResponse = await use_case.execute(current_user_id=current_user_id,
+                                                        current_card_id=main_card_id,
+                                                        cards_for_merge=cards_for_merge
+                                                        )
+    if data.success is True:
+        success_msg = data.success_message
         encoded_success = quote(success_msg)
         url = request.url_for('view_card', card_id=main_card_id)
         full_url = f'{url}?success={encoded_success}'
-        return RedirectResponse(full_url, status_code=data.get('status_code'))
+        return RedirectResponse(full_url, status_code=data.status_code)
     else:
-        if data.get('status_code') in (404, 500):
-            context = {'error': data.get('error_message'),
-                       'status_code': data.get('status_code'),
-                       'current_user': data.get('current_user_dto')}
-            return templates.TemplateResponse(request=request,
-                                              name='errors/error_page.html',
-                                              context=context,
-                                              status_code=data.get('status_code')
-                                              )
+        if data.status_code in (404, 500):
+            context = {
+                'error': data.error_message,
+                'status_code': data.status_code,
+                'current_user': data.current_user_dto
+            }
+            return templates.TemplateResponse(
+                request=request,
+                name='errors/error_page.html',
+                context=context,
+                status_code=data.status_code
+            )
         else:
             error_msg = data['error_message']
             encoded_error = quote(error_msg)
