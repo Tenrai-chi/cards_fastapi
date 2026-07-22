@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.schemas.base import AmuletBase
 from cards_app.schemas.inventory import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
 from cards_app.schemas.response import ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse, \
-    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
-from cards_app.types import (ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
+from cards_app.types import (ViewMergeUseCaseDict, MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.exeptions import (NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
                                  TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
@@ -17,9 +17,10 @@ from cards_app.services.cards import (get_card_with_details, get_rarities_and_cl
                                       create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
                                       get_cards_for_merge, merge_card)
 from cards_app.services.inventory import upgrade_card
-from cards_app.schemas.cards_new import CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard, UserCardsDTO
+from cards_app.schemas.cards_new import CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard, UserCardsDTO, \
+    CardsTradingDTO
 
-from cards_app.schemas.cards import (CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
+from cards_app.schemas.cards import (OneCardForMergeDTO, CardsForMergeDTO)
 from cards_app.services.profile import (update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
                                         charge_user_gold, create_transaction)
 
@@ -361,19 +362,16 @@ class ViewTradingUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self) -> ViewTradingUseCaseDict:
+    async def execute(self) -> ViewTradingUseCaseResponse:
         """ Выполняет получение карты и формирует DTO для отображения.
                Returns:
-                   ViewTradingUseCaseDict:
-                       - cards_trading_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
+                   ViewTradingUseCaseResponse:
+                       - cards_trading (CardsTradingDTO | None): DTO с данными карт, выставленных на продажу пользователями.
                        - status_code (int): HTTP статус-код.
                Note:
                    - 200: успешное получение данных.
                    - 500: любая другая непредвиденная ошибка.
                """
-
-        answer_data: ViewTradingUseCaseDict = {'cards_trading_dto': None,
-                                               'status_code': None}
 
         cards_trading: list = await get_cards_in_trading(session_db=self.session_db)
         cards_trading_dto = CardsTradingDTO(
@@ -399,9 +397,11 @@ class ViewTradingUseCase:
                 for card in cards_trading
             ],
         )
-        answer_data['cards_trading_dto'] = cards_trading_dto
-        answer_data['status_code'] = 200
-        return answer_data
+
+        return ViewTradingUseCaseResponse(
+            status_code=200,
+            cards_trading=cards_trading_dto
+        )
 
 
 class ViewMergeUseCase:

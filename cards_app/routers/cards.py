@@ -12,10 +12,10 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.schemas.response import (
     ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
-    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse
 )
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import (ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
+from cards_app.types import (ViewMergeUseCaseDict, MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.use_cases.cards import (ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase,
                                        ViewUserCardsUseCase, ViewTradingUseCase, ViewMergeUseCase,
@@ -177,26 +177,32 @@ async def view_trading(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewTradingUseCase(session_db)
-    data: ViewTradingUseCaseDict = await use_case.execute()
-    if data.get('cards_trading_dto') is not None:
-        context = {'request': request,
-                   'current_user': current_user_dto,
-                   'cards_trading_dto': data.get('cards_trading_dto'),
-                   'error_message': error,
-                   'success_message': success
-                   }
-        return templates.TemplateResponse(request=request,
-                                          name='cards/trading.html',
-                                          context=context,
-                                          status_code=data.get('status_code'))
+    data: ViewTradingUseCaseResponse = await use_case.execute()
+    if data.cards_trading is not None:
+        context = {
+            'request': request,
+            'current_user': current_user_dto,
+            'cards_trading_dto': data.cards_trading,
+            'error_message': error,
+            'success_message': success
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name='cards/trading.html',
+            context=context,
+            status_code=data.status_code
+        )
     else:
-        context = {'error': 'Какая-то ошибка',
-                   'error_code': 500}
-        return templates.TemplateResponse(request=request,
-                                          name='errors/error_page.html',
-                                          context=context,
-                                          status_code=data.get('status_code')
-                                          )
+        context = {
+            'error': 'Какая-то ошибка',
+            'error_code': 500
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name='errors/error_page.html',
+            context=context,
+            status_code=data.status_code
+        )
 
 
 @router.get(path='/card-{card_id}/merge_menu', name='view_merge_card')

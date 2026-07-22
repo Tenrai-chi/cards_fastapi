@@ -74,10 +74,10 @@ class CardInfoDTO(BaseModel):
 #     cards: list[CardDTO]
 
 
-class CardsTradingDTO(BaseModel):
-    """ Данные для просмотра торговой площадки """
-
-    cards: list[CardDTO]
+# class CardsTradingDTO(BaseModel):
+#     """ Данные для просмотра торговой площадки """
+#
+#     cards: list[CardDTO]
 
 
 class OneCardForMergeDTO(BaseModel):

@@ -68,12 +68,12 @@ class UserCardsDTO(BaseModel):
     owner_username: str
     owner_current_card_id: int | None
     cards: list[CardDTO]
-#
-#
-# class CardsTradingDTO(BaseModel):
-#     """ Данные для просмотра торговой площадки """
-#
-#     cards: list[CardDTO]
+
+
+class CardsTradingDTO(BaseModel):
+    """ Данные для просмотра торговой площадки """
+
+    cards: list[CardDTO]
 #
 #
 # class CardsForMergeDTO(BaseModel):

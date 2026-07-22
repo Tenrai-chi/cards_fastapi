@@ -1,7 +1,10 @@
 from .base import (
     UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin
 )
-from .cards_new import (CardInfoDTO, GetFreeCardDTO, UserCardsDTO)
+
+from .cards_new import (
+    CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO
+)
 
 
 # -------- Ответы в USE CASES --------
@@ -27,3 +30,9 @@ class ViewUserCardsUseResponse(UseCaseResponse, ErrorMessageMixin):
     """ Ответ для получения всех карт пользователя """
 
     user_cards: UserCardsDTO | None
+
+
+class ViewTradingUseCaseResponse(UseCaseResponse):
+    """ Ответ для получения всех карт, выставленных на продажу игроками """
+
+    cards_trading: CardsTradingDTO | None
