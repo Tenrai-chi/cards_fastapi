@@ -12,10 +12,10 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.schemas.response import (
     ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
-    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse
 )
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import (ViewMergeUseCaseDict, MergeUseCaseDict,
+from cards_app.types import (MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.use_cases.cards import (ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase,
                                        ViewUserCardsUseCase, ViewTradingUseCase, ViewMergeUseCase,
@@ -157,7 +157,8 @@ async def view_user_cards(request: Request,
     else:
         if data.status_code in (404, 500):
             context = {'error': data.error_message,
-                       'error_code': data.status_code}
+                       'error_code': data.status_code,
+                       'current_user': current_user_dto}
             return templates.TemplateResponse(
                 request=request,
                 name='errors/error_page.html',
@@ -193,9 +194,11 @@ async def view_trading(request: Request,
             status_code=data.status_code
         )
     else:
+        # todo сделать нормальный вывод ошибки и почему она происходит
         context = {
             'error': 'Какая-то ошибка',
-            'error_code': 500
+            'error_code': 500,
+            'current_user': current_user_dto
         }
         return templates.TemplateResponse(
             request=request,
@@ -217,28 +220,35 @@ async def view_merge_card(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewMergeUseCase(session_db)
-    data: ViewMergeUseCaseDict = await use_case.execute(current_card_id=card_id,
-                                                        current_user=current_user)
-    if data.get('merge_dto') is not None:
-        context = {'request': request,
-                   'current_user': current_user_dto,
-                   'merge_dto': data.get('merge_dto'),
-                   'error_message': error,
-                   'success_message': success
-                   }
-        return templates.TemplateResponse(request=request,
-                                          name='cards/merge_menu.html',
-                                          context=context,
-                                          status_code=data.get('status_code'))
+    data: ViewMergeUseCaseResponse = await use_case.execute(current_card_id=card_id,
+                                                            current_user=current_user)
+    if data.merge is not None:
+        context = {
+            'request': request,
+            'current_user': current_user_dto,
+            'merge_dto': data.merge,
+            'error_message': error,
+            'success_message': success
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name='cards/merge_menu.html',
+            context=context,
+            status_code=data.status_code
+        )
     else:
-        if data.get('status_code') in (400, 404, 500):
-            context = {'error': data.get('error_message'),
-                       'error_code': data.get('status_code')}
-            return templates.TemplateResponse(request=request,
-                                              name='errors/error_page.html',
-                                              context=context,
-                                              status_code=data.get('status_code')
-                                              )
+        if data.status_code in (400, 404, 500):
+            context = {
+                'error': data.error_message,
+                'error_code': data.status_code,
+                'current_user': current_user_dto
+            }
+            return templates.TemplateResponse(
+                request=request,
+                name='errors/error_page.html',
+                context=context,
+                status_code=data.status_code
+            )
 
 
 @router.post('/merge', name='merge_cards')

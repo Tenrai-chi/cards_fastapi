@@ -20,17 +20,17 @@ class CardDTO(CardBase):
     owner_username: str | None = None
 
 
-# class OneCardForMergeDTO(CardBase):
-#     """ Урезанная версия карты для страницы слияния """
-#
-#     level: int
-#     max_level: int
-#     merger: int
-#     max_merger: int
-#     enhancement: int
-#     max_enhancement: int
-#
-#
+class OneCardForMergeDTO(CardBase):
+    """ Урезанная версия карты для страницы слияния """
+
+    level: int
+    max_level: int
+    merger: int
+    max_merger: int
+    enhancement: int
+    max_enhancement: int
+
+
 class CardInfoDTO(BaseModel):
     """ Данные для просмотра карты """
 
@@ -74,12 +74,12 @@ class CardsTradingDTO(BaseModel):
     """ Данные для просмотра торговой площадки """
 
     cards: list[CardDTO]
-#
-#
-# class CardsForMergeDTO(BaseModel):
-#     """ Карты, подходящие для слияния """
-#
-#     current_card: OneCardForMergeDTO
-#     cards: list[OneCardForMergeDTO]
-#     need_cards: int
+
+
+class CardsForMergeDTO(BaseModel):
+    """ Карты, подходящие для слияния """
+
+    current_card: OneCardForMergeDTO
+    cards: list[OneCardForMergeDTO]
+    need_cards: int
 

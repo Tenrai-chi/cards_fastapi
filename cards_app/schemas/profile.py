@@ -1,7 +1,8 @@
 from datetime import datetime
 from pydantic import BaseModel
 
-from cards_app.schemas.cards import AmuletDTO, CardDTO
+from cards_app.schemas.base import AmuletBase
+from cards_app.schemas.cards_new import CardDTO
 
 
 class GuildDTO(BaseModel):
@@ -51,7 +52,7 @@ class ProfileResponseDTO(BaseModel):
     profile: ProfileBaseDTO
     guild: GuildDTO | None = None
     card: CardDTO | None = None
-    amulet: AmuletDTO | None = None
+    amulet: AmuletBase | None = None
     role: str | None = 'anonymous'
 
     # Владелец

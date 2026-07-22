@@ -3,7 +3,7 @@ from .base import (
 )
 
 from .cards_new import (
-    CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO
+    CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
 )
 
 
@@ -36,3 +36,10 @@ class ViewTradingUseCaseResponse(UseCaseResponse):
     """ Ответ для получения всех карт, выставленных на продажу игроками """
 
     cards_trading: CardsTradingDTO | None
+
+
+class ViewMergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
+    """ Ответ для получения списка карт, доступных для слияния """
+
+    merge: CardsForMergeDTO | None
+

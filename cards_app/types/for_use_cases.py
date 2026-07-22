@@ -1,6 +1,5 @@
 from typing import TypedDict
 
-from cards_app.schemas.cards import CardsForMergeDTO
 from cards_app.schemas.fight import FightDTO
 from cards_app.schemas.inventory import FullInventoryDTO, FullInfoLevelingDTO, FullInfoUpgradingDTO
 from cards_app.schemas.news import NewsDTO
@@ -159,10 +158,10 @@ class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, S
     """ Кастомный словарь для возврата данных из SaleAmuletUseCase """
 
 
-class ViewMergeUseCaseDict(BaseUseCaseDict, ErrorMixin):
-    """ Кастомный словарь для возврата данных из ViewMergeUseCase """
-
-    merge_dto: CardsForMergeDTO | None
+# class ViewMergeUseCaseDict(BaseUseCaseDict, ErrorMixin):
+#     """ Кастомный словарь для возврата данных из ViewMergeUseCase """
+#
+#     merge_dto: CardsForMergeDTO | None
 
 
 class ViewUpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin):

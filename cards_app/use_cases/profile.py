@@ -3,13 +3,14 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import UserFavoriteException
+from cards_app.schemas.base import AmuletBase
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
                                         get_user_fight_history, is_favorite, add_user_to_favorite,
                                         remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user,
                                         get_rating_users, get_total_users_count, get_user_transactions)
 from cards_app.services.cards import get_card_with_details
 from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, GuildDTO,
-                                       CardDTO, AmuletDTO, FightHistoryRecordDTO, CardBriefDTO, FavoriteUserDTO,
+                                       CardDTO, FightHistoryRecordDTO, CardBriefDTO, FavoriteUserDTO,
                                        FavoriteUsersPageDTO, UserRatingTableDTO, RatingTableDTO, TransactionsDTO,
                                        RecordTransaction)
 from cards_app.models.users import User
@@ -106,11 +107,11 @@ class ViewProfileUseCase:
                                    max_enhancement=card.max_enhancement,
                                    )
                 if card.amulet:
-                    amulet_dto = AmuletDTO(id=card.amulet.id,
-                                           name=card.amulet.amulet_type.name,
-                                           bonus_hp=card.amulet.amulet_type.bonus_hp,
-                                           bonus_damage=card.amulet.amulet_type.bonus_damage,
-                                           )
+                    amulet_dto = AmuletBase(id=card.amulet.id,
+                                            name=card.amulet.amulet_type.name,
+                                            bonus_hp=card.amulet.amulet_type.bonus_hp,
+                                            bonus_damage=card.amulet.amulet_type.bonus_damage,
+                                            )
 
         is_owner = current_user and current_user.id == target_user_id
 

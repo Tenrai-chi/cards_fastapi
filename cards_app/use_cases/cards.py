@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.schemas.base import AmuletBase
 from cards_app.schemas.inventory import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
 from cards_app.schemas.response import ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse, \
-    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
-from cards_app.types import (ViewMergeUseCaseDict, MergeUseCaseDict,
+from cards_app.types import (MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.exeptions import (NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
                                  TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
@@ -17,10 +17,11 @@ from cards_app.services.cards import (get_card_with_details, get_rarities_and_cl
                                       create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
                                       get_cards_for_merge, merge_card)
 from cards_app.services.inventory import upgrade_card
-from cards_app.schemas.cards_new import CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard, UserCardsDTO, \
-    CardsTradingDTO
+from cards_app.schemas.cards_new import (
+    CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard, UserCardsDTO,
+    CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO
+)
 
-from cards_app.schemas.cards import (OneCardForMergeDTO, CardsForMergeDTO)
 from cards_app.services.profile import (update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
                                         charge_user_gold, create_transaction)
 
@@ -413,14 +414,14 @@ class ViewMergeUseCase:
     async def execute(self,
                       current_card_id: int,
                       current_user: User | None
-                      ) -> ViewMergeUseCaseDict:
-        """ Выполняет получение карты и формирует DTO для отображения.
+                      ) -> ViewMergeUseCaseResponse:
+        """ Выполняет получение карт для слияния.
                Args:
                    current_user: User + Profile текущего пользователя
                    current_card_id: ID текущей карты
                Returns:
-                   ViewMergeUseCaseDict:
-                       - merge_dto (CardsForMergeDTO | None): DTO с данными карты, амулета и флагом владельца.
+                   ViewMergeUseCaseResponse:
+                       - merge (CardsForMergeDTO | None): DTO с данными карт для слияния.
                        - status_code (int): HTTP статус-код.
                        - error_message (str): сообщение об ошибке
                Note:
@@ -430,30 +431,32 @@ class ViewMergeUseCase:
                    - 500: любая другая непредвиденная ошибка.
                """
 
-        answer_data = {'merge_dto': None,
-                       'status_code': None,
-                       'error_message': None}
-
         if current_user is None:
-            answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Для слияния карты вы должны быть авторизованы'
             logger.warning(f'Попытка неавторизованного пользователя просмотреть меню слияния карты')
-            return answer_data
+            return ViewMergeUseCaseResponse(
+                status_code=400,
+                error_message=f'Для слияния карты вы должны быть авторизованы',
+                merge=None
+            )
 
         try:
             current_card, cards_for_merge = await get_cards_for_merge(session_db=self.session_db,
                                                                       current_card_id=current_card_id,
                                                                       owner_id=current_user.profile.id)
             if current_card.merger >= current_card.max_merger:
-                answer_data['status_code'] = 400
-                answer_data['error_message'] = f'Карта уже имеет максимальный уровень слияния'
-                return answer_data
+                return ViewMergeUseCaseResponse(
+                    status_code=400,
+                    error_message=f'Карта уже имеет максимальный уровень слияния',
+                    merge=None
+                )
 
             current_card_dto = OneCardForMergeDTO(id=current_card.id,
                                                   class_card_name=current_card.class_card.name,
                                                   rarity_card_name=current_card.rarity_card.name,
                                                   type_card_name=current_card.type_card.name,
                                                   class_card_pic=current_card.class_card.image,
+                                                  hp=current_card.hp,
+                                                  damage=current_card.damage,
                                                   level=current_card.level,
                                                   max_level=current_card.rarity_card.max_level,
                                                   merger=current_card.merger,
@@ -466,6 +469,8 @@ class ViewMergeUseCase:
                                             rarity_card_name=card.rarity_card.name,
                                             type_card_name=card.type_card.name,
                                             class_card_pic=card.class_card.image,
+                                            hp=current_card.hp,
+                                            damage=current_card.damage,
                                             level=card.level,
                                             max_level=card.rarity_card.max_level,
                                             merger=card.merger,
@@ -478,20 +483,26 @@ class ViewMergeUseCase:
                                          cards=cards_dto,
                                          need_cards=current_card.max_merger-current_card.merger)
 
-            answer_data['status_code'] = 200
-            answer_data['merge_dto'] = merge_dto
-            return answer_data
+            return ViewMergeUseCaseResponse(
+                status_code=200,
+                error_message=None,
+                merge=merge_dto
+            )
 
         except (NotCardOwnerError, CardNotFoundError) as error:
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return ViewMergeUseCaseResponse(
+                status_code=error.status_code,
+                error_message=str(error),
+                merge=None
+            )
 
         except Exception as error:
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewMergeUseCase: {error}', exc_info=True)
-
-        return answer_data
+            return ViewMergeUseCaseResponse(
+                status_code=500,
+                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                merge=None
+            )
 
 
 class MergeUseCase:
