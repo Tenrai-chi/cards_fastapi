@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import InventoryException
 from cards_app.models import User
-from cards_app.schemas import ExpItemsInventoryDTO, UpgradeItemsInventoryDTO, AmuletsInventoryDTO, FullInventoryDTO
+from cards_app.schemas.inventory import ExpItemsInventoryDTO, AmuletsInventoryDTO, FullInventoryDTO, \
+    UpgradeItemsInventoryDTO
 from cards_app.services.inventory import (get_amulets_in_user_inventory, get_upgrade_items_in_user_inventory,
                                           get_exp_items_in_user_inventory, delete_amulet)
 from cards_app.services.profile import add_user_gold, create_transaction

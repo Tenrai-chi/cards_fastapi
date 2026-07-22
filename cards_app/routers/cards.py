@@ -10,9 +10,9 @@ from urllib.parse import quote
 from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
-from cards_app.schemas.response import ViewCardUseCaseResponse
+from cards_app.schemas.response import ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import (ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict,
+from cards_app.types import (GetFreeCardUseCaseDict,
                              ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.use_cases.cards import (ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase,
@@ -72,17 +72,17 @@ async def view_free_card(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewGetFreeCardUseCase(session_db)
-    data: ViewGetFreeCardUseCaseDict = await use_case.execute(current_user)
+    data: ViewGetFreeCardUseCaseResponse = await use_case.execute(current_user)
 
     context = {'request': request,
                'current_user': current_user_dto,
-               'info_dto': data.get('get_free_card_dto'),
+               'info_dto': data.get_free_card,
                'error_message': error
                }
     return templates.TemplateResponse(request=request,
                                       name='cards/free_card_page.html',
                                       context=context,
-                                      status_code=data.get('status_code'))
+                                      status_code=data.status_code)
 
 
 @router.post(path='/generate_new_card', name='create_card')

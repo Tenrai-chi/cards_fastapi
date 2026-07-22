@@ -2,12 +2,12 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.schemas import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
 from cards_app.schemas.base import AmuletBase
-from cards_app.schemas.response import ViewCardUseCaseResponse
+from cards_app.schemas.inventory import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
+from cards_app.schemas.response import ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
-from cards_app.types import (ViewCardUseCaseDict, ViewGetFreeCardUseCaseDict, GetFreeCardUseCaseDict,
+from cards_app.types import (GetFreeCardUseCaseDict,
                              ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.exeptions import (NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
@@ -17,10 +17,9 @@ from cards_app.services.cards import (get_card_with_details, get_rarities_and_cl
                                       create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
                                       get_cards_for_merge, merge_card)
 from cards_app.services.inventory import upgrade_card
-from cards_app.schemas.cards_new import CardDTO, CardInfoDTO
+from cards_app.schemas.cards_new import CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard
 
-from cards_app.schemas.cards import (AmuletDTO, GetFreeCardDTO, RarityCard, ClassCard,
-                                     UserCardsDTO, CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
+from cards_app.schemas.cards import (UserCardsDTO, CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
 from cards_app.services.profile import (update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
                                         charge_user_gold, create_transaction)
 
@@ -124,18 +123,15 @@ class ViewGetFreeCardUseCase:
         self.session_db = session_db
 
     async def execute(self, current_user: User | None
-                      ) -> ViewGetFreeCardUseCaseDict:
+                      ) -> ViewGetFreeCardUseCaseResponse:
         """ Формирует DTO для страницы получения бесплатной карты.
             Args:
                 current_user: User + Profile текущего пользователя
             Returns:
-                ViewGetFreeCardUseCaseDict:
-                    - get_free_card_dto (GetFreeCardDTO): DTO со списками классов, редкостей и флагом can_get_free_card.
+                ViewGetFreeCardUseCaseResponse:
+                    - get_free_card (GetFreeCardDTO): DTO со списками классов, редкостей и флагом can_get_free_card.
                     - status_code (int): HTTP статус-код всегда 200
         """
-
-        answer_data = {'get_free_card_dto': None,
-                       'status_code': 200}
 
         data_for_page: dict = await get_rarities_and_classes(session_db=self.session_db)
         all_classes: list = data_for_page['classes']
@@ -163,10 +159,18 @@ class ViewGetFreeCardUseCase:
         else:
             can_get_card = False
 
-        answer_data['get_free_card_dto'] = GetFreeCardDTO(all_classes=classes_card,
-                                                          all_rarities=rarities_card,
-                                                          can_get_free_card=can_get_card)
-        return answer_data
+        # answer_data['get_free_card_dto'] = GetFreeCardDTO(all_classes=classes_card,
+        #                                                   all_rarities=rarities_card,
+        #                                                   can_get_free_card=can_get_card)
+        # return answer_data
+        return ViewGetFreeCardUseCaseResponse(
+            status_code=200,
+            get_free_card=GetFreeCardDTO(
+                all_classes=classes_card,
+                all_rarities=rarities_card,
+                can_get_free_card=can_get_card
+            )
+        )
 
 
 class GetFreeCardUseCase:

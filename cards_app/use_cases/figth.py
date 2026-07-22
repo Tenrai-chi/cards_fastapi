@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.exeptions import UserNotFoundError, NoCurrentCardError, CooldownNotElapsedError
-from cards_app.schemas import FightDTO, Participant
+from cards_app.schemas.fight import Participant, FightDTO
 from cards_app.services.cards import update_card_experience
 from cards_app.services.fight import (validate_battle_preconditions, get_cards_participants, fight_now,
                                       create_record_fight_history)

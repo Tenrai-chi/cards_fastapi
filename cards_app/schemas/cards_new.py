@@ -37,28 +37,28 @@ class CardInfoDTO(BaseModel):
     card: CardDTO
     amulet: AmuletBase | None
     is_owner: bool = False
-#
-#
-# class RarityCard(BaseModel):
-#     """ Данные с шансом выпадения редкостей карты """
-#
-#     name: str
-#     chance_drop: int
-#
-#
-# class ClassCard(BaseModel):
-#     """ Данные с классами карт, которые могут выпасть при бесплатном получении """
-#
-#     name: str
-#     skill_description: str
-#
-#
-# class GetFreeCardDTO(BaseModel):
-#     """ Данные для страницы получения бесплатной карты """
-#
-#     all_classes: list[ClassCard]
-#     all_rarities: list[RarityCard]
-#     can_get_free_card: bool = False
+
+
+class RarityCard(BaseModel):
+    """ Данные с шансом выпадения редкостей карты """
+
+    name: str
+    chance_drop: int
+
+
+class ClassCard(BaseModel):
+    """ Данные с классами карт, которые могут выпасть при бесплатном получении """
+
+    name: str
+    skill_description: str
+
+
+class GetFreeCardDTO(BaseModel):
+    """ Данные для страницы получения бесплатной карты """
+
+    all_classes: list[ClassCard]
+    all_rarities: list[RarityCard]
+    can_get_free_card: bool = False
 #
 #
 # class UserCardsDTO(BaseModel):

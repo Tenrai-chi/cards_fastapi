@@ -1,9 +1,13 @@
 from typing import TypedDict
-from cards_app.schemas import (AllStoreDTO, UserCardsDTO, CardsTradingDTO, TransactionsDTO,
-                               CardInfoDTO, GetFreeCardDTO, NewsDTO, StartEventAwardsDTO,
-                               ProfileResponseDTO, RatingTableDTO, FavoriteUsersPageDTO,
-                               CardStoreDTO, FightDTO, FullInventoryDTO, FullInfoLevelingDTO, CardsForMergeDTO,
-                               OpenBoxExpItemDTO, OpenBoxAmuletDTO, FullInfoUpgradingDTO, CurrentUserForMenuDTO)
+
+from cards_app.schemas.cards import UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
+from cards_app.schemas.fight import FightDTO
+from cards_app.schemas.inventory import FullInventoryDTO, FullInfoLevelingDTO, FullInfoUpgradingDTO
+from cards_app.schemas.news import NewsDTO
+from cards_app.schemas.profile import ProfileResponseDTO, FavoriteUsersPageDTO, RatingTableDTO, TransactionsDTO
+from cards_app.schemas.start_event import StartEventAwardsDTO
+from cards_app.schemas.store import CardStoreDTO, AllStoreDTO, OpenBoxExpItemDTO, OpenBoxAmuletDTO
+from cards_app.schemas.users import CurrentUserForMenuDTO
 
 
 class BaseUseCaseDict(TypedDict):
@@ -46,18 +50,7 @@ class SuccessMixin(TypedDict):
     success: bool
 
 
-class ViewCardUseCaseDict(BaseUseCaseDict, ErrorMixin):
-    """ Кастомный словарь для возврата данных из ViewCardUseCase """
-
-    card_info_dto: CardInfoDTO | None
-
-
-class ViewGetFreeCardUseCaseDict(BaseUseCaseDict):
-    """ Кастомный словарь для возврата данных из ViewGetFreeCardUseCase """
-
-    get_free_card_dto: GetFreeCardDTO | None
-
-
+# ------- todo ПЕРЕДЕЛАТЬ и удалить -----------
 class GetFreeCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):
     """ Кастомный словарь для возврата данных из GetFreeCardUseCase """
 
