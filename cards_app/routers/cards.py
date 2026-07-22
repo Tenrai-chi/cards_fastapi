@@ -10,10 +10,12 @@ from urllib.parse import quote
 from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
-from cards_app.schemas.response import ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse
+from cards_app.schemas.response import (
+    ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse
+)
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import (GetFreeCardUseCaseDict,
-                             ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
+from cards_app.types import (ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.use_cases.cards import (ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase,
                                        ViewUserCardsUseCase, ViewTradingUseCase, ViewMergeUseCase,
@@ -40,26 +42,32 @@ async def view_card(request: Request,
     use_case = ViewCardUseCase(session_db)
     data: ViewCardUseCaseResponse = await use_case.execute(card_id, current_user)
     if data.card_info is not None:
-        context = {'request': request,
-                   'current_user': current_user_dto,
-                   'card_dto': data.card_info,
-                   'error_message': error,
-                   'success_message': success
-                   }
-        return templates.TemplateResponse(request=request,
-                                          name='cards/card.html',
-                                          context=context,
-                                          status_code=data.status_code)
+        context = {
+            'request': request,
+            'current_user': current_user_dto,
+            'card_dto': data.card_info,
+            'error_message': error,
+            'success_message': success
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name='cards/card.html',
+            context=context,
+            status_code=data.status_code
+        )
     else:
         if data.status_code in (404, 500):
-            context = {'error': data.error_message,
-                       'error_code': data.status_code,
-                       'current_user': current_user_dto}
-            return templates.TemplateResponse(request=request,
-                                              name='errors/error_page.html',
-                                              context=context,
-                                              status_code=data.status_code
-                                              )
+            context = {
+                'error': data.error_message,
+                'error_code': data.status_code,
+                'current_user': current_user_dto
+            }
+            return templates.TemplateResponse(
+                request=request,
+                name='errors/error_page.html',
+                context=context,
+                status_code=data.status_code
+            )
 
 
 @router.get(path='/free_card', name='get_card')
@@ -74,15 +82,18 @@ async def view_free_card(request: Request,
     use_case = ViewGetFreeCardUseCase(session_db)
     data: ViewGetFreeCardUseCaseResponse = await use_case.execute(current_user)
 
-    context = {'request': request,
-               'current_user': current_user_dto,
-               'info_dto': data.get_free_card,
-               'error_message': error
-               }
-    return templates.TemplateResponse(request=request,
-                                      name='cards/free_card_page.html',
-                                      context=context,
-                                      status_code=data.status_code)
+    context = {
+        'request': request,
+        'current_user': current_user_dto,
+        'info_dto': data.get_free_card,
+        'error_message': error
+    }
+    return templates.TemplateResponse(
+        request=request,
+        name='cards/free_card_page.html',
+        context=context,
+        status_code=data.status_code
+    )
 
 
 @router.post(path='/generate_new_card', name='create_card')
@@ -93,24 +104,27 @@ async def get_free_card(request: Request,
     """ Обработка запроса на получение бесплатной карты """
 
     use_case = GetFreeCardUseCase(session_db)
-    data: GetFreeCardUseCaseDict = await use_case.execute(current_user_id)
+    data: GetFreeCardUseCaseResponse = await use_case.execute(current_user_id)
 
-    if data.get('success') is True:
-        new_card_id = data.get('new_card_id')
+    if data.success is True:
+        new_card_id = data.new_card_id
         url = request.url_for('view_card', card_id=new_card_id)
-        return RedirectResponse(url, status_code=data.get('status_code'))
+        return RedirectResponse(url, status_code=data.status_code)
     else:
-        if data.get('status_code') == 500:
-            context = {'error': data.get('error_message'),
-                       'status_code': data.get('status_code'),
-                       'current_user': data.get('current_user_dto')}
-            return templates.TemplateResponse(request=request,
-                                              name='errors/error_page.html',
-                                              context=context,
-                                              status_code=data.get('status_code')
-                                              )
+        if data.status_code == 500:
+            context = {
+                'error': data.error_message,
+                'status_code': data.status_code,
+                'current_user': data.current_user_dto
+            }
+            return templates.TemplateResponse(
+                request=request,
+                name='errors/error_page.html',
+                context=context,
+                status_code=data.status_code
+            )
         else:
-            error_msg = data['error_message']
+            error_msg = data.error_message
             encoded_error = quote(error_msg)
             url = request.url_for('get_card')
             full_url = f'{url}?error={encoded_error}'
@@ -127,25 +141,29 @@ async def view_user_cards(request: Request,
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewUserCardsUseCase(session_db)
-    data: ViewUserCardsUseCaseDict = await use_case.execute(user_id)
-    if data.get('user_cards_dto') is not None:
-        context = {'request': request,
-                   'current_user': current_user_dto,
-                   'user_cards_dto': data.get('user_cards_dto'),
-                   }
-        return templates.TemplateResponse(request=request,
-                                          name='cards/user_cards.html',
-                                          context=context,
-                                          status_code=data.get('status_code'))
+    data: ViewUserCardsUseResponse = await use_case.execute(user_id)
+    if data.user_cards is not None:
+        context = {
+            'request': request,
+            'current_user': current_user_dto,
+            'user_cards_dto': data.user_cards,
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name='cards/user_cards.html',
+            context=context,
+            status_code=data.status_code
+        )
     else:
-        if data.get('status_code') in (404, 500):
-            context = {'error': data.get('error_message'),
-                       'error_code': data.get('status_code')}
-            return templates.TemplateResponse(request=request,
-                                              name='errors/error_page.html',
-                                              context=context,
-                                              status_code=data.get('status_code')
-                                              )
+        if data.status_code in (404, 500):
+            context = {'error': data.error_message,
+                       'error_code': data.status_code}
+            return templates.TemplateResponse(
+                request=request,
+                name='errors/error_page.html',
+                context=context,
+                status_code=data.status_code
+            )
 
 
 @router.get(path='/trading', name='trading')

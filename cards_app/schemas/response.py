@@ -1,7 +1,7 @@
 from .base import (
-    UseCaseResponse, ErrorMessageMixin,
+    UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin
 )
-from .cards_new import (CardInfoDTO, GetFreeCardDTO)
+from .cards_new import (CardInfoDTO, GetFreeCardDTO, UserCardsDTO)
 
 
 # -------- Ответы в USE CASES --------
@@ -15,3 +15,15 @@ class ViewGetFreeCardUseCaseResponse(UseCaseResponse):
     """ Ответ для просмотра страницы с получением случайной карты """
 
     get_free_card: GetFreeCardDTO | None
+
+
+class GetFreeCardUseCaseResponse(UseCaseResponse, CurrentUserMixin, SuccessFlagMixin, ErrorMessageMixin):
+    """ Ответ для получения бесплатной карты """
+
+    new_card_id: int | None
+
+
+class ViewUserCardsUseResponse(UseCaseResponse, ErrorMessageMixin):
+    """ Ответ для получения всех карт пользователя """
+
+    user_cards: UserCardsDTO | None

@@ -35,7 +35,7 @@ class SuccessMessageMixin(BaseModel):
     success_message: str | None = None
 
 
-class CurrentUserMixin(BaseModel):
+class CurrentUserForMenu(BaseModel):
     """ Данные для вывода информации в шапке профиля.
         Используется в схемах, где необходимо возвращать информацию о текущем пользователе.
     """
@@ -44,6 +44,14 @@ class CurrentUserMixin(BaseModel):
     username: str | None = None
     gold: int | None = None
     diamond: int | None = None
+
+
+class CurrentUserMixin(BaseModel):
+    """ Данные для вывода информации в шапке профиля.
+        Используется в схемах, где необходимо возвращать информацию о текущем пользователе.
+    """
+
+    current_user: CurrentUserForMenu | None
 
 
 # -------- Схемы сущностей --------

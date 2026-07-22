@@ -65,13 +65,13 @@ class CardInfoDTO(BaseModel):
 #     can_get_free_card: bool = False
 
 
-class UserCardsDTO(BaseModel):
-    """ Данные для просмотра всех карт пользователя """
-
-    owner_id: int
-    owner_username: str
-    owner_current_card_id: int | None
-    cards: list[CardDTO]
+# class UserCardsDTO(BaseModel):
+#     """ Данные для просмотра всех карт пользователя """
+#
+#     owner_id: int
+#     owner_username: str
+#     owner_current_card_id: int | None
+#     cards: list[CardDTO]
 
 
 class CardsTradingDTO(BaseModel):

@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-from cards_app.schemas.cards import UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
+from cards_app.schemas.cards import CardsTradingDTO, CardsForMergeDTO
 from cards_app.schemas.fight import FightDTO
 from cards_app.schemas.inventory import FullInventoryDTO, FullInfoLevelingDTO, FullInfoUpgradingDTO
 from cards_app.schemas.news import NewsDTO
@@ -125,10 +125,10 @@ class ViewItemStoreUseCaseDict(BaseUseCaseDict, ErrorMixin):
     store_dto: AllStoreDTO | None
 
 
-class ViewUserCardsUseCaseDict(BaseUseCaseDict, ErrorMixin):
-    """ Кастомный словарь для возврата данных из ViewUserCardsUseCase """
-
-    user_cards_dto: UserCardsDTO | None
+# class ViewUserCardsUseCaseDict(BaseUseCaseDict, ErrorMixin):
+#     """ Кастомный словарь для возврата данных из ViewUserCardsUseCase """
+#
+#     user_cards_dto: UserCardsDTO | None
 
 
 class ViewTradingUseCaseDict(BaseUseCaseDict):

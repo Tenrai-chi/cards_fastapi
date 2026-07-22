@@ -4,27 +4,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from cards_app.schemas.users import CurrentUserForMenuDTO
+from cards_app.schemas.base import CurrentUserForMenu
 from cards_app.models.users import User, Profile
 
 logger = logging.getLogger(__name__)
 
 
-async def user_info_to_dto(user: User | None) -> CurrentUserForMenuDTO | None:
+async def user_info_to_dto(user: User | None) -> CurrentUserForMenu | None:
     """ Преобразует данные из User + Profile в DTO для вывода информации в шапку сайта
         Args:
             user: User + Profile или None, если не авторизирован.
 
         Returns:
-            CurrentUserForMenuDTO | None: DTO для вывода информации в шапку сайта
+            CurrentUserForMenu | None: DTO для вывода информации в шапку сайта
     """
 
     if user:
-        current_user_dto = CurrentUserForMenuDTO(id=user.id,
-                                                 username=user.username,
-                                                 gold=user.profile.gold,
-                                                 diamond=user.profile.diamond,
-                                                 )
+        current_user_dto = CurrentUserForMenu(id=user.id,
+                                              username=user.username,
+                                              gold=user.profile.gold,
+                                              diamond=user.profile.diamond,
+                                              )
         return current_user_dto
 
 

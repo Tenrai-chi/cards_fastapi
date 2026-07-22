@@ -4,11 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.schemas.base import AmuletBase
 from cards_app.schemas.inventory import CardUpgradingDTO, UpgradeItemsInventoryDTO, FullInfoUpgradingDTO
-from cards_app.schemas.response import ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse
+from cards_app.schemas.response import ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse, \
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
-from cards_app.types import (GetFreeCardUseCaseDict,
-                             ViewUserCardsUseCaseDict, ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
+from cards_app.types import (ViewTradingUseCaseDict, ViewMergeUseCaseDict, MergeUseCaseDict,
                              ViewUpgradeUseCaseDict, UpgradeUseCaseDict)
 from cards_app.exeptions import (NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
                                  TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
@@ -17,9 +17,9 @@ from cards_app.services.cards import (get_card_with_details, get_rarities_and_cl
                                       create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
                                       get_cards_for_merge, merge_card)
 from cards_app.services.inventory import upgrade_card
-from cards_app.schemas.cards_new import CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard
+from cards_app.schemas.cards_new import CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard, UserCardsDTO
 
-from cards_app.schemas.cards import (UserCardsDTO, CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
+from cards_app.schemas.cards import (CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO)
 from cards_app.services.profile import (update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
                                         charge_user_gold, create_transaction)
 
@@ -159,10 +159,6 @@ class ViewGetFreeCardUseCase:
         else:
             can_get_card = False
 
-        # answer_data['get_free_card_dto'] = GetFreeCardDTO(all_classes=classes_card,
-        #                                                   all_rarities=rarities_card,
-        #                                                   can_get_free_card=can_get_card)
-        # return answer_data
         return ViewGetFreeCardUseCaseResponse(
             status_code=200,
             get_free_card=GetFreeCardDTO(
@@ -182,12 +178,12 @@ class GetFreeCardUseCase:
         self.session_db = session_db
 
     async def execute(self, current_user_id: int | None
-                      ) -> GetFreeCardUseCaseDict:
+                      ) -> GetFreeCardUseCaseResponse:
         """ Выполняет получение бесплатной карты для авторизованного пользователя.
             Args:
                 current_user_id: ID User текущего пользователя или None
             Returns:
-                GetFreeCardUseCaseDict:
+                GetFreeCardUseCaseResponse:
                     - success (bool): True при успешном получении карты
                     - new_card_id (int | None): ID новой карты (при успехе)
                     - error_message (str | None): сообщение об ошибке
@@ -200,73 +196,90 @@ class GetFreeCardUseCase:
         """
 
         hours_for_get_free_card = 6
-        answer_data = {'success': None,
-                       'new_card_id': None,
-                       'error_message': None,
-                       'status_code': None,
-                       'current_user_dto': None}
 
         if current_user_id is None:
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Для получения бесплатной карты вы должны быть авторизованы'
-            answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
-            return answer_data
+            return GetFreeCardUseCaseResponse(
+                status_code=400,
+                success=False,
+                new_card_id=None,
+                current_user=None,
+                error_message=f'Для получения бесплатной карты вы должны быть авторизованы'
+            )
+        await get_profile_for_update(session_db=self.session_db,
+                                     user_id=current_user_id)
+        # current_user получит профиль из сессии при запросе (используется для создания DTO)
+        current_user = await get_user_with_profile(session_db=self.session_db,
+                                                   user_id=current_user_id)
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
+            return GetFreeCardUseCaseResponse(
+                status_code=400,
+                success=False,
+                new_card_id=None,
+                current_user=None,
+                error_message=f'Для получения бесплатной карты вы должны быть авторизованы'
+            )
+        else:
+            current_user_dto = await user_info_to_dto(user=current_user)
         try:
             # Получение и блокировка данных для транзакции
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для получения бесплатной карты вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
-                return answer_data
-
             if current_user.profile.receiving_timer is not None:
-                check_time, hours = time_difference_check(check_time=current_user.profile.receiving_timer,
-                                                          need_hours=hours_for_get_free_card)
+                check_time, hours = time_difference_check(
+                    check_time=current_user.profile.receiving_timer,
+                    need_hours=hours_for_get_free_card
+                )
                 if not check_time:
                     base_message = f'Вы не можете получить бесплатную карту'
                     logger.warning(f'Попытка пользователя {current_user.id} получить бесплатную карту, '
                                    f'но прошло недостаточно времени. Осталось: {hours}')
                     raise CooldownNotElapsedError(base_message=base_message, hours=hours)
 
-            await check_can_user_receive_card(session_db=self.session_db,
-                                              current_user=current_user,
-                                              need_slots=1)
-            await update_user_receiving_timer(session_db=self.session_db,
-                                              current_user=current_user)
-            new_card_id: int = await generate_random_card(session_db=self.session_db,
-                                                          owner_id=current_user.profile.id)
-            await create_record_in_history_receiving_card(session_db=self.session_db,
-                                                          card_id=new_card_id,
-                                                          user_profile_id=current_user.profile.id,
-                                                          method_receiving='Генерация')
+            await check_can_user_receive_card(
+                session_db=self.session_db,
+                current_user=current_user,
+                need_slots=1
+            )
+            await update_user_receiving_timer(session_db=self.session_db, current_user=current_user)
+            new_card_id: int = await generate_random_card(
+                session_db=self.session_db,
+                owner_id=current_user.profile.id
+            )
+            await create_record_in_history_receiving_card(
+                session_db=self.session_db,
+                card_id=new_card_id,
+                user_profile_id=current_user.profile.id,
+                method_receiving='Генерация'
+            )
             await self.session_db.commit()
-            answer_data['success'] = True
-            answer_data['new_card_id'] = new_card_id
-            answer_data['status_code'] = 303
+            return GetFreeCardUseCaseResponse(
+                status_code=303,
+                success=True,
+                new_card_id=new_card_id,
+                current_user=current_user_dto,
+                error_message=None
+            )
 
         except (NotEnoughSlotsError, CooldownNotElapsedError) as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return GetFreeCardUseCaseResponse(
+                status_code=error.status_code,
+                success=False,
+                new_card_id=None,
+                current_user=current_user_dto,
+                error_message=str(error)
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в GetFreeCardUseCase: {error}', exc_info=True)
-
-        return answer_data
+            return GetFreeCardUseCaseResponse(
+                status_code=500,
+                success=False,
+                new_card_id=None,
+                current_user=current_user_dto,
+                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
+            )
 
 
 class ViewUserCardsUseCase:
@@ -276,13 +289,13 @@ class ViewUserCardsUseCase:
         self.session_db = session_db
 
     async def execute(self, user_id: int
-                      ) -> ViewUserCardsUseCaseDict:
+                      ) -> ViewUserCardsUseResponse:
         """ Выполняет получение карты и формирует DTO для отображения.
                Args:
                    user_id: ID User владельца карт.
                Returns:
-                   ViewUserCardsUseCaseDict:
-                       - user_cards_dto (CardInfoDTO | None): DTO с данными карты, амулета и флагом владельца.
+                   ViewUserCardsUseResponse:
+                       - user_cards_dto (UserCardsDTO | None): DTO с данными карт.
                        - error_message (str | None): текст ошибки, если произошла.
                        - status_code (int): HTTP статус-код.
                Note:
@@ -291,22 +304,22 @@ class ViewUserCardsUseCase:
                    - 500: любая другая непредвиденная ошибка.
                """
 
-        answer_data: ViewUserCardsUseCaseDict = {'user_cards_dto': None,
-                                                 'error_message': None,
-                                                 'status_code': None,
-                                                 }
         try:
             owner: User = await get_base_info_profile(session_db=self.session_db,
                                                       user_id=user_id)
         except CardNotFoundError as error:
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
-            return answer_data
+            return ViewUserCardsUseResponse(
+                status_code=error.status_code,
+                error_message=str(error),
+                user_cards=None
+            )
         except Exception as error:
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewUserCardsUseCase: {error}', exc_info=True)
-            return answer_data
+            return ViewUserCardsUseResponse(
+                status_code=500,
+                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                user_cards=None
+            )
 
         user_cards: list = await get_all_cards_user(session_db=self.session_db,
                                                     owner_id=owner.profile.id,
@@ -335,9 +348,11 @@ class ViewUserCardsUseCase:
             owner_username=owner.username,
             owner_current_card_id=owner.profile.current_card_id
         )
-        answer_data['user_cards_dto'] = user_cards_dto
-        answer_data['status_code'] = 200
-        return answer_data
+        return ViewUserCardsUseResponse(
+            status_code=200,
+            error_message=None,
+            user_cards=user_cards_dto
+        )
 
 
 class ViewTradingUseCase:
