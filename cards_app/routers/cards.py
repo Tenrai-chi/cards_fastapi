@@ -465,10 +465,9 @@ async def view_upgrade_card(
 
     Notes:
         Могут быть получены следующие статус коды:
-        200: рендеринг информации при успехе.
-        400: рендеринг страницы с ошибкой.
-        404: рендеринг страницы с ошибкой.
-        500: рендеринг страницы с серверной ошибкой.
+        - SUCCESS: рендеринг информации при успехе.
+        - 400: рендеринг страницы с ошибкой.
+        - FORBIDDEN, UNAUTHORIZED, NOT_FOUND или SERVER_ERROR: редирект на страницу с ошибкой.
     """
 
     current_user_dto = await user_info_to_dto(current_user)
@@ -477,7 +476,7 @@ async def view_upgrade_card(
         current_card_id=card_id,
         current_user=current_user
     )
-    if data.upgrade_info is not None:
+    if data.response_type == ResponseType.SUCCESS:
         context = {
             'request': request,
             'current_user': current_user_dto,
@@ -489,26 +488,15 @@ async def view_upgrade_card(
             request=request,
             name='cards/upgrade_menu.html',
             context=context,
-            status_code=data.status_code
+            status_code=200
         )
     else:
-        if data.status_code in (400, 404, 500):
-            context = {
-                'error': data.error_message,
-                'error_code': data.status_code
-            }
-            return templates.TemplateResponse(
-                request=request,
-                name='errors/error_page.html',
-                context=context,
-                status_code=data.status_code
-            )
-        else:
-            error_msg = data.error_message
-            encoded_error = quote(error_msg)
-            url = request.url_for('view_card', card_id=card_id)
-            full_url = f'{url}?error={encoded_error}'
-            return RedirectResponse(full_url, status_code=303)
+        error_msg = data.error_message
+        encoded_error = quote(error_msg)
+        status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
+        url = request.url_for('view_error', error_code=status_code)
+        full_url = f'{url}?error={encoded_error}'
+        return RedirectResponse(full_url, status_code=303)
 
 
 @router.post(path='/card-{card_id}/upgrade-{upgrade_id}', name='upgrade_card')

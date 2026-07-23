@@ -654,7 +654,7 @@ class MergeUseCase:
 
 
 class ViewUpgradeUseCase:
-    """ Use case для просмотра доступных карт для слияния """
+    """ Use case для просмотра меню усиления карты """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
@@ -670,105 +670,89 @@ class ViewUpgradeUseCase:
                Returns:
                    ViewUpgradeUseCaseResponse:
                        - upgrade_info (FullInfoUpgradingDTO | None): DTO с информацией для усиления карты
-                       - status_code (int): HTTP статус-код.
+                       - response_type (str): статус ответа.
                        - error_message (str): сообщение об ошибке
                Note:
-                   - 200: успешное получение данных.
-                   - 400: нет прав или пользователь не авторизован
-                   - 404: карта не найдена
-                   - 500: любая другая непредвиденная ошибка.
+                   - SUCCESS: успешное получение данных.
+                   - UNAUTHORIZED: пользователь не авторизован
+                   - FORBIDDEN: нет прав.
+                   - NOT_FOUND: карта не найдена
+                   - SERVER_ERROR: любая другая непредвиденная ошибка.
                """
-        #
-        # answer_data = {'upgrade_dto': None,
-        #                'status_code': None,
-        #                'error_message': None}
 
         if current_user is None:
-            # answer_data['status_code'] = 400
-            # answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
             logger.warning(f'Для просмотра меню усиления карт, вы должны быть авторизованы')
-            # return answer_data
             return ViewUpgradeUseCaseResponse(
-                status_code=400,
+                response_type=ResponseType.UNAUTHORIZED,
                 error_message=f'Для усиления карты вы должны быть авторизованы',
                 upgrade_info=None,
             )
 
         try:
-            current_card = await get_card_with_details(session_db=self.session_db,
-                                                       card_id=current_card_id)
+            current_card = await get_card_with_details(session_db=self.session_db, card_id=current_card_id)
             if current_card.enhancement >= current_card.max_enhancement:
-                # answer_data['status_code'] = 400
-                # answer_data['error_message'] = f'Карта уже имеет максимальный уровень усиления'
-                # return answer_data
                 return ViewUpgradeUseCaseResponse(
-                    status_code=303,
+                    response_type=ResponseType.REDIRECT_WITH_ERROR,
                     error_message=f'Карта уже имеет максимальный уровень усиления',
                     upgrade_info=None,
                 )
             if current_card.owner_id != current_user.profile.id:
-                # answer_data['status_code'] = 400
-                # answer_data['error_message'] = f'Вы не являетесь владельцем этой карты'
-                # return answer_data
                 return ViewUpgradeUseCaseResponse(
-                    status_code=400,
+                    response_type=ResponseType.FORBIDDEN,
                     error_message=f'Вы не являетесь владельцем этой карты',
                     upgrade_info=None,
                 )
 
-            current_card_dto = CardUpgradingDTO(id=current_card.id,
-                                                class_card_name=current_card.class_card.name,
-                                                rarity_card_name=current_card.rarity_card.name,
-                                                type_card_name=current_card.type_card.name,
-                                                hp=current_card.hp,
-                                                damage=current_card.damage,
-                                                class_card_pic=current_card.class_card.image,
-                                                enhancement=current_card.enhancement,
-                                                max_enhancement=current_card.max_enhancement)
+            current_card_dto = CardUpgradingDTO(
+                id=current_card.id,
+                class_card_name=current_card.class_card.name,
+                rarity_card_name=current_card.rarity_card.name,
+                type_card_name=current_card.type_card.name,
+                hp=current_card.hp,
+                damage=current_card.damage,
+                class_card_pic=current_card.class_card.image,
+                enhancement=current_card.enhancement,
+                max_enhancement=current_card.max_enhancement
+            )
 
-            upgrade_items: list = await get_upgrade_items_in_user_inventory(session_db=self.session_db,
-                                                                            owner_id=current_user.profile.id)
+            upgrade_items: list = await get_upgrade_items_in_user_inventory(
+                session_db=self.session_db,
+                owner_id=current_user.profile.id
+            )
 
-            upgrade_items_dto = [UpgradeItemsInventoryDTO(id=item.upgrade_item_type.id,
-                                                          name=item.upgrade_item_type.name,
-                                                          description=item.upgrade_item_type.description,
-                                                          image=item.upgrade_item_type.image,
-                                                          gold_for_use=item.upgrade_item_type.price_of_use,
-                                                          amount=item.amount)
-                                 for item in upgrade_items
-                                 ]
+            upgrade_items_dto = [UpgradeItemsInventoryDTO(
+                id=item.upgrade_item_type.id,
+                name=item.upgrade_item_type.name,
+                description=item.upgrade_item_type.description,
+                image=item.upgrade_item_type.image,
+                gold_for_use=item.upgrade_item_type.price_of_use,
+                amount=item.amount)
+                for item in upgrade_items
+            ]
             upgrade_dto = FullInfoUpgradingDTO(card=current_card_dto,
                                                upgrade_items=upgrade_items_dto,
                                                )
 
-            # answer_data['status_code'] = 200
-            # answer_data['upgrade_dto'] = upgrade_dto
-            # return answer_data
             return ViewUpgradeUseCaseResponse(
-                status_code=200,
+                response_type=ResponseType.SUCCESS,
                 error_message=None,
                 upgrade_info=upgrade_dto,
             )
 
-        except (CardNotFoundError, ) as error:
-            # answer_data['error_message'] = str(error)
-            # answer_data['status_code'] = error.status_code
+        except (CardNotFoundError,) as error:
             return ViewUpgradeUseCaseResponse(
-                status_code=error.status_code,
+                response_type=error.response_type,
                 error_message=str(error),
                 upgrade_info=None,
             )
 
         except Exception as error:
-            # answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            # answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewUpgradeUseCase: {error}', exc_info=True)
             return ViewUpgradeUseCaseResponse(
-                status_code=500,
+                response_type=ResponseType.SERVER_ERROR,
                 error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
                 upgrade_info=None,
             )
-        # return answer_data
 
 
 class UpgradeUseCase:
