@@ -1,6 +1,6 @@
 from typing import TypedDict
 from cards_app.schemas.fight import FightDTO
-from cards_app.schemas.inventory import FullInventoryDTO, FullInfoLevelingDTO, FullInfoUpgradingDTO
+from cards_app.schemas.inventory import FullInventoryDTO, FullInfoLevelingDTO
 from cards_app.schemas.news import NewsDTO
 from cards_app.schemas.profile import ProfileResponseDTO, FavoriteUsersPageDTO, RatingTableDTO, TransactionsDTO
 from cards_app.schemas.start_event import StartEventAwardsDTO
@@ -163,10 +163,10 @@ class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, S
 #     merge_dto: CardsForMergeDTO | None
 
 
-class ViewUpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin):
-    """ Кастомный словарь для возврата данных из ViewUpgradeUseCase """
-
-    upgrade_dto: FullInfoUpgradingDTO | None
+# class ViewUpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin):
+#     """ Кастомный словарь для возврата данных из ViewUpgradeUseCase """
+#
+#     upgrade_dto: FullInfoUpgradingDTO | None
 
 
 # class MergeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):

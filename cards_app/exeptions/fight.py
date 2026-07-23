@@ -1,4 +1,5 @@
-from .base import AppException
+from cards_app.exeptions.base import AppException
+from cards_app.utils.response_types import ResponseType
 
 
 class FightException(AppException):
@@ -8,12 +9,12 @@ class FightException(AppException):
 
 class SelfFightError(FightException):
     """ Исключение, возникающее при попытке начать битву с самим собой.
-        Возвращает HTTP статус 400 (Bad Request)
+        Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
 
         message = f'Вы не можете бросить вызов самому себе'
-        super().__init__(message, status_code=400)
+        super().__init__(message, response_type=ResponseType.REDIRECT_WITH_ERROR)
 

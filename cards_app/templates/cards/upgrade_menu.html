@@ -17,30 +17,30 @@
 <div class="inventory-page">
     <!-- Текущая карта -->
     <div class="current-card-wrapper">
-        <div class="selected-card" data-card-id="{{ upgrade_dto.card.id }}">
+        <div class="selected-card" data-card-id="{{ upgrade_info.card.id }}">
             <div class="card-image">
-                <img src="{{ url_for('static', path=upgrade_dto.card.image) }}" alt="{{ upgrade_dto.card.class_name }}">
+                <img src="{{ url_for('static', path=upgrade_info.card.class_card_pic) }}" alt="{{ upgrade_info.card.class_card_name }}">
             </div>
             <div class="card-info">
                 <div class="card-name">
-                    {{ upgrade_dto.card.class_name }} ({{ upgrade_dto.card.rarity_name }})
+                    {{ upgrade_info.card.class_card_name }} ({{ upgrade_info.card.rarity_card_name }})
                 </div>
                 <div class="card-stats">
-                    <div class="card-stat">❤️ HP: {{ upgrade_dto.card.hp }}</div>
-                    <div class="card-stat">⚔️ Урон: {{ upgrade_dto.card.damage }}</div>
-                    <div class="card-stat">🏷️ Тип: {{ upgrade_dto.card.type_name }}</div>
-                    <div class="card-stat">🛠️ Усиление: {{ upgrade_dto.card.enhancement }}/{{ upgrade_dto.card.max_enhancement }}</div>
+                    <div class="card-stat">❤️ HP: {{ upgrade_info.card.hp }}</div>
+                    <div class="card-stat">⚔️ Урон: {{ upgrade_info.card.damage }}</div>
+                    <div class="card-stat">🏷️ Тип: {{ upgrade_info.card.type_card_name }}</div>
+                    <div class="card-stat">🛠️ Усиление: {{ upgrade_info.card.enhancement }}/{{ upgrade_info.card.max_enhancement }}</div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Предметы усиления -->
-    {% if upgrade_dto.upgrade_items %}
+    {% if upgrade_info.upgrade_items %}
     <section class="inventory-section">
         <h2 class="section-title">⚡ Предметы усиления</h2>
         <div class="store-grid">
-            {% for item in upgrade_dto.upgrade_items %}
+            {% for item in upgrade_info.upgrade_items %}
             <div class="store-card">
                 <div class="card-image">
                     <img src="{{ url_for('static', path=item.image) }}" alt="{{ item.name }}">
@@ -60,10 +60,10 @@
                             {{ item.gold_for_use }}
                         </span>
                     </div>
-                    <form class="action-form" action="{{ url_for('upgrade_card', card_id=upgrade_dto.card.id, upgrade_id=item.id ) }}" method="post">
+                    <form class="action-form" action="{{ url_for('upgrade_card', card_id=upgrade_info.card.id, upgrade_id=item.id ) }}" method="post">
                         <input type="hidden" name="upgrade_item_id" value="{{ item.id }}">
                         <button type="submit" class="card-action-btn"
-                            {% if not current_user or current_user.gold < item.gold_for_use %}disabled{% endif %}>
+                            {% if not current_user or current_user.gold < item.gold_for_use %} disabled{% endif %}>
                             Использовать
                         </button>
                     </form>

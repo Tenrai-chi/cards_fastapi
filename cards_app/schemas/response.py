@@ -1,13 +1,9 @@
-from .base import (
-    UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin
-)
-
-from .cards import (
-    CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
-)
+from cards_app.schemas.base import UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin
+from cards_app.schemas.cards import CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
+from cards_app.schemas.inventory_new import FullInfoUpgradingDTO
 
 
-# -------- Ответы в USE CASES --------
+# -------- Cards --------
 class ViewCardUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
     """ Ответ для просмотра одной карты """
 
@@ -47,3 +43,10 @@ class ViewMergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
 class MergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin):
     """ Ответ на попытку слить карты. Пустой, потому что все данные наследуются из миксин. """
 
+
+class ViewUpgradeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
+    """ Ответ на получение карты и предметов для ее усиления """
+
+    upgrade_info: FullInfoUpgradingDTO | None
+
+# -------- Events --------

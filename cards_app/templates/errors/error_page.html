@@ -1,8 +1,0 @@
-{% extends "base.html" %}
-{% block title %}Ошибка{% endblock %}
-{% block content %}
-<div class="card" style="text-align: center;">
-    <h2>{{ status_code  }}</h2>
-    <p>{{ error|default('Страница не найдена') }}</p>
-</div>
-{% endblock %}

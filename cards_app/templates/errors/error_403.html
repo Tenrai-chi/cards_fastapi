@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Доступ запрещён{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-content">
+        <div class="error-icon">🚫</div>
+        <h1 class="error-code">403</h1>
+        <p class="error-message">
+            {{ error or 'Сорри, у вас нет доступа к этому ресурсу. Попробуйте вернуться на главную или обратитесь к администратору.' }}
+        </p>
+        <div class="error-actions">
+            <a href="{{ url_for('news') }}" class="btn btn-primary">На главную</a>
+            <button onclick="history.back();" class="btn btn-secondary">Вернуться назад</button>
+        </div>
+        <p class="error-hint">Если вы считаете, что это ошибка, свяжитесь с поддержкой 🧑‍💻</p>
+    </div>
+</div>
+
+<style>
+    .error-page {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 60vh;
+        padding: 2rem;
+        text-align: center;
+    }
+    .error-content {
+        max-width: 500px;
+        background: var(--card-bg, #fff);
+        padding: 3rem 2rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    .error-icon {
+        font-size: 4rem;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    .error-code {
+        font-size: 4rem;
+        font-weight: 700;
+        color: var(--primary, #6c5ce7);
+        margin: 0.5rem 0;
+    }
+    .error-message {
+        font-size: 1.2rem;
+        color: var(--text-secondary, #555);
+        margin: 1rem 0 2rem;
+        line-height: 1.6;
+    }
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .btn {
+        padding: 0.7rem 2rem;
+        border: none;
+        border-radius: 30px;
+        font-size: 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s, transform 0.1s;
+        display: inline-block;
+    }
+    .btn-primary {
+        background: var(--primary, #6c5ce7);
+        color: #fff;
+    }
+    .btn-primary:hover {
+        background: var(--primary-dark, #5a4bd1);
+        transform: scale(1.02);
+    }
+    .btn-secondary {
+        background: var(--bg-secondary, #f0f0f0);
+        color: var(--text-primary, #222);
+    }
+    .btn-secondary:hover {
+        background: #e0e0e0;
+    }
+    .error-hint {
+        font-size: 0.9rem;
+        color: var(--text-muted, #999);
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}

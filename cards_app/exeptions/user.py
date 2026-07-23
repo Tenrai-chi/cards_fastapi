@@ -1,4 +1,5 @@
-from .base import AppException
+from cards_app.exeptions.base import AppException
+from cards_app.utils.response_types import ResponseType
 
 
 class UserException(AppException):
@@ -8,14 +9,14 @@ class UserException(AppException):
 
 class UserNotFoundError(UserException):
     """ Исключение, возникающее при попытке получить несуществующего пользователя.
-        Возвращает HTTP статус 404 (Not Found)
+        Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self, user_id: int | None = None):
         """ Формирует сообщение об ошибке в зависимости от наличия user_id """
 
         message = f'Пользователь ID: {user_id} не найден' if user_id else 'Пользователь не найден'
-        super().__init__(message=message, status_code=404)
+        super().__init__(message=message, response_type=ResponseType.NOT_FOUND)
 
 
 class CooldownNotElapsedError(UserException):
@@ -23,7 +24,7 @@ class CooldownNotElapsedError(UserException):
         Принимает готовое сообщение или количество необходимых (недостающих)
         часов для действия
         Если не передан ни один параметр, используется базовое сообщение.
-        Возвращает HTTP статус 400 (Bad Request)
+        Возвращает статус ответа REDIRECT_WITH_ERROR.
      """
 
     def __init__(self, base_message: str | None = None, hours: int | None = None):
@@ -46,7 +47,7 @@ class CooldownNotElapsedError(UserException):
                 message = f'Для данного действия необходимо подождать {hours}'
             else:
                 message = 'Пока что вы не можете сделать это'
-        super().__init__(message=message, status_code=400)
+        super().__init__(message=message, response_type=ResponseType.REDIRECT_WITH_ERROR)
 
 
 class UserFavoriteException(UserException):
@@ -56,48 +57,48 @@ class UserFavoriteException(UserException):
 
 class SelfFavoriteError(UserFavoriteException):
     """ Исключение, возникающее при попытке пользователя добавить в избранное самого себя.
-        Возвращает HTTP статус 400 (Bad Request)
+        Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
 
         message = f'Вы не можете добавить в избранное самого себя'
-        super().__init__(message=message, status_code=400)
+        super().__init__(message=message, response_type=ResponseType.REDIRECT_WITH_ERROR)
 
 
 class SelfFavoriteRemoveError(UserFavoriteException):
     """ Исключение, возникающее при попытке пользователя удалить из избранного самого себя.
-        Возвращает HTTP статус 400 (Bad Request)
+        Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
 
         message = f'Вы не можете удалить из избранного самого себя'
-        super().__init__(message=message, status_code=400)
+        super().__init__(message=message, response_type=ResponseType.REDIRECT_WITH_ERROR)
 
 
 class DuplicateFavoriteError(UserFavoriteException):
     """ Исключение, возникающее при попытке добавить в избранное пользователя,
         который уже присутствует в списке избранных текущего пользователя.
-        Возвращает HTTP статус 400 (Bad Request)
+        Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
 
         message = f'Этот пользователь уже находится в списке избранных'
-        super().__init__(message=message, status_code=400)
+        super().__init__(message=message, response_type=ResponseType.REDIRECT_WITH_ERROR)
 
 
 class FavoriteNotFoundError(UserFavoriteException):
     """ Исключение, возникающее при попытке удалить из избранного пользователя, которого там не было.
-        Возвращает HTTP статус 400 (Bad Request)
+        Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
         """ Формирует сообщение об ошибке """
 
         message = f'Этот пользователь не находится в вашем списке избранных'
-        super().__init__(message=message, status_code=400)
+        super().__init__(message=message, response_type=ResponseType.REDIRECT_WITH_ERROR)

@@ -1,14 +1,16 @@
+from cards_app.utils.response_types import ResponseType
+
+
 class AppException(Exception):
     """ Базовое исключение для всех бизнес-ошибок приложения.
-
         Attributes:
-            message (str): Текст ошибки
-            status_code (int): HTTP-статус, по умолчанию 400
+            message (str): Текст ошибки.
+            response_type (str): статус ответа.
     """
 
-    def __init__(self, message: str, status_code: int = 400):
+    def __init__(self, message: str, response_type: ResponseType):
         """ Инициализирует базовое исключение """
 
         self.message = message
-        self.status_code = status_code
+        self.response_type = response_type
         super().__init__(message)

@@ -13,6 +13,7 @@ from cards_app.types import (ViewNewsUseCaseDict, ViewStartEventUseCaseDict, Get
                              ViewUsersRatingDict)
 from cards_app.use_cases.events import ViewNewsUseCase, ViewStartEventUseCase, GetAwardStartEventUseCase
 from cards_app.use_cases.profile import ViewUsersRatingUseCase
+from cards_app.routers.response_mapping import TEMPLATE_FOR_STATUS
 
 router = APIRouter()
 
@@ -23,6 +24,44 @@ templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
 async def root(request: Request):
     url = request.url_for('news')
     return RedirectResponse(url=url, status_code=303)
+
+
+@router.get(path='/error-{error_code}', name='view_error')
+async def view_error(
+        request: Request,
+        current_user: User | None = Depends(get_current_user_with_profile),
+        error_code: int = 500,
+        error: str = None,
+):
+    """
+    Просмотр страницы с ошибкой при редиректе.
+    Обрабатываются ошибки 401, 403, 404 и 500.
+    Если статус код не является одним из перечисленных, то по умолчанию выводит 500
+    Args:
+        request:
+        current_user:
+        error_code:
+        error:
+
+    Returns:
+
+    """
+
+    current_user_dto = await user_info_to_dto(current_user)
+    context = {'request': request,
+               'current_user': current_user_dto,
+               'error': error,
+               }
+
+    template_name = TEMPLATE_FOR_STATUS.get(error_code, 'errors/error_500.html')
+    status_code = error_code if error_code in TEMPLATE_FOR_STATUS else 500
+
+    return templates.TemplateResponse(
+        request=request,
+        name=template_name,
+        context=context,
+        status_code=status_code
+    )
 
 
 @router.get(path='/news', name='news')

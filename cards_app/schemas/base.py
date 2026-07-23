@@ -1,11 +1,13 @@
 from pydantic import BaseModel
 
+from cards_app.utils.response_types import ResponseType
+
 
 # -------- Общие схемы ответов --------
 class UseCaseResponse(BaseModel):
     """ Базовый ответ любого use case """
 
-    status_code: int
+    response_type: ResponseType
 
 
 class SuccessFlagMixin(BaseModel):

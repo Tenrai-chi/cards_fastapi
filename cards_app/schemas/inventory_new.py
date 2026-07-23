@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from .base import AmuletBase, CardBase
 
 
 class ExpItemsInventoryDTO(BaseModel):
@@ -12,7 +13,7 @@ class ExpItemsInventoryDTO(BaseModel):
     amount: int
 
 
-class AmuletsInventoryDTO(BaseModel):
+class AmuletsInventoryDTO(AmuletBase):
     """ Данные об амулетах в инвентаре пользователя """
 
     # Карта, на которую надет амулет
@@ -21,11 +22,7 @@ class AmuletsInventoryDTO(BaseModel):
     card_rarity_name: str | None
 
     # Амулет
-    id: int
-    name: str
     rarity_name: str
-    bonus_hp: int
-    bonus_damage: int
     image: str
     price_for_sale: int
     upgrades: int
@@ -53,19 +50,13 @@ class FullInventoryDTO(BaseModel):
     max_count_amulets: int | None = None
 
 
-class CardLevelingDTO(BaseModel):
+class CardLevelingDTO(CardBase):
     """ Информация о карте в меню увеличения уровня """
 
-    id: int
-    class_name: str
-    rarity_name: str
-    type_name: str
-    hp: int
-    damage: int
     level: int
     max_level: int
-    current_exp: int  # или float
-    need_exp: int  # или float
+    current_exp: int
+    need_exp: int
 
 
 class FullInfoLevelingDTO(BaseModel):
@@ -75,22 +66,15 @@ class FullInfoLevelingDTO(BaseModel):
     exp_items: list[ExpItemsInventoryDTO]
 
 
-# class CardUpgradingDTO(BaseModel):
-#     """ Информация о карте в меню усиления """
-#
-#     id: int
-#     class_name: str
-#     rarity_name: str
-#     type_name: str
-#     hp: float
-#     damage: float
-#     image: str
-#     enhancement: int
-#     max_enhancement: int
+class CardUpgradingDTO(CardBase):
+    """ Информация о карте в меню усиления """
+
+    enhancement: int
+    max_enhancement: int
 
 
-# class FullInfoUpgradingDTO(BaseModel):
-#     """ Информация для вывода на страницу с усилением карты """
-#
-#     card: CardUpgradingDTO
-#     upgrade_items: list[UpgradeItemsInventoryDTO]
+class FullInfoUpgradingDTO(BaseModel):
+    """ Информация для вывода на страницу с усилением карты """
+
+    card: CardUpgradingDTO
+    upgrade_items: list[UpgradeItemsInventoryDTO]
