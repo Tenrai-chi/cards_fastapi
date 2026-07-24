@@ -61,10 +61,10 @@ class GetFreeCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):
 #     news_dto: NewsDTO | None
 
 
-class ViewStartEventUseCaseDict(BaseUseCaseDict):
-    """ Кастомный словарь для возврата данных из ViewStartEventUseCase """
-
-    start_event_awards_dto: StartEventAwardsDTO | None
+# class ViewStartEventUseCaseDict(BaseUseCaseDict):
+#     """ Кастомный словарь для возврата данных из ViewStartEventUseCase """
+#
+#     start_event_awards_dto: StartEventAwardsDTO | None
 
 
 class GetAwardStartEventUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMessageMixin):

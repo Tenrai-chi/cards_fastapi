@@ -9,11 +9,11 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.models.users import User
 from cards_app.routers.response_mapping import TEMPLATE_FOR_STATUS, get_error_template, RESPONSE_TYPE_TO_HTTP
-from cards_app.schemas.response import ViewNewsUseCaseResponse, ViewUsersRatingResponse
-from cards_app.services.users import user_info_to_dto
-from cards_app.types import (
-    ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
+from cards_app.schemas.response import (
+    ViewNewsUseCaseResponse, ViewUsersRatingResponse, ViewStartEventUseCaseResponse,
+    GetAwardStartEventUseCaseResponse
 )
+from cards_app.services.users import user_info_to_dto
 from cards_app.use_cases.events import ViewUsersRatingUseCase, ViewNewsUseCase, ViewStartEventUseCase, GetAwardStartEventUseCase
 from cards_app.utils.response_types import ResponseType
 
@@ -128,13 +128,30 @@ async def view_news(
 
 
 @router.get(path='/rating', name='rating')
-async def view_rating(request: Request,
-                      session_db: AsyncSession = Depends(get_db_session),
-                      current_user: User | None = Depends(get_current_user_with_profile),
-                      page: int = 1,
-                      size: int = 25
-                      ):
-    """ Просмотр новостей """
+async def view_rating(
+        request: Request,
+        session_db: AsyncSession = Depends(get_db_session),
+        current_user: User | None = Depends(get_current_user_with_profile),
+        page: int = 1,
+        size: int = 25
+) -> Response:
+    """
+    Просмотр таблицы рейтинга.
+    Args:
+        request: объект запроса FastAPI.
+        session_db: сессия базы данных из зависимости.
+        current_user: текущий пользователь из зависимости.
+        page: номер страницы.
+        size: количество элементов на странице, по умолчанию 6.
+
+    Returns:
+        Response: рендеринг страницы при успехе или рендеринг страницы с ошибкой.
+
+    Notes:
+        Возможные типы ответов:
+        - SUCCESS: рендеринг данных.
+        - SERVER_ERROR: рендеринг страницы ошибки.
+    """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewUsersRatingUseCase(session_db)
@@ -168,64 +185,116 @@ async def view_rating(request: Request,
         )
 
 
-
 @router.get(path='/start_event', name='start_event_page')
-async def view_start_event(request: Request,
-                           session_db: AsyncSession = Depends(get_db_session),
-                           current_user: User | None = Depends(get_current_user_with_profile),
-                           error: str = None,
-                           success: str = None
-                           ):
-    """ Просмотр страницы стартового события """
+async def view_start_event(
+        request: Request,
+        session_db: AsyncSession = Depends(get_db_session),
+        current_user: User | None = Depends(get_current_user_with_profile),
+        error: str = None,
+        success: str = None
+) -> Response:
+    """
+    Просмотр страницы стартового события.
+    Args:
+        request: объект запроса FastAPI.
+        session_db: сессия базы данных из зависимости.
+        current_user: текущий пользователь из зависимости.
+        error: сообщение об ошибке из query-параметра.
+        success: сообщение об успехе из query-параметра.
+
+    Returns:
+        Response: рендеринг страницы при успехе или рендеринг страницы с ошибкой.
+
+    Notes:
+        Возможные типы ответов:
+        - SUCCESS: рендеринг данных.
+        - SERVER_ERROR: рендеринг страницы ошибки.
+    """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewStartEventUseCase(session_db)
-    data: ViewStartEventUseCaseDict = await use_case.execute(current_user=current_user)
-    context = {'request': request,
-               'current_user': current_user_dto,
-               'awards': data.get('start_event_awards_dto'),
-               'error_message': error,
-               'success_message': success
-               }
-    return templates.TemplateResponse(request=request,
-                                      name='home/home_start_event.html',
-                                      context=context,
-                                      status_code=data.get('status_code'))
+    data: ViewStartEventUseCaseResponse = await use_case.execute(current_user=current_user)
+    if data.response_type == ResponseType.SUCCESS:
+        context = {
+            'request': request,
+            'current_user': current_user_dto,
+            'awards': data.start_event_awards,
+            'error_message': error,
+            'success_message': success
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name='home/home_start_event.html',
+            context=context,
+            status_code=200
+        )
+    else:
+        status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
+        template_name = get_error_template(status_code)
+        context = {
+            'error': data.error_message,
+            'error_code': status_code,
+            'current_user': current_user_dto
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name=template_name,
+            context=context,
+            status_code=status_code
+        )
 
 
 @router.post(path='/start_event', name='get_award_start_event')
-async def get_award_start_event(request: Request,
-                                session_db: AsyncSession = Depends(get_db_session),
-                                current_user_id: int | None = Depends(get_current_user_id),
-                                ):
-    """ Получение награды стартового события """
+async def get_award_start_event(
+        request: Request,
+        session_db: AsyncSession = Depends(get_db_session),
+        current_user_id: int | None = Depends(get_current_user_id),
+) -> Response:
+    """
+    Получение награды стартового события/
+    Args:
+        request: объект запроса FastAPI.
+        session_db: сессия базы данных из зависимости.
+        current_user_id: ID текущего пользователя из зависимости.
+
+    Returns:
+        Response: редирект на страницу с стартовым событием, либо на просмотр новой карты,
+        либо на страницу ошибки.
+
+    Notes:
+        Возможные типы ответов:
+        - REDIRECT_WITH_INFO: редирект к обновленным данным.
+        - REDIRECT_WITH_ERROR: редирект на страницу получения карты с ошибкой,
+        - UNAUTHORIZED и SERVER_ERROR редирект на страницу с ошибкой.
+    """
 
     use_case = GetAwardStartEventUseCase(session_db)
-    data: GetAwardStartEventUseCaseDict = await use_case.execute(current_user_id=current_user_id)
-    if data.get('new_card_id'):
-        url = request.url_for('view_card', card_id=data.get('new_card_id'))
-        return RedirectResponse(url, status_code=data.get('status_code'))
+    data: GetAwardStartEventUseCaseResponse = await use_case.execute(current_user_id=current_user_id)
+    if data.response_type == ResponseType.REDIRECT_WITH_INFO:
+        if data.new_card_id:
+            success_msg = data.success_message
+            encoded_success = quote(success_msg)
+            url = request.url_for('view_card', card_id=data.new_card_id)
+            full_url = f'{url}?success={encoded_success}'
+            return RedirectResponse(full_url, status_code=303)
+        else:
+            success_msg = data.success_message
+            encoded_success = quote(success_msg)
+            url = request.url_for('start_event_page')
+            full_url = f'{url}?success={encoded_success}'
+            return RedirectResponse(full_url, status_code=303)
 
-    elif data.get('status_code') == 303:
-        success_msg = data['success_message']
-        encoded_success = quote(success_msg)
+    elif data.response_type == ResponseType.REDIRECT_WITH_ERROR:
+        error_msg = data.error_message
+        encoded_success = quote(error_msg)
         url = request.url_for('start_event_page')
-        full_url = f'{url}?success={encoded_success}'
+        full_url = f'{url}?error={encoded_success}'
         return RedirectResponse(full_url, status_code=303)
 
-    elif data.get('status_code') == 400:
-        error_msg = data['error_message']
+    else:
+        error_msg = data.error_message
         encoded_error = quote(error_msg)
-        url = request.url_for('start_event_page')
+        status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
+        url = request.url_for('view_error', error_code=status_code)
         full_url = f'{url}?error={encoded_error}'
         return RedirectResponse(full_url, status_code=303)
-
-    elif data.get('status_code') == 500:
-        context = {'error': data.get('error_message'),
-                   'status_code': data.get('status_code'),
-                   'current_user': data.get('current_user_dto')}
-        return templates.TemplateResponse(request=request,
-                                          name='errors/error_page.html',
-                                          context=context,
-                                          status_code=data.get('status_code')
-                                          )

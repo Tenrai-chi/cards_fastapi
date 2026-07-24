@@ -343,12 +343,49 @@ class ViewUserCardsUseCase:
 
         try:
             owner: User = await get_base_info_profile(session_db=self.session_db, user_id=user_id)
+
+            user_cards: list = await get_all_cards_user(
+                session_db=self.session_db,
+                owner_id=owner.profile.id,
+                with_details=True)
+            user_cards_dto = UserCardsDTO(
+                cards=[
+                    CardDTO(
+                        id=card.id,
+                        class_card_name=card.class_card.name,
+                        rarity_card_name=card.rarity_card.name,
+                        type_card_name=card.type_card.name,
+                        class_card_pic=card.class_card.image,
+                        hp=card.hp,
+                        damage=card.damage,
+                        level=card.level,
+                        max_level=card.rarity_card.max_level,
+                        merger=card.merger,
+                        max_merger=card.max_merger,
+                        enhancement=card.enhancement,
+                        max_enhancement=card.max_enhancement,
+                        sale_status=card.sale_status,
+                        price=card.price,
+                    )
+                    for card in user_cards
+                ],
+                owner_id=owner.id,
+                owner_username=owner.username,
+                owner_current_card_id=owner.profile.current_card_id
+            )
+            return ViewUserCardsUseResponse(
+                response_type=ResponseType.SUCCESS,
+                error_message=None,
+                user_cards=user_cards_dto
+            )
+
         except UserNotFoundError as error:
             return ViewUserCardsUseResponse(
                 response_type=ResponseType.NOT_FOUND,
                 error_message=str(error),
                 user_cards=None
             )
+
         except Exception as error:
             logger.error(f'Непредвиденная ошибка в ViewUserCardsUseCase: {error}', exc_info=True)
             return ViewUserCardsUseResponse(
@@ -356,41 +393,6 @@ class ViewUserCardsUseCase:
                 error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
                 user_cards=None
             )
-
-        user_cards: list = await get_all_cards_user(
-            session_db=self.session_db,
-            owner_id=owner.profile.id,
-            with_details=True)
-        user_cards_dto = UserCardsDTO(
-            cards=[
-                CardDTO(
-                    id=card.id,
-                    class_card_name=card.class_card.name,
-                    rarity_card_name=card.rarity_card.name,
-                    type_card_name=card.type_card.name,
-                    class_card_pic=card.class_card.image,
-                    hp=card.hp,
-                    damage=card.damage,
-                    level=card.level,
-                    max_level=card.rarity_card.max_level,
-                    merger=card.merger,
-                    max_merger=card.max_merger,
-                    enhancement=card.enhancement,
-                    max_enhancement=card.max_enhancement,
-                    sale_status=card.sale_status,
-                    price=card.price,
-                )
-                for card in user_cards
-            ],
-            owner_id=owner.id,
-            owner_username=owner.username,
-            owner_current_card_id=owner.profile.current_card_id
-        )
-        return ViewUserCardsUseResponse(
-            response_type=ResponseType.SUCCESS,
-            error_message=None,
-            user_cards=user_cards_dto
-        )
 
 
 class ViewTradingUseCase:

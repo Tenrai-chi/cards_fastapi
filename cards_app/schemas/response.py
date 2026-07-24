@@ -3,6 +3,7 @@ from cards_app.schemas.cards import CardInfoDTO, GetFreeCardDTO, UserCardsDTO, C
 from cards_app.schemas.inventory_new import FullInfoUpgradingDTO
 from cards_app.schemas.news import NewsDTO
 from cards_app.schemas.profile import RatingTableDTO
+from cards_app.schemas.start_event import StartEventAwardsDTO
 
 
 # -------- Cards --------
@@ -67,4 +68,18 @@ class ViewUsersRatingResponse(UseCaseResponse):
     """ Ответ на запрос получения таблицы рейтинга """
 
     rating: RatingTableDTO | None
+
+
+class ViewStartEventUseCaseResponse(UseCaseResponse):
+    """ Ответ на запрос страницы стартового события """
+
+    start_event_awards: StartEventAwardsDTO | None
+
+
+class GetAwardStartEventUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessageMixin):
+    """ Ответ на запрос получения награды в стартовом событии """
+
+    new_card_id: int | None
+
+
 
