@@ -7,17 +7,17 @@ from cards_app.schemas.base import AmuletBase
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
                                         get_user_fight_history, is_favorite, add_user_to_favorite,
                                         remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user,
-                                        get_rating_users, get_total_users_count, get_user_transactions)
+                                        get_user_transactions)
 from cards_app.services.cards import get_card_with_details
 from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, GuildDTO,
                                        CardDTO, FightHistoryRecordDTO, CardBriefDTO, FavoriteUserDTO,
-                                       FavoriteUsersPageDTO, UserRatingTableDTO, RatingTableDTO, TransactionsDTO,
+                                       FavoriteUsersPageDTO, TransactionsDTO,
                                        RecordTransaction)
 from cards_app.models.users import User
 from cards_app.exeptions import UserNotFoundError, NotEnoughSlotsError
 from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
 from cards_app.types import (ViewProfileUseCaseDict, AddFavoriteUserUseCaseDict, RemoveFavoriteUserUseCaseDict,
-                             FavoriteUsersUseCaseDict, ViewUsersRatingDict, UserTransactionsUseCaseDict)
+                             FavoriteUsersUseCaseDict, UserTransactionsUseCaseDict)
 
 logger = logging.getLogger(__name__)
 
@@ -409,47 +409,47 @@ class FavoriteUsersUseCase:
         return answer_data
 
 
-class ViewUsersRatingUseCase:
-    """ Use Case для просмотра таблицы рейтинга """
-
-    def __init__(self, session_db: AsyncSession):
-        self.session_db = session_db
-
-    async def execute(self, page: int, size: int
-                      ) -> ViewUsersRatingDict:
-        """ Выполняет получение новостей и формирует DTO для отображения.
-            Args:
-                page: номер страницы (начиная с 1).
-                size: количество новостей на странице.
-            Returns:
-                ViewUsersRatingDict:
-                    - rating_dto (RatingTableDTO | None): DTO с пользователя и пагинацией.
-                    - status_code (int):  HTTP статус-код всегда 200
-        """
-
-        answer_data = {'rating_dto': None,
-                       'status_code': None}
-
-        offset = (page - 1) * size
-        users_models = await get_rating_users(session_db=self.session_db, limit=size, offset=offset)
-
-        total = await get_total_users_count(self.session_db)
-        total_pages = (total + size - 1) // size
-
-        user_record = [UserRatingTableDTO(id=user.id,
-                                          username=user.username,
-                                          rating=user.profile.rating)
-                       for user in users_models
-                       ]
-
-        rating_dto = RatingTableDTO(user_rating=user_record,
-                                    total=total,
-                                    page=page,
-                                    size=size,
-                                    total_pages=total_pages)
-        answer_data['rating_dto'] = rating_dto
-        answer_data['status_code'] = 200
-        return answer_data
+# class ViewUsersRatingUseCase:
+#     """ Use Case для просмотра таблицы рейтинга """
+#
+#     def __init__(self, session_db: AsyncSession):
+#         self.session_db = session_db
+#
+#     async def execute(self, page: int, size: int
+#                       ) -> ViewUsersRatingDict:
+#         """ Выполняет получение новостей и формирует DTO для отображения.
+#             Args:
+#                 page: номер страницы (начиная с 1).
+#                 size: количество новостей на странице.
+#             Returns:
+#                 ViewUsersRatingDict:
+#                     - rating_dto (RatingTableDTO | None): DTO с пользователя и пагинацией.
+#                     - status_code (int):  HTTP статус-код всегда 200
+#         """
+#
+#         answer_data = {'rating_dto': None,
+#                        'status_code': None}
+#
+#         offset = (page - 1) * size
+#         users_models = await get_rating_users(session_db=self.session_db, limit=size, offset=offset)
+#
+#         total = await get_total_users_count(self.session_db)
+#         total_pages = (total + size - 1) // size
+#
+#         user_record = [UserRatingTableDTO(id=user.id,
+#                                           username=user.username,
+#                                           rating=user.profile.rating)
+#                        for user in users_models
+#                        ]
+#
+#         rating_dto = RatingTableDTO(user_rating=user_record,
+#                                     total=total,
+#                                     page=page,
+#                                     size=size,
+#                                     total_pages=total_pages)
+#         answer_data['rating_dto'] = rating_dto
+#         answer_data['status_code'] = 200
+#         return answer_data
 
 
 class UserTransactionsUseCase:

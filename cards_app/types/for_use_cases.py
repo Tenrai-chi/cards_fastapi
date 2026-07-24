@@ -55,10 +55,10 @@ class GetFreeCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):
     new_card_id: int | None
 
 
-class ViewNewsUseCaseDict(BaseUseCaseDict):
-    """ Кастомный словарь для возврата данных из ViewNewsUseCase """
-
-    news_dto: NewsDTO | None
+# class ViewNewsUseCaseDict(BaseUseCaseDict):
+#     """ Кастомный словарь для возврата данных из ViewNewsUseCase """
+#
+#     news_dto: NewsDTO | None
 
 
 class ViewStartEventUseCaseDict(BaseUseCaseDict):
@@ -111,10 +111,10 @@ class ProcessFightUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
     fight_dto: FightDTO | None
 
 
-class ViewUsersRatingDict(BaseUseCaseDict):
-    """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
-
-    rating_dto: RatingTableDTO
+# class ViewUsersRatingDict(BaseUseCaseDict):
+#     """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
+#
+#     rating_dto: RatingTableDTO
 
 
 class ViewItemStoreUseCaseDict(BaseUseCaseDict, ErrorMixin):

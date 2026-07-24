@@ -3,7 +3,8 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import NotEnoughSlotsError
-from cards_app.schemas.response import ViewNewsUseCaseResponse
+from cards_app.schemas.profile import UserRatingTableDTO, RatingTableDTO
+from cards_app.schemas.response import ViewNewsUseCaseResponse, ViewUsersRatingResponse
 from cards_app.services.cards import generate_card_start_event, create_record_in_history_receiving_card
 from cards_app.services.events import (get_total_news_count, get_paginated_news, get_info_start_event_awards,
                                        get_info_award, update_profile_event_award_received)
@@ -11,11 +12,12 @@ from cards_app.schemas.news import NewsRecordDTO, NewsDTO
 from cards_app.schemas.start_event import StartEventAwardDTO, StartEventAwardsDTO
 from cards_app.services.store import get_book_by_name, get_amulet_by_name
 from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
-from cards_app.types import ViewNewsUseCaseDict, ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
+from cards_app.types import ViewStartEventUseCaseDict, GetAwardStartEventUseCaseDict
 from cards_app.models import User
 from cards_app.services.inventory import add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch
 from cards_app.services.events import can_get_start_event_award
-from cards_app.services.profile import check_can_user_receive_card, add_user_gold, create_transaction
+from cards_app.services.profile import check_can_user_receive_card, add_user_gold, create_transaction, get_rating_users, \
+    get_total_users_count
 from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
@@ -78,6 +80,61 @@ class ViewNewsUseCase:
             )
 
 
+class ViewUsersRatingUseCase:
+    """ Use Case для просмотра таблицы рейтинга """
+
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def execute(self, page: int, size: int) -> ViewUsersRatingResponse:
+        """
+        Выполняет получение рейтинговой таблицы.
+        Args:
+            page: номер страницы (начиная с 1).
+            size: количество участников рейтинга на странице.
+        Returns:
+            ViewUsersRatingResponse:
+                - rating (RatingTableDTO | None): DTO с пользователя и пагинацией.
+                - response_type (str): статус ответа.
+        Note:
+           - SUCCESS: успешное получение данных.
+           - SERVER_ERROR: любая непредвиденная ошибка.
+        """
+
+        try:
+            offset = (page - 1) * size
+            users_models = await get_rating_users(session_db=self.session_db, limit=size, offset=offset)
+
+            total = await get_total_users_count(self.session_db)
+            total_pages = (total + size - 1) // size
+
+            user_record = [UserRatingTableDTO(
+                id=user.id,
+                username=user.username,
+                rating=user.profile.rating
+            )
+                for user in users_models
+            ]
+
+            rating_dto = RatingTableDTO(
+                user_rating=user_record,
+                total=total,
+                page=page,
+                size=size,
+                total_pages=total_pages
+            )
+
+            return ViewUsersRatingResponse(
+                response_type=ResponseType.SUCCESS,
+                rating=rating_dto
+            )
+        except Exception:
+            return ViewUsersRatingResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                rating=None
+            )
+
+
 class ViewStartEventUseCase:
     """ Use case для просмотра страницы стартового события.
         Доступен только для авторизованных пользователей?
@@ -86,8 +143,7 @@ class ViewStartEventUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None
-                      ) -> ViewStartEventUseCaseDict:
+    async def execute(self, current_user: User | None) -> ViewStartEventUseCaseDict:
         """ Выполняет получение списка наград стартового события и формирует DTO для отображения.
             Args:
                 current_user: User + Profile текущего пользователя

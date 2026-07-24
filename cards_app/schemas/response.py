@@ -2,6 +2,7 @@ from cards_app.schemas.base import UseCaseResponse, ErrorMessageMixin, CurrentUs
 from cards_app.schemas.cards import CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
 from cards_app.schemas.inventory_new import FullInfoUpgradingDTO
 from cards_app.schemas.news import NewsDTO
+from cards_app.schemas.profile import RatingTableDTO
 
 
 # -------- Cards --------
@@ -42,7 +43,7 @@ class ViewMergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
 
 
 class MergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin):
-    """ Ответ на попытку слить карты. Пустой, потому что все данные наследуются из миксин. """
+    """ Ответ на запрос слить карты. Пустой, потому что все данные наследуются из миксин. """
 
 
 class ViewUpgradeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
@@ -52,11 +53,18 @@ class ViewUpgradeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
 
 
 class UpgradeUseCaseResponse(UseCaseResponse, CurrentUserMixin, SuccessMessageMixin, ErrorMessageMixin):
-    """ Ответ на попытку усилить карту с помощью предметов усиления """
+    """ Ответ на запрос усилить карту с помощью предметов усиления """
 
 
 # -------- Events --------
 class ViewNewsUseCaseResponse(UseCaseResponse):
-    """ Ответ на попытку получить новости сайта """
+    """ Ответ на запрос получить новости сайта """
 
     news: NewsDTO | None
+
+
+class ViewUsersRatingResponse(UseCaseResponse):
+    """ Ответ на запрос получения таблицы рейтинга """
+
+    rating: RatingTableDTO | None
+
