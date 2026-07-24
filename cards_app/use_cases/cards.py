@@ -8,11 +8,10 @@ from cards_app.schemas.inventory_new import FullInfoUpgradingDTO, CardUpgradingD
 from cards_app.schemas.response import (
     ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
     GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,
-    MergeUseCaseResponse, ViewUpgradeUseCaseResponse
+    MergeUseCaseResponse, ViewUpgradeUseCaseResponse, UpgradeUseCaseResponse
 )
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
-from cards_app.types import (UpgradeUseCaseDict)
 from cards_app.exeptions import (NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
                                  TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
                                  InsufficientFundsUserError, MaxUpgradeCardError, UserNotFoundError)
@@ -456,10 +455,11 @@ class ViewMergeUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_card_id: int,
-                      current_user: User | None
-                      ) -> ViewMergeUseCaseResponse:
+    async def execute(
+            self,
+            current_card_id: int,
+            current_user: User | None
+    ) -> ViewMergeUseCaseResponse:
         """
         Выполняет получение карт для слияния.
         Args:
@@ -565,11 +565,12 @@ class MergeUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_card_id: int,
-                      current_user_id: int | None,
-                      cards_for_merge: list[int]
-                      ) -> MergeUseCaseResponse:
+    async def execute(
+            self,
+            current_card_id: int,
+            current_user_id: int | None,
+            cards_for_merge: list[int]
+    ) -> MergeUseCaseResponse:
         """
         Выполняет процесс слияния карты. В зависимости от количества слитых (удаленных) карт
         повышается уровень слияния.
@@ -659,26 +660,28 @@ class ViewUpgradeUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_card_id: int,
-                      current_user: User | None
-                      ) -> ViewUpgradeUseCaseResponse:
-        """ Выполняет получение карты и формирует DTO для отображения.
-               Args:
-                   current_user: User + Profile текущего пользователя
-                   current_card_id: ID текущей карты
-               Returns:
-                   ViewUpgradeUseCaseResponse:
-                       - upgrade_info (FullInfoUpgradingDTO | None): DTO с информацией для усиления карты
-                       - response_type (str): статус ответа.
-                       - error_message (str): сообщение об ошибке
-               Note:
-                   - SUCCESS: успешное получение данных.
-                   - UNAUTHORIZED: пользователь не авторизован
-                   - FORBIDDEN: нет прав.
-                   - NOT_FOUND: карта не найдена
-                   - SERVER_ERROR: любая другая непредвиденная ошибка.
-               """
+    async def execute(
+            self,
+            current_card_id: int,
+            current_user: User | None
+    ) -> ViewUpgradeUseCaseResponse:
+        """
+        Выполняет получение карты и формирует DTO для отображения.
+        Args:
+           current_user: User + Profile текущего пользователя
+           current_card_id: ID текущей карты
+        Returns:
+           ViewUpgradeUseCaseResponse:
+               - upgrade_info (FullInfoUpgradingDTO | None): DTO с информацией для усиления карты
+               - response_type (str): статус ответа.
+               - error_message (str): сообщение об ошибке
+        Note:
+           - SUCCESS: успешное получение данных.
+           - UNAUTHORIZED: пользователь не авторизован
+           - FORBIDDEN: нет прав.
+           - NOT_FOUND: карта не найдена
+           - SERVER_ERROR: любая другая непредвиденная ошибка.
+        """
 
         if current_user is None:
             logger.warning(f'Для просмотра меню усиления карт, вы должны быть авторизованы')
@@ -759,90 +762,100 @@ class UpgradeUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_card_id: int,
-                      current_user_id: int | None,
-                      upgrade_item_id: int
-                      ) -> UpgradeUseCaseDict:
-        """ Улучшение карты с помощью предмета усиления
-               Args:
-                   current_user_id: ID User текущего пользователя
-                   current_card_id: ID текущей карты
-                   upgrade_item_id: ID предмета усиления в инвентаре
-               Returns:
-                   UpgradeUseCaseDict:
-                       - status_code (int): HTTP статус-код.
-                       - error_message (str | None): сообщение об ошибке
-                       - success (bool): флаг о успехе
-                       - success_message (str | NOne): сообщение об успехе
-                       - current_user_dto (CurrentUserForMenuDTO | None):  DTO текущего пользователя
-               Note:
-                   - 303: успешное получение данных.
-                   - 400: нет прав или пользователь не авторизован или не хватает предметов
-                   - 404: карта не найдена
-                   - 500: любая другая непредвиденная ошибка.
-               """
-
-        answer_data = {'status_code': None,
-                       'error_message': None,
-                       'success': None,
-                       'success_message': None,
-                       'current_user_dto': None}
+    async def execute(
+            self,
+            current_card_id: int,
+            current_user_id: int | None,
+            upgrade_item_id: int
+    ) -> UpgradeUseCaseResponse:
+        """
+        Улучшение карты с помощью предмета усиления
+        Args:
+           current_user_id: ID User текущего пользователя
+           current_card_id: ID текущей карты
+           upgrade_item_id: ID предмета усиления в инвентаре
+        Returns:
+           UpgradeUseCaseResponse:
+               - response_type (str): статус ответа.
+               - error_message (str | None): сообщение об ошибке
+               - success (bool): флаг о успехе
+               - success_message (str | NOne): сообщение об успехе
+               - current_user_dto (CurrentUserForMenuDTO | None):  DTO текущего пользователя
+        Note:
+        - REDIRECT_WITH_INFO: успешное получение данных.
+        - UNAUTHORIZED: не авторизован.
+        - FORBIDDEN: нет прав.
+        - REDIRECT_WITH_ERROR: не хватает ресурсов.
+        - NOT_FOUND: карта или предмет не найден.
+        - SERVER_ERROR: любая другая непредвиденная ошибка.
+        """
 
         if current_user_id is None:
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
-            answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя усилить карту')
-            return answer_data
-
+            return UpgradeUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для усиления карты вы должны быть авторизованы',
+                success_message=None,
+                current_user=None
+            )
+        await get_profile_for_update(session_db=self.session_db,
+                                     user_id=current_user_id)
+        # current_user получит профиль из сессии при запросе (используется для создания DTO)
+        current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя усилить карту')
+            return UpgradeUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для усиления карты вы должны быть авторизованы',
+                success_message=None,
+                current_user=None
+            )
+        else:
+            current_user_dto = await user_info_to_dto(user=current_user)
         try:
-            # Блокирует профиль, чтобы избежать гонок
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
-
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для усиления карты вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя усилить карту')
-                return answer_data
-
-            price: int = await upgrade_card(session_db=self.session_db,
-                                            card_id=current_card_id,
-                                            upgrade_item_id=upgrade_item_id,
-                                            user=current_user)
-            for_transaction: dict = await charge_user_gold(session_db=self.session_db,
-                                                           current_user=current_user,
-                                                           need_gold=price)
-            await create_transaction(session_db=self.session_db,
-                                     gold_before=for_transaction['gold_before'],
-                                     gold_after=for_transaction['gold_after'],
-                                     user_profile_id=current_user.profile.id,
-                                     comment='Усиление карты')
+            price: int = await upgrade_card(
+                session_db=self.session_db,
+                card_id=current_card_id,
+                upgrade_item_id=upgrade_item_id,
+                user=current_user
+            )
+            for_transaction: dict = await charge_user_gold(
+                session_db=self.session_db,
+                current_user=current_user,
+                need_gold=price
+            )
+            await create_transaction(
+                session_db=self.session_db,
+                gold_before=for_transaction['gold_before'],
+                gold_after=for_transaction['gold_after'],
+                user_profile_id=current_user.profile.id,
+                comment='Усиление карты'
+            )
 
             await self.session_db.commit()
-            answer_data['success'] = True
-            answer_data['status_code'] = 303
-            answer_data['success_message'] = f'Вы успешно улучшили карту'
+            return UpgradeUseCaseResponse(
+                response_type=ResponseType.REDIRECT_WITH_INFO,
+                error_message=None,
+                success_message=f'Вы успешно улучшили карту',
+                current_user=current_user_dto
+            )
 
         except (NotEnoughUpgradeItemsError, NotCardOwnerError, CardNotFoundError,
                 MaxUpgradeCardError, InsufficientFundsUserError) as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return UpgradeUseCaseResponse(
+                response_type=error.response_type,
+                error_message=str(error),
+                success_message=None,
+                current_user=current_user_dto
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в UpgradeUseCase: {error}', exc_info=True)
-
-        return answer_data
+            return UpgradeUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=str(error),
+                success_message=None,
+                current_user=current_user_dto
+            )

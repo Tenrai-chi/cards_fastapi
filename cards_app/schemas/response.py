@@ -49,4 +49,8 @@ class ViewUpgradeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
 
     upgrade_info: FullInfoUpgradingDTO | None
 
+
+class UpgradeUseCaseResponse(UseCaseResponse, CurrentUserMixin, SuccessMessageMixin, ErrorMessageMixin):
+    """ Ответ на попытку усилить карту с помощью предметов усиления """
+
 # -------- Events --------

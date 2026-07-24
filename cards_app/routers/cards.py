@@ -1,28 +1,27 @@
 import json
-from json import JSONDecodeError
 
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
+from json import JSONDecodeError
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import quote
 
-from cards_app.utils.response_types import ResponseType
 from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.schemas.response import (
-    ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
-    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,
-    MergeUseCaseResponse, ViewUpgradeUseCaseResponse
+    ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse, GetFreeCardUseCaseResponse,
+    ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,
+    MergeUseCaseResponse, ViewUpgradeUseCaseResponse, UpgradeUseCaseResponse
 )
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import (UpgradeUseCaseDict)
 from cards_app.use_cases.cards import (
     ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase,
     ViewUserCardsUseCase, ViewTradingUseCase, ViewMergeUseCase,
     MergeUseCase, ViewUpgradeUseCase, UpgradeUseCase
 )
+from cards_app.utils.response_types import ResponseType
 from cards_app.routers.response_mapping import RESPONSE_TYPE_TO_HTTP, get_error_template
 
 from cards_app.models.users import User
@@ -63,6 +62,7 @@ async def view_card(
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewCardUseCase(session_db)
     data: ViewCardUseCaseResponse = await use_case.execute(card_id, current_user)
+
     if data.response_type == ResponseType.SUCCESS:
         context = {
             'request': request,
@@ -81,7 +81,6 @@ async def view_card(
     else:
         status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
         template_name = get_error_template(status_code)
-
         context = {
             'error': data.error_message,
             'error_code': status_code,
@@ -228,6 +227,7 @@ async def view_user_cards(
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewUserCardsUseCase(session_db)
     data: ViewUserCardsUseResponse = await use_case.execute(user_id)
+
     if data.response_type == ResponseType.SUCCESS:
         context = {
             'request': request,
@@ -244,7 +244,6 @@ async def view_user_cards(
     else:
         status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
         template_name = get_error_template(status_code)
-
         context = {
             'error': data.error_message,
             'error_code': status_code,
@@ -287,6 +286,7 @@ async def view_trading(
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewTradingUseCase(session_db)
     data: ViewTradingUseCaseResponse = await use_case.execute()
+
     if data.response_type == ResponseType.SUCCESS:
         context = {
             'request': request,
@@ -306,7 +306,6 @@ async def view_trading(
     else:
         status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
         template_name = get_error_template(status_code)
-
         context = {
             'error': data.error_message,
             'error_code': status_code,
@@ -355,6 +354,7 @@ async def view_merge_card(
         current_card_id=card_id,
         current_user=current_user
     )
+
     if data.response_type == ResponseType.SUCCESS:
         context = {
             'request': request,
@@ -466,7 +466,6 @@ async def view_upgrade_card(
     Notes:
         Могут быть получены следующие статус коды:
         - SUCCESS: рендеринг информации при успехе.
-        - 400: рендеринг страницы с ошибкой.
         - FORBIDDEN, UNAUTHORIZED, NOT_FOUND или SERVER_ERROR: редирект на страницу с ошибкой.
     """
 
@@ -500,37 +499,56 @@ async def view_upgrade_card(
 
 
 @router.post(path='/card-{card_id}/upgrade-{upgrade_id}', name='upgrade_card')
-async def upgrade_card(request: Request,
-                       card_id: int,
-                       upgrade_id: int,
-                       session_db: AsyncSession = Depends(get_db_session),
-                       current_user_id: int | None = Depends(get_current_user_id)):
-    """ Обработка запроса на повышение уровня карты """
+async def upgrade_card(
+        request: Request,
+        card_id: int,
+        upgrade_id: int,
+        session_db: AsyncSession = Depends(get_db_session),
+        current_user_id: int | None = Depends(get_current_user_id)
+) -> Response:
+    """
+    Обработка запроса на улучшение карты с помощью предмета усиления.
+    Args:
+        request: объект запроса FastAPI.
+        card_id: ID карты для повышения уровня усиления.
+        upgrade_id: ID предмета усиления.
+        session_db: сессия базы данных из зависимости.
+        current_user_id: ID текущего пользователя из зависимости.
+
+    Returns:
+        Response: рендеринг страницы с картой, либо рендеринг страницы с ошибкой.
+
+    Notes:
+        Могут быть получены следующие статус коды:
+        - SUCCESS: редирект на страницу просмотра карты.
+        - REDIRECT_WITH_ERROR: редирект на страницу просмотра карты с ошибкой.
+        - FORBIDDEN, UNAUTHORIZED, NOT_FOUND или SERVER_ERROR: редирект на страницу с ошибкой.
+    """
 
     use_case = UpgradeUseCase(session_db=session_db)
-    data: UpgradeUseCaseDict = await use_case.execute(current_user_id=current_user_id,
-                                                      current_card_id=card_id,
-                                                      upgrade_item_id=upgrade_id
-                                                      )
-    if data.get('success') is True:
-        success_msg = data.get('success_message')
+    data: UpgradeUseCaseResponse = await use_case.execute(
+        current_user_id=current_user_id,
+        current_card_id=card_id,
+        upgrade_item_id=upgrade_id
+    )
+    if data.response_type == ResponseType.REDIRECT_WITH_INFO:
+        success_msg = data.success_message
         encoded_success = quote(success_msg)
         url = request.url_for('view_upgrade_card', card_id=card_id)
         full_url = f'{url}?success={encoded_success}'
-        return RedirectResponse(full_url, status_code=data.get('status_code'))
+        return RedirectResponse(full_url, status_code=303)
+
+    elif data.response_type == ResponseType.REDIRECT_WITH_ERROR:
+        error_msg = data.success_message
+        encoded_error = quote(error_msg)
+        url = request.url_for('view_upgrade_card', card_id=card_id)
+        full_url = f'{url}?error={encoded_error}'
+        return RedirectResponse(full_url, status_code=303)
+
     else:
-        if data.get('status_code') in (404, 500):
-            context = {'error': data.get('error_message'),
-                       'status_code': data.get('status_code'),
-                       'current_user': data.get('current_user_dto')}
-            return templates.TemplateResponse(request=request,
-                                              name='errors/error_page.html',
-                                              context=context,
-                                              status_code=data.get('status_code')
-                                              )
-        else:
-            error_msg = data['error_message']
-            encoded_error = quote(error_msg)
-            url = request.url_for('view_upgrade_card', card_id=card_id)
-            full_url = f'{url}?error={encoded_error}'
-            return RedirectResponse(full_url, status_code=303)
+        error_msg = data.error_message
+        encoded_error = quote(error_msg)
+        status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
+        url = request.url_for('view_error', error_code=status_code)
+        full_url = f'{url}?error={encoded_error}'
+        return RedirectResponse(full_url, status_code=303)

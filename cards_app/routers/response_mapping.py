@@ -1,9 +1,14 @@
 from cards_app.utils.response_types import ResponseType
 
 RESPONSE_TYPE_TO_HTTP = {
+    # рендеринг при GET запросах
     ResponseType.SUCCESS: 200,
+
+    # редирект при POST запросах
     ResponseType.REDIRECT_WITH_INFO: 303,
     ResponseType.REDIRECT_WITH_ERROR: 303,
+
+    # рендеринг при GET, редирект при POST
     ResponseType.BAD_REQUEST: 400,
     ResponseType.UNAUTHORIZED: 401,
     ResponseType.FORBIDDEN: 403,

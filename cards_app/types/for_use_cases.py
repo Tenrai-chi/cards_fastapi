@@ -173,8 +173,8 @@ class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, S
 #     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 
-class UpgradeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
-    """ Кастомный словарь для возврата данных из MergeUseCase """
+# class UpgradeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
+#     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 
 class BuyBoxUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
