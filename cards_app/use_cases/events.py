@@ -367,7 +367,7 @@ class GetAwardStartEventUseCase:
             logger.error(f'Непредвиденная ошибка в GetAwardStartEventUseCase: {error}', exc_info=True)
             return GetAwardStartEventUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
-                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                error_message=None,
                 success_message=None,
                 new_card_id=None
             )

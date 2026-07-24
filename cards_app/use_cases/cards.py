@@ -74,7 +74,7 @@ class ViewCardUseCase:
             logger.error(f'Непредвиденная ошибка в ViewCardUseCase: {error}', exc_info=True)
             return ViewCardUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
-                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                error_message=None,
                 card_info=None
             )
 
@@ -313,7 +313,7 @@ class GetFreeCardUseCase:
                 success=False,
                 new_card_id=None,
                 current_user=current_user_dto,
-                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
+                error_message=None
             )
 
 
@@ -391,7 +391,7 @@ class ViewUserCardsUseCase:
             logger.error(f'Непредвиденная ошибка в ViewUserCardsUseCase: {error}', exc_info=True)
             return ViewUserCardsUseResponse(
                 response_type=ResponseType.SERVER_ERROR,
-                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                error_message=None,
                 user_cards=None
             )
 
@@ -560,7 +560,7 @@ class ViewMergeUseCase:
             logger.error(f'Непредвиденная ошибка в ViewMergeUseCase: {error}', exc_info=True)
             return ViewMergeUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
-                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                error_message=None,
                 merge=None
             )
 
@@ -651,7 +651,7 @@ class MergeUseCase:
             logger.error(f'Непредвиденная ошибка в MergeUseCase: {error}', exc_info=True)
             return MergeUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
-                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                error_message=None,
                 current_user=current_user_dto,
                 success=False,
                 success_message=None
@@ -757,7 +757,7 @@ class ViewUpgradeUseCase:
             logger.error(f'Непредвиденная ошибка в ViewUpgradeUseCase: {error}', exc_info=True)
             return ViewUpgradeUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
-                error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                error_message=None,
                 upgrade_info=None,
             )
 
@@ -859,7 +859,7 @@ class UpgradeUseCase:
             logger.error(f'Непредвиденная ошибка в UpgradeUseCase: {error}', exc_info=True)
             return UpgradeUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
-                error_message=str(error),
+                error_message=None,
                 success_message=None,
                 current_user=current_user_dto
             )
