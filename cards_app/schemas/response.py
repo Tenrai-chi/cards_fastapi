@@ -1,6 +1,7 @@
 from cards_app.schemas.base import UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin
 from cards_app.schemas.cards import CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
 from cards_app.schemas.inventory_new import FullInfoUpgradingDTO
+from cards_app.schemas.news import NewsDTO
 
 
 # -------- Cards --------
@@ -53,4 +54,9 @@ class ViewUpgradeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
 class UpgradeUseCaseResponse(UseCaseResponse, CurrentUserMixin, SuccessMessageMixin, ErrorMessageMixin):
     """ Ответ на попытку усилить карту с помощью предметов усиления """
 
+
 # -------- Events --------
+class ViewNewsUseCaseResponse(UseCaseResponse):
+    """ Ответ на попытку получить новости сайта """
+
+    news: NewsDTO | None

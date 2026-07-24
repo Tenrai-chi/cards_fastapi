@@ -3,6 +3,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import NotEnoughSlotsError
+from cards_app.schemas.response import ViewNewsUseCaseResponse
 from cards_app.services.cards import generate_card_start_event, create_record_in_history_receiving_card
 from cards_app.services.events import (get_total_news_count, get_paginated_news, get_info_start_event_awards,
                                        get_info_award, update_profile_event_award_received)
@@ -15,6 +16,7 @@ from cards_app.models import User
 from cards_app.services.inventory import add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch
 from cards_app.services.events import can_get_start_event_award
 from cards_app.services.profile import check_can_user_receive_card, add_user_gold, create_transaction
+from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
 
@@ -27,44 +29,53 @@ class ViewNewsUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, page: int, size: int
-                      ) -> ViewNewsUseCaseDict:
-        """ Выполняет получение новостей и формирует DTO для отображения.
-            Args:
-                page: номер страницы (начиная с 1).
-                size: количество новостей на странице.
-            Returns:
-                ViewNewsUseCaseDict:
-                    - news_dto (NewsDTO): DTO с новостями и пагинацией.
-                    - status_code (int):  HTTP статус-код всегда 200
+    async def execute(self, page: int, size: int) -> ViewNewsUseCaseResponse:
+        """
+        Выполняет получение новостей и формирует DTO для отображения.
+        Args:
+            page: номер страницы (начиная с 1).
+            size: количество новостей на странице.
+        Returns:
+            ViewNewsUseCaseResponse:
+                - news (NewsDTO): DTO с новостями и пагинацией.
+                - response_type (str): статус ответа.
+        Note:
+           - SUCCESS: успешное получение данных.
+           - SERVER_ERROR: любая непредвиденная ошибка.
         """
 
-        answer_data = {'news_dto': None,
-                       'status_code': None}
+        try:
+            offset = (page - 1) * size
+            news_models = await get_paginated_news(self.session_db, limit=size, offset=offset)
 
-        offset = (page - 1) * size
-        news_models = await get_paginated_news(self.session_db, limit=size, offset=offset)
+            total = await get_total_news_count(self.session_db)
+            total_pages = (total + size - 1) // size
 
-        total = await get_total_news_count(self.session_db)
-        total_pages = (total + size - 1) // size
+            news_records = [
+                NewsRecordDTO(title=item.title,
+                              theme=item.theme,
+                              text=item.text,
+                              date_and_time=item.date_time_create
+                              )
+                for item in news_models
+            ]
 
-        news_records = [NewsRecordDTO(title=item.title,
-                                      theme=item.theme,
-                                      text=item.text,
-                                      date_and_time=item.date_time_create
-                                      )
-                        for item in news_models
-                        ]
+            news_dto = NewsDTO(items=news_records,
+                               total=total,
+                               page=page,
+                               size=size,
+                               total_pages=total_pages
+                               )
+            return ViewNewsUseCaseResponse(
+                response_type=ResponseType.SUCCESS,
+                news=news_dto
+            )
 
-        news_dto = NewsDTO(items=news_records,
-                           total=total,
-                           page=page,
-                           size=size,
-                           total_pages=total_pages
-                           )
-        answer_data['status_code'] = 200
-        answer_data['news_dto'] = news_dto
-        return answer_data
+        except Exception:
+            return ViewNewsUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                news=None
+            )
 
 
 class ViewStartEventUseCase:
