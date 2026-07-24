@@ -79,7 +79,8 @@ class ViewNewsUseCase:
                 news=news_dto
             )
 
-        except Exception:
+        except Exception as error:
+            logger.error(f'Непредвиденная ошибка в ViewNewsUseCase: {error}', exc_info=True)
             return ViewNewsUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
                 news=None
@@ -134,7 +135,8 @@ class ViewUsersRatingUseCase:
                 response_type=ResponseType.SUCCESS,
                 rating=rating_dto
             )
-        except Exception:
+        except Exception as error:
+            logger.error(f'Непредвиденная ошибка в ViewUsersRatingUseCase: {error}', exc_info=True)
             return ViewUsersRatingResponse(
                 response_type=ResponseType.SERVER_ERROR,
                 rating=None
@@ -184,7 +186,7 @@ class ViewStartEventUseCase:
                 start_event_awards=start_event_awards_dto,
             )
         except Exception as error:
-            logger.error(f'Непредвиденная ошибка в ViewUserCardsUseCase: {error}', exc_info=True)
+            logger.error(f'Непредвиденная ошибка в ViewStartEventUseCase: {error}', exc_info=True)
             return ViewStartEventUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
                 start_event_awards=None,

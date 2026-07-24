@@ -185,7 +185,8 @@ class ViewGetFreeCardUseCase:
                     can_get_free_card=can_get_card
                 )
             )
-        except Exception:
+        except Exception as error:
+            logger.error(f'Непредвиденная ошибка в ViewGetFreeCardUseCase: {error}', exc_info=True)
             return ViewGetFreeCardUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
                 get_free_card=None
@@ -444,7 +445,8 @@ class ViewTradingUseCase:
                 response_type=ResponseType.SUCCESS,
                 cards_trading=cards_trading_dto
             )
-        except Exception:
+        except Exception as error:
+            logger.error(f'Непредвиденная ошибка в ViewTradingUseCase: {error}', exc_info=True)
             return ViewTradingUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
                 cards_trading=None

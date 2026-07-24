@@ -80,6 +80,3 @@ class GetAwardStartEventUseCaseResponse(UseCaseResponse, ErrorMessageMixin, Succ
     """ Ответ на запрос получения награды в стартовом событии """
 
     new_card_id: int | None
-
-
-
