@@ -17,6 +17,7 @@ RESPONSE_TYPE_TO_HTTP = {
 }
 
 TEMPLATE_FOR_STATUS = {
+    400: 'errors/error_400.html',
     401: 'errors/error_401.html',
     403: 'errors/error_403.html',
     404: 'errors/error_404.html',

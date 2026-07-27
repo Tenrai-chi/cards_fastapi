@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from .base import AmuletBase, CardBase
+from cards_app.schemas.base import AmuletBase, CardBase
 
 
 class ExpItemsInventoryDTO(BaseModel):

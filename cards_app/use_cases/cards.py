@@ -215,14 +215,14 @@ class GetFreeCardUseCase:
                 - new_card_id (int | None): ID новой карты (при успехе)
                 - error_message (str | None): сообщение об ошибке
                 - response_type (str): статус ответа.
-                - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя
+                - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя.
         Raises:
            CooldownNotElapsedError: если не прошло достаточно времени.
         Note:
-           - REDIRECT_WITH_INFO: успешное получение данных и перенаправление
+           - REDIRECT_WITH_INFO: успешное получение данных и перенаправление.
            - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
            - UNAUTHORIZED: неавторизованный пользователь.
-           - SERVER_ERROR: любая другая непредвиденная ошибка
+           - SERVER_ERROR: любая другая непредвиденная ошибка.
         """
 
         hours_for_get_free_card = 6

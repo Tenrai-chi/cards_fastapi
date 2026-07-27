@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import RedirectResponse
 from urllib.parse import quote
@@ -7,10 +8,13 @@ from urllib.parse import quote
 from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
+from cards_app.routers.response_mapping import RESPONSE_TYPE_TO_HTTP, get_error_template
+from cards_app.schemas.response import ViewInventoryUseCaseResponse
 from cards_app.services.users import user_info_to_dto
 from cards_app.models.users import User
-from cards_app.types import ViewInventoryUseCaseDict, SaleAmuletUseCaseDict
+from cards_app.types import SaleAmuletUseCaseDict
 from cards_app.use_cases.inventory import ViewInventoryUseCase, SaleAmuletUseCase
+from cards_app.utils.response_types import ResponseType
 
 router = APIRouter(prefix='/inventory', tags=['inventory'])
 
@@ -18,40 +22,71 @@ templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
 
 
 @router.get(path='/{inventory_filter}', name='inventory')
-async def inventory(request: Request,
-                    session_db: AsyncSession = Depends(get_db_session),
-                    current_user: User | None = Depends(get_current_user_with_profile),
-                    inventory_filter: str = 'all',
-                    error: str = None,
-                    success: str = None
-                    ):
-    """ Просмотр инвентаря пользователя """
+async def inventory(
+        request: Request,
+        session_db: AsyncSession = Depends(get_db_session),
+        current_user: User | None = Depends(get_current_user_with_profile),
+        inventory_filter: str = 'all',
+        error: str = None,
+        success: str = None
+) -> Response:
+    """
+    Просмотр инвентаря пользователя.
+    Args:
+        request: объект запроса FastAPI.
+        session_db: сессия базы данных из зависимости.
+        current_user: текущий пользователь из зависимости.
+        inventory_filter: фильтр для вывода.
+        error: сообщение об ошибке из query-параметра.
+        success: сообщение об успехе из query-параметра.
+
+    Returns:
+        Response: рендеринг страницы при успехе или рендеринг страницы с ошибкой.
+
+    Notes:
+        Возможные типы ответов:
+        - SUCCESS: рендеринг данных.
+        - UNAUTHORIZED: рендеринг страницы с ошибкой.
+        - BAD_REQUEST: ошибка фильтра.
+        - SERVER_ERROR: рендеринг страницы ошибки.
+    """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewInventoryUseCase(session_db)
-    data: ViewInventoryUseCaseDict = await use_case.execute(current_user=current_user,
-                                                            inventory_filter=inventory_filter)
-    if data.get('inventory_dto'):
-        context = {'request': request,
-                   'current_user': current_user_dto,
-                   'inventory_dto': data.get('inventory_dto'),
-                   'error_message': error,
-                   'success_message': success,
-                   'current_inventory_filter': inventory_filter
-                   }
+    data: ViewInventoryUseCaseResponse = await use_case.execute(
+        current_user=current_user,
+        inventory_filter=inventory_filter
+    )
+    if data.response_type == ResponseType.SUCCESS:
+        context = {
+            'request': request,
+            'current_user': current_user_dto,
+            'inventory_dto': data.inventory,
+            'error_message': error,
+            'success_message': success,
+            'current_inventory_filter': inventory_filter
+        }
 
-        return templates.TemplateResponse(request=request,
-                                          name='inventory/inventory.html',
-                                          context=context,
-                                          status_code=data.get('status_code'))
+        return templates.TemplateResponse(
+            request=request,
+            name='inventory/inventory.html',
+            context=context,
+            status_code=200
+        )
     else:
-        return templates.TemplateResponse(request=request,
-                                          name='errors/error_page.html',
-                                          context={'error': data.get('error_message'),
-                                                   'status_code': data.get('status_code'),
-                                                   'current_user': current_user_dto},
-                                          status_code=data.get('status_code')
-                                          )
+        status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
+        template_name = get_error_template(status_code)
+        context = {
+            'error': data.error_message,
+            'error_code': status_code,
+            'current_user': current_user_dto
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name=template_name,
+            context=context,
+            status_code=status_code
+        )
 
 
 # @router.get(path='/level_up/{card_id}', name='view_level_up')
@@ -118,10 +153,13 @@ async def sell_amulet(request: Request,
         return RedirectResponse(full_url, status_code=303)
 
     elif data.get('status_code') in (404, 500):
+        context = {
+            'error': data.get('error_message'),
+                   'status_code': data.get('status_code'),
+                   'current_user': data.get('current_user_dto')
+        }
         return templates.TemplateResponse(request=request,
                                           name='errors/error_page.html',
-                                          context={'error': data.get('error_message'),
-                                                   'status_code': data.get('status_code'),
-                                                   'current_user': data.get('current_user_dto')},
+                                          context=context,
                                           status_code=data.get('status_code')
                                           )

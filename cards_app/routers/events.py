@@ -37,7 +37,7 @@ async def view_error(
         current_user: User | None = Depends(get_current_user_with_profile),
         error_code: int = 500,
         error: str = None,
-):
+) -> Response:
     """
     Просмотр страницы с ошибкой.
     Обрабатываются ошибки 401, 403, 404 и 500.
@@ -49,7 +49,7 @@ async def view_error(
         error: сообщение об ошибке, при наличии
 
     Returns:
-        Response: рендеринг страницы с ошибкой, переданной другими роутерами.
+        Response: рендеринг страницы с ошибкой, переданной другими роутерам.
     """
 
     current_user_dto = await user_info_to_dto(current_user)
@@ -77,7 +77,7 @@ async def view_news(
         current_user: User | None = Depends(get_current_user_with_profile),
         page: int = 1,
         size: int = 6
-):
+) -> Response:
     """
     Просмотр новостей.
     Args:
@@ -258,13 +258,13 @@ async def get_award_start_event(
         current_user_id: ID текущего пользователя из зависимости.
 
     Returns:
-        Response: редирект на страницу с стартовым событием, либо на просмотр новой карты,
+        Response: редирект на страницу со стартовым событием, либо на просмотр новой карты,
         либо на страницу ошибки.
 
     Notes:
         Возможные типы ответов:
         - REDIRECT_WITH_INFO: редирект к обновленным данным.
-        - REDIRECT_WITH_ERROR: редирект на страницу получения карты с ошибкой,
+        - REDIRECT_WITH_ERROR: редирект на страницу получения карты с ошибкой.
         - UNAUTHORIZED и SERVER_ERROR редирект на страницу с ошибкой.
     """
 

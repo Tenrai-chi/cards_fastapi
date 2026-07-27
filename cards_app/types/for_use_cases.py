@@ -1,9 +1,6 @@
 from typing import TypedDict
 from cards_app.schemas.fight import FightDTO
-from cards_app.schemas.inventory import FullInventoryDTO, FullInfoLevelingDTO
-from cards_app.schemas.news import NewsDTO
-from cards_app.schemas.profile import ProfileResponseDTO, FavoriteUsersPageDTO, RatingTableDTO, TransactionsDTO
-from cards_app.schemas.start_event import StartEventAwardsDTO
+from cards_app.schemas.profile import ProfileResponseDTO, FavoriteUsersPageDTO, TransactionsDTO
 from cards_app.schemas.store import CardStoreDTO, AllStoreDTO, OpenBoxExpItemDTO, OpenBoxAmuletDTO
 from cards_app.schemas.users import CurrentUserForMenuDTO
 
@@ -141,16 +138,16 @@ class UserTransactionsUseCaseDict(BaseUseCaseDict, ErrorMixin):
     transactions_dto: TransactionsDTO | None
 
 
-class ViewInventoryUseCaseDict(BaseUseCaseDict, ErrorMixin):
-    """ Кастомный словарь для возврата данных из ViewInventoryUseCase """
+# class ViewInventoryUseCaseDict(BaseUseCaseDict, ErrorMixin):
+#     """ Кастомный словарь для возврата данных из ViewInventoryUseCase """
+#
+#     inventory_dto: FullInventoryDTO | None
 
-    inventory_dto: FullInventoryDTO | None
 
-
-class ViewLevelUpUseCaseDict(BaseUseCaseDict):
-    """ Кастомный словарь для возврата данных из ViewLevelUpUseCase """
-
-    info_leveling_dto: FullInfoLevelingDTO | None
+# class ViewLevelUpUseCaseDict(BaseUseCaseDict):
+#     """ Кастомный словарь для возврата данных из ViewLevelUpUseCase """
+#
+#     info_leveling_dto: FullInfoLevelingDTO | None
 
 
 class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):

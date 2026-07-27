@@ -5,13 +5,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import InventoryException
 from cards_app.models import User
-from cards_app.schemas.inventory import ExpItemsInventoryDTO, AmuletsInventoryDTO, FullInventoryDTO, \
-    UpgradeItemsInventoryDTO
-from cards_app.services.inventory import (get_amulets_in_user_inventory, get_upgrade_items_in_user_inventory,
-                                          get_exp_items_in_user_inventory, delete_amulet)
+from cards_app.schemas.inventory_new import (
+    ExpItemsInventoryDTO, AmuletsInventoryDTO,
+    UpgradeItemsInventoryDTO, FullInventoryDTO
+)
+from cards_app.schemas.response import ViewInventoryUseCaseResponse
+from cards_app.services.inventory import (
+    get_amulets_in_user_inventory, get_upgrade_items_in_user_inventory,
+    get_exp_items_in_user_inventory, delete_amulet
+)
 from cards_app.services.profile import add_user_gold, create_transaction
 from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
-from cards_app.types import ViewInventoryUseCaseDict, SaleAmuletUseCaseDict
+from cards_app.types import SaleAmuletUseCaseDict
+from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
 
@@ -23,29 +29,31 @@ class ViewInventoryUseCase:
         self.session_db = session_db
 
     async def execute(self, current_user: User | None, inventory_filter: str
-                      ) -> ViewInventoryUseCaseDict:
-        """ Формирует InventoryDTO пользователя
-           Args:
-               current_user: User + Profile текущего пользователя
-               inventory_filter: фильтр инвентаря
-           Returns:
-               ViewInventoryUseCaseDict:
-                   - inventory_dto (InventoryDTO | None): DTO избранных пользователей
-                   - status_code (int): HTTP статус-код.
-                   - error_message: текст ошибки
-           Note:
-               - 200: успешное получение данных
-               - 400: если пользователь не авторизован
+                      ) -> ViewInventoryUseCaseResponse:
+        """
+        Выполняет получение инвентаря пользователя с примененным фильтром.
+        Args:
+           current_user: User + Profile текущего пользователя
+           inventory_filter: фильтр инвентаря
+        Returns:
+           ViewInventoryUseCaseResponse:
+               - inventory(InventoryDTO | None): DTO избранных пользователей
+               - response_type (str): статус ответа.
+               - error_message: текст ошибки
+        Note:
+            - SUCCESS: успешное получение данных.
+            - UNAUTHORIZED: неавторизованный пользователь.
+            - BAD_REQUEST: неверный фильтр.
+            - SERVER_ERROR: любая другая непредвиденная ошибка.
        """
 
-        answer_data = {'inventory_dto': None,
-                       'status_code': None,
-                       'error_message': None}
         if current_user is None:
-            answer_data['error_message'] = f'Для просмотра инвентаря необходимо быть авторизованным'
-            answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя просмотреть инвентарь')
-            return answer_data
+            return ViewInventoryUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для просмотра инвентаря необходимо быть авторизованным',
+                inventory=None
+            )
 
         if inventory_filter == 'exp_items':
             inventory_dto = FullInventoryDTO(
@@ -73,81 +81,96 @@ class ViewInventoryUseCase:
 
         elif inventory_filter == 'all':
 
-            exp, amu, upg = await asyncio.gather(self._get_exp_items_dto(owner_id=current_user.profile.id),
-                                                 self._get_amulets_dto(owner_id=current_user.profile.id),
-                                                 self._get_upgrade_items_dto(owner_id=current_user.profile.id),
-                                                 )
-            inventory_dto = FullInventoryDTO(exp_items=exp,
-                                             amulets=amu,
-                                             upgrade_items=upg,
-                                             count_amulet=len(amu),
-                                             max_count_amulets=current_user.profile.amulet_slots
-                                             )
+            exp, amu, upg = await asyncio.gather(
+                self._get_exp_items_dto(owner_id=current_user.profile.id),
+                self._get_amulets_dto(owner_id=current_user.profile.id),
+                self._get_upgrade_items_dto(owner_id=current_user.profile.id),
+            )
+            inventory_dto = FullInventoryDTO(
+                exp_items=exp,
+                amulets=amu,
+                upgrade_items=upg,
+                count_amulet=len(amu),
+                max_count_amulets=current_user.profile.amulet_slots
+            )
 
         else:
-            answer_data['status_code'] = 500
-            answer_data['error_message'] = f'Неверный фильтр инвентаря'
-            return answer_data
+            return ViewInventoryUseCaseResponse(
+                response_type=ResponseType.BAD_REQUEST,
+                error_message=f'Неверный фильтр инвентаря',
+                inventory=None
+            )
 
-        answer_data['inventory_dto'] = inventory_dto
-        answer_data['status_code'] = 200
-        return answer_data
+        return ViewInventoryUseCaseResponse(
+            response_type=ResponseType.SUCCESS,
+            error_message=None,
+            inventory=inventory_dto
+        )
 
     async def _get_exp_items_dto(self, owner_id: int) -> list[ExpItemsInventoryDTO]:
         """ Преобразует DTO для предметов опыта """
 
-        exp_items: list = await get_exp_items_in_user_inventory(session_db=self.session_db,
-                                                                owner_id=owner_id)
-        exp_items_dto = [ExpItemsInventoryDTO(name=item.item.name,
-                                              rarity=item.item.rarity,
-                                              experience_amount=item.item.experience_amount,
-                                              image=item.item.image,
-                                              gold_for_use=item.item.gold_for_use,
-                                              amount=item.amount
-                                              )
-                         for item in exp_items
-                         ]
+        exp_items: list = await get_exp_items_in_user_inventory(
+            session_db=self.session_db,
+            owner_id=owner_id
+        )
+        exp_items_dto = [
+            ExpItemsInventoryDTO(
+                name=item.item.name,
+                rarity=item.item.rarity,
+                experience_amount=item.item.experience_amount,
+                image=item.item.image,
+                gold_for_use=item.item.gold_for_use,
+                amount=item.amount
+            )
+            for item in exp_items
+        ]
         return exp_items_dto
 
     async def _get_amulets_dto(self, owner_id: int) -> list[AmuletsInventoryDTO]:
         """ Преобразует DTO для амулетов """
 
-        amulets: list = await get_amulets_in_user_inventory(session_db=self.session_db,
-                                                            owner_id=owner_id)
-        amulets_dto = [AmuletsInventoryDTO(card_id=amulet.card.id if amulet.card else None,
-                                           card_class_name=(amulet.card.class_card.name
-                                                            if amulet.card
-                                                            else None),
-                                           card_rarity_name=(amulet.card.rarity_card.name
-                                                             if amulet.card
-                                                             else None),
-                                           id=amulet.id,
-                                           name=amulet.amulet_type.name,
-                                           rarity_name=amulet.amulet_type.rarity.name,
-                                           bonus_hp=amulet.amulet_type.bonus_hp,
-                                           bonus_damage=amulet.amulet_type.bonus_damage,
-                                           image=amulet.amulet_type.image,
-                                           price_for_sale=amulet.amulet_type.price // 2,
-                                           upgrades=amulet.upgrades,
-                                           max_upgrade=amulet.amulet_type.rarity.max_upgrade,
-                                           )
-                       for amulet in amulets
-                       ]
+        amulets: list = await get_amulets_in_user_inventory(
+            session_db=self.session_db,
+            owner_id=owner_id
+        )
+        amulets_dto = [
+            AmuletsInventoryDTO(
+                card_id=amulet.card.id if amulet.card else None,
+                card_class_name=amulet.card.class_card.name if amulet.card else None,
+                card_rarity_name=amulet.card.rarity_card.name if amulet.card else None,
+                id=amulet.id,
+                name=amulet.amulet_type.name,
+                rarity_name=amulet.amulet_type.rarity.name,
+                bonus_hp=amulet.amulet_type.bonus_hp,
+                bonus_damage=amulet.amulet_type.bonus_damage,
+                image=amulet.amulet_type.image,
+                price_for_sale=amulet.amulet_type.price // 2,
+                upgrades=amulet.upgrades,
+                max_upgrade=amulet.amulet_type.rarity.max_upgrade,
+            )
+            for amulet in amulets
+        ]
         return amulets_dto
 
     async def _get_upgrade_items_dto(self, owner_id: int) -> list[UpgradeItemsInventoryDTO]:
         """ Преобразует DTO для предметов усиления """
 
-        upg_items: list = await get_upgrade_items_in_user_inventory(session_db=self.session_db,
-                                                                    owner_id=owner_id)
-        upg_items_dto = [UpgradeItemsInventoryDTO(id=item.id,
-                                                  name=item.upgrade_item_type.name,
-                                                  description=item.upgrade_item_type.description,
-                                                  image=item.upgrade_item_type.image,
-                                                  gold_for_use=item.upgrade_item_type.price_of_use,
-                                                  amount=item.amount)
-                         for item in upg_items
-                         ]
+        upg_items: list = await get_upgrade_items_in_user_inventory(
+            session_db=self.session_db,
+            owner_id=owner_id
+        )
+        upg_items_dto = [
+            UpgradeItemsInventoryDTO(
+                id=item.id,
+                name=item.upgrade_item_type.name,
+                description=item.upgrade_item_type.description,
+                image=item.upgrade_item_type.image,
+                gold_for_use=item.upgrade_item_type.price_of_use,
+                amount=item.amount
+            )
+            for item in upg_items
+        ]
         return upg_items_dto
 
 
