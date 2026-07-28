@@ -9,14 +9,13 @@ from cards_app.schemas.inventory_new import (
     ExpItemsInventoryDTO, AmuletsInventoryDTO,
     UpgradeItemsInventoryDTO, FullInventoryDTO
 )
-from cards_app.schemas.response import ViewInventoryUseCaseResponse
+from cards_app.schemas.response import ViewInventoryUseCaseResponse, SaleAmuletUseCaseResponse
 from cards_app.services.inventory import (
     get_amulets_in_user_inventory, get_upgrade_items_in_user_inventory,
     get_exp_items_in_user_inventory, delete_amulet
 )
 from cards_app.services.profile import add_user_gold, create_transaction
-from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
-from cards_app.types import SaleAmuletUseCaseDict
+from cards_app.services.users import get_profile_for_update, get_user_with_profile
 from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
@@ -175,89 +174,93 @@ class ViewInventoryUseCase:
 
 
 class SaleAmuletUseCase:
-    """ Use case продажи амулета """
+    """ Use case для продажи амулета """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
     async def execute(self, current_user_id: int | None, amulet_id: int
-                      ) -> SaleAmuletUseCaseDict:
-        """ Формирует InventoryDTO пользователя
-           Args:
-               current_user_id: ID User текущего пользователя
-               amulet_id: ID амулета
-           Returns:
-               SaleAmuletUseCaseDict:
-                   - success: успех или неудача
-                   - status_code (int): HTTP статус-код.
-                   - error_message: текст ошибки
-                   - success_message: сообщение об успехе
-           Note:
-               - 303: успешная продажа
-               - 400: если пользователь не авторизован или не является владельцем
-               - 404: если амулет не найден
+                      ) -> SaleAmuletUseCaseResponse:
+        """
+        Выполняет запрос на продажу амулета из инвентаря пользователя.
+        Args:
+           current_user_id: ID User текущего пользователя.
+           amulet_id: ID амулета.
+        Returns:
+           SaleAmuletUseCaseResponse:
+               - response_type (str): статус ответа.
+               - error_message: текст ошибки
+               - success_message: сообщение об успехе
+        Note:
+           - REDIRECT_WITH_INFO: успешная продажа.
+           - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
+           - UNAUTHORIZED: неавторизованный пользователь.
+           - FORBIDDEN: не является владельцем.
+           - NOT_FOUND: амулет не найден.
+           - SERVER_ERROR: любая другая непредвиденная ошибка.
        """
 
-        answer_data = {'success': None,
-                       'status_code': None,
-                       'error_message': None,
-                       'success_message': None,
-                       'current_user_dto': None}
-
         if current_user_id is None:
-            answer_data['error_message'] = f'Для продажи амулета вы должны быть авторизованы'
-            answer_data['status_code'] = 400
-            answer_data['success'] = False
             logger.warning(f'Попытка неавторизованного пользователя продать амулет')
-            return answer_data
+            return SaleAmuletUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для продажи амулета вы должны быть авторизованы',
+                success_message=None
+            )
+
+        await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
+        current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя продать амулет')
+            return SaleAmuletUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для продажи амулета вы должны быть авторизованы',
+                success_message=None
+            )
 
         try:
-            # Блокирует профиль, чтобы избежать гонок
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
-
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для продажи амулета вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя продать амулет')
-                return answer_data
-
             # Удаление амулета
-            add_gold_for_sell: int = await delete_amulet(session_db=self.session_db,
-                                                         owner_id=current_user.profile.id,
-                                                         amulet_id=amulet_id)
+            add_gold_for_sell: int = await delete_amulet(
+                session_db=self.session_db,
+                owner_id=current_user.profile.id,
+                amulet_id=amulet_id
+            )
             # Добавление золота
-            gold_data: dict = await add_user_gold(session_db=self.session_db,
-                                                  current_user=current_user,
-                                                  add_gold=add_gold_for_sell)
+            gold_data: dict = await add_user_gold(
+                session_db=self.session_db,
+                current_user=current_user,
+                add_gold=add_gold_for_sell
+            )
             # Создание транзакции
-            await create_transaction(session_db=self.session_db,
-                                     user_profile_id=current_user.profile.id,
-                                     gold_before=gold_data.get('gold_before'),
-                                     gold_after=gold_data.get('gold_after'),
-                                     comment=f'Продажа амулета')
+            await create_transaction(
+                session_db=self.session_db,
+                user_profile_id=current_user.profile.id,
+                gold_before=gold_data.get('gold_before'),
+                gold_after=gold_data.get('gold_after'),
+                comment=f'Продажа амулета'
+            )
 
             await self.session_db.commit()
-            answer_data['success'] = True
-            answer_data['status_code'] = 303
-            answer_data['success_message'] = f'Вы успешно продали амулет за {add_gold_for_sell} золота'
+            return SaleAmuletUseCaseResponse(
+                response_type=ResponseType.REDIRECT_WITH_INFO,
+                error_message=None,
+                success_message=f'Вы успешно продали амулет за {add_gold_for_sell} золота'
+            )
 
         except InventoryException as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return SaleAmuletUseCaseResponse(
+                response_type=error.response_type,
+                error_message=str(error),
+                success_message=None
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в SaleAmuletUseCase: {error}', exc_info=True)
-        return answer_data
+            return SaleAmuletUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
+                success_message=None
+            )

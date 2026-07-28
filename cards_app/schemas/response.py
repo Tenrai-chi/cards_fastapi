@@ -87,3 +87,9 @@ class ViewInventoryUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
     """ Ответ на запрос получения инвентаря пользователя """
 
     inventory: FullInventoryDTO | None
+
+
+class SaleAmuletUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessageMixin):
+    """ Ответ на запрос продажи амулета из инвентаря """
+
+

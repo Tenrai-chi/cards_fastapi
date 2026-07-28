@@ -52,18 +52,6 @@ class GetFreeCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):
     new_card_id: int | None
 
 
-# class ViewNewsUseCaseDict(BaseUseCaseDict):
-#     """ Кастомный словарь для возврата данных из ViewNewsUseCase """
-#
-#     news_dto: NewsDTO | None
-
-
-# class ViewStartEventUseCaseDict(BaseUseCaseDict):
-#     """ Кастомный словарь для возврата данных из ViewStartEventUseCase """
-#
-#     start_event_awards_dto: StartEventAwardsDTO | None
-
-
 class GetAwardStartEventUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMessageMixin):
     """ Кастомный словарь для возврата данных из GetAwardStartEventUseCase """
 
@@ -108,70 +96,16 @@ class ProcessFightUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
     fight_dto: FightDTO | None
 
 
-# class ViewUsersRatingDict(BaseUseCaseDict):
-#     """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
-#
-#     rating_dto: RatingTableDTO
-
-
 class ViewItemStoreUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
 
     store_dto: AllStoreDTO | None
 
 
-# class ViewUserCardsUseCaseDict(BaseUseCaseDict, ErrorMixin):
-#     """ Кастомный словарь для возврата данных из ViewUserCardsUseCase """
-#
-#     user_cards_dto: UserCardsDTO | None
-
-
-# class ViewTradingUseCaseDict(BaseUseCaseDict):
-#     """ Кастомный словарь для возврата данных из ViewTradingUseCase """
-#
-#     cards_trading_dto: CardsTradingDTO | None
-
-
 class UserTransactionsUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из UserTransactionsUseCase """
 
     transactions_dto: TransactionsDTO | None
-
-
-# class ViewInventoryUseCaseDict(BaseUseCaseDict, ErrorMixin):
-#     """ Кастомный словарь для возврата данных из ViewInventoryUseCase """
-#
-#     inventory_dto: FullInventoryDTO | None
-
-
-# class ViewLevelUpUseCaseDict(BaseUseCaseDict):
-#     """ Кастомный словарь для возврата данных из ViewLevelUpUseCase """
-#
-#     info_leveling_dto: FullInfoLevelingDTO | None
-
-
-class SaleAmuletUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
-    """ Кастомный словарь для возврата данных из SaleAmuletUseCase """
-
-
-# class ViewMergeUseCaseDict(BaseUseCaseDict, ErrorMixin):
-#     """ Кастомный словарь для возврата данных из ViewMergeUseCase """
-#
-#     merge_dto: CardsForMergeDTO | None
-
-
-# class ViewUpgradeUseCaseDict(BaseUseCaseDict, ErrorMixin):
-#     """ Кастомный словарь для возврата данных из ViewUpgradeUseCase """
-#
-#     upgrade_dto: FullInfoUpgradingDTO | None
-
-
-# class MergeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
-#     """ Кастомный словарь для возврата данных из MergeUseCase """
-
-
-# class UpgradeUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):
-#     """ Кастомный словарь для возврата данных из MergeUseCase """
 
 
 class BuyBoxUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
