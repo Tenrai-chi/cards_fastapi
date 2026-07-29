@@ -4,12 +4,14 @@ from cards_app.utils.response_types import ResponseType
 
 class CardException(AppException):
     """ Базовое для ошибок карт """
+
     pass
 
 
 class CardNotFoundError(CardException):
-    """ Исключение, возникающее при попытке получить несуществующую карту.
-        Возвращает статус ответа NOT_FOUND.
+    """
+    Исключение, возникающее при попытке получить несуществующую карту.
+    Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self, card_id: int | None = None):
@@ -20,8 +22,9 @@ class CardNotFoundError(CardException):
 
 
 class NoCurrentCardError(CardException):
-    """ Исключение, возникающее если у одного из участников не выбрана карта для боя.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее если у одного из участников не выбрана карта для боя.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self, username):
@@ -32,8 +35,9 @@ class NoCurrentCardError(CardException):
 
 
 class NotCardOwnerError(CardException):
-    """ Исключение, если пользователь не является владельцем карты.
-        Возвращает статус ответа FORBIDDEN.
+    """
+    Исключение, если пользователь не является владельцем карты.
+    Возвращает статус ответа FORBIDDEN.
     """
 
     def __init__(self):
@@ -44,8 +48,9 @@ class NotCardOwnerError(CardException):
 
 
 class EmptyCardsForMergeError(CardException):
-    """ Исключение, если список карт для слияния пуст.
-        Возвращает статус ответа BAD_REQUEST.
+    """
+    Исключение, если список карт для слияния пуст.
+    Возвращает статус ответа BAD_REQUEST.
     """
 
     def __init__(self):
@@ -56,9 +61,10 @@ class EmptyCardsForMergeError(CardException):
 
 
 class TooManyCardsMergeError(CardException):
-    """ Исключение, если список карт для слияния больше,
-        чем необходимо для максимального уровня слияния.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, если список карт для слияния больше,
+    чем необходимо для максимального уровня слияния.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
@@ -69,9 +75,10 @@ class TooManyCardsMergeError(CardException):
 
 
 class MaxUpgradeCardError(CardException):
-    """ Исключение, возникающее при попытке усилить карту,
-        которая уже имеет максимальное усиление.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при попытке усилить карту,
+    которая уже имеет максимальное усиление.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
@@ -82,8 +89,9 @@ class MaxUpgradeCardError(CardException):
 
 
 class SelfMergeError(CardException):
-    """ Исключение, если была попытка слить саму себя.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, если была попытка слить саму себя.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):

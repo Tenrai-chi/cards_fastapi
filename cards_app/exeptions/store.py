@@ -4,12 +4,14 @@ from cards_app.utils.response_types import ResponseType
 
 class StoreException(AppException):
     """ Базовое для ошибок магазина """
+
     pass
 
 
 class CardInStoreNotFoundError(StoreException):
-    """ Исключение, возникающее при попытке получить несуществующую карту в магазине.
-        Возвращает статус ответа NOT_FOUND.
+    """
+    Исключение, возникающее при попытке получить несуществующую карту в магазине.
+    Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self, card_id: int | None = None):
@@ -20,8 +22,9 @@ class CardInStoreNotFoundError(StoreException):
 
 
 class CardNotOnSaleError(StoreException):
-    """ Исключение, возникающее при попытке купить карту не в продаже.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при попытке купить карту не в продаже.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
@@ -32,8 +35,9 @@ class CardNotOnSaleError(StoreException):
 
 
 class BoxNotFoundError(StoreException):
-    """ Исключение, возникающее при попытке получить несуществующий сундук.
-        Возвращает статус ответа NOT_FOUND.
+    """
+    Исключение, возникающее при попытке получить несуществующий сундук.
+    Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self):
@@ -44,8 +48,9 @@ class BoxNotFoundError(StoreException):
 
 
 class ExpItemNotFoundError(StoreException):
-    """ Исключение, возникающее при попытке купить несуществующую книгу.
-        Возвращает статус ответа NOT_FOUND.
+    """
+    Исключение, возникающее при попытке купить несуществующую книгу.
+    Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self):
@@ -56,8 +61,9 @@ class ExpItemNotFoundError(StoreException):
 
 
 class AmuletNotFoundError(StoreException):
-    """ Исключение, возникающее при попытке купить несуществующий амулет.
-        Возвращает статус ответа NOT_FOUND.
+    """
+    Исключение, возникающее при попытке купить несуществующий амулет.
+    Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self):
@@ -68,8 +74,9 @@ class AmuletNotFoundError(StoreException):
 
 
 class AmuletNotOnSaleError(StoreException):
-    """ Исключение, возникающее при попытке купить амулет не в продаже.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при попытке купить амулет не в продаже.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
@@ -80,8 +87,9 @@ class AmuletNotOnSaleError(StoreException):
 
 
 class UpgradeItemNotFoundError(StoreException):
-    """ Исключение, возникающее при попытке купить несуществующий предмет усиления.
-        Возвращает статус ответа NOT_FOUND.
+    """
+    Исключение, возникающее при попытке купить несуществующий предмет усиления.
+    Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self):

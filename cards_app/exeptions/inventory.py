@@ -4,13 +4,15 @@ from cards_app.utils.response_types import ResponseType
 
 class InventoryException(AppException):
     """ Базовое для ошибок связанных с инвентарем пользователя """
+
     pass
 
 
 class NotEnoughSlotsError(InventoryException):
-    """ Исключение, возникающее при недостатке слотов в инвентаре.
-        Применимо к картам, амулетам, гильдиям, избранным пользователям.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при недостатке слотов в инвентаре.
+    Применимо к картам, амулетам, гильдиям, избранным пользователям.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self, message: str):
@@ -20,8 +22,9 @@ class NotEnoughSlotsError(InventoryException):
 
 
 class AmuletNotFoundError(InventoryException):
-    """ Исключение, если амулет не найден.
-        Возвращает статус ответа NOT_FOUND.
+    """
+    Исключение, если амулет не найден.
+    Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self):
@@ -32,8 +35,9 @@ class AmuletNotFoundError(InventoryException):
 
 
 class NotAmuletOwnerError(InventoryException):
-    """ Исключение, если пользователь не является владельцем амулета.
-        Возвращает статус ответа FORBIDDEN.
+    """
+    Исключение, если пользователь не является владельцем амулета.
+    Возвращает статус ответа FORBIDDEN.
     """
 
     def __init__(self):
@@ -44,8 +48,9 @@ class NotAmuletOwnerError(InventoryException):
 
 
 class NotEnoughUpgradeItemsError(InventoryException):
-    """ Исключение, возникающее при недостатке предметов усиления в инвентаре.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при недостатке предметов усиления в инвентаре.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):

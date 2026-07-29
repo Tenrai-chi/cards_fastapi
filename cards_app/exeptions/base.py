@@ -2,10 +2,11 @@ from cards_app.utils.response_types import ResponseType
 
 
 class AppException(Exception):
-    """ Базовое исключение для всех бизнес-ошибок приложения.
-        Attributes:
-            message (str): Текст ошибки.
-            response_type (str): статус ответа.
+    """
+    Базовое исключение для всех бизнес-ошибок приложения.
+    Attributes:
+        message (str): Текст ошибки.
+        response_type (str): статус ответа.
     """
 
     def __init__(self, message: str, response_type: ResponseType):

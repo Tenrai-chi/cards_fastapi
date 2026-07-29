@@ -4,12 +4,14 @@ from cards_app.utils.response_types import ResponseType
 
 class ResourceException(AppException):
     """ Базовое для ошибок ресурсов пользователя """
+
     pass
 
 
 class InsufficientFundsUserError(ResourceException):
-    """ Исключение, возникающее при недостатке средств у пользователя для действия.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при недостатке средств у пользователя для действия.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self, need_gold: int | None = None):

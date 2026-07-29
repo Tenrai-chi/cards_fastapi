@@ -4,12 +4,14 @@ from cards_app.utils.response_types import ResponseType
 
 class FightException(AppException):
     """ Базовое для ошибок связанных с битвами """
+
     pass
 
 
 class SelfFightError(FightException):
-    """ Исключение, возникающее при попытке начать битву с самим собой.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при попытке начать битву с самим собой.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):

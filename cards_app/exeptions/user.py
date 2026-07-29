@@ -4,12 +4,14 @@ from cards_app.utils.response_types import ResponseType
 
 class UserException(AppException):
     """ Базовое для ошибок пользователей """
+
     pass
 
 
 class UserNotFoundError(UserException):
-    """ Исключение, возникающее при попытке получить несуществующего пользователя.
-        Возвращает статус ответа NOT_FOUND.
+    """
+    Исключение, возникающее при попытке получить несуществующего пользователя.
+    Возвращает статус ответа NOT_FOUND.
     """
 
     def __init__(self, user_id: int | None = None):
@@ -20,11 +22,12 @@ class UserNotFoundError(UserException):
 
 
 class CooldownNotElapsedError(UserException):
-    """ Исключение возникающее при попытке действия, если не прошло необходимое время.
-        Принимает готовое сообщение или количество необходимых (недостающих)
-        часов для действия
-        Если не передан ни один параметр, используется базовое сообщение.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+     возникающее при попытке действия, если не прошло необходимое время.
+    Принимает готовое сообщение или количество необходимых (недостающих)
+    часов для действия
+    Если не передан ни один параметр, используется базовое сообщение.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
      """
 
     def __init__(self, base_message: str | None = None, hours: int | None = None):
@@ -52,12 +55,14 @@ class CooldownNotElapsedError(UserException):
 
 class UserFavoriteException(UserException):
     """ Базовое для ошибок избранного """
+
     pass
 
 
 class SelfFavoriteError(UserFavoriteException):
-    """ Исключение, возникающее при попытке пользователя добавить в избранное самого себя.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при попытке пользователя добавить в избранное самого себя.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
@@ -68,8 +73,9 @@ class SelfFavoriteError(UserFavoriteException):
 
 
 class SelfFavoriteRemoveError(UserFavoriteException):
-    """ Исключение, возникающее при попытке пользователя удалить из избранного самого себя.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при попытке пользователя удалить из избранного самого себя.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
@@ -80,9 +86,10 @@ class SelfFavoriteRemoveError(UserFavoriteException):
 
 
 class DuplicateFavoriteError(UserFavoriteException):
-    """ Исключение, возникающее при попытке добавить в избранное пользователя,
-        который уже присутствует в списке избранных текущего пользователя.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при попытке добавить в избранное пользователя,
+    который уже присутствует в списке избранных текущего пользователя.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
@@ -93,8 +100,9 @@ class DuplicateFavoriteError(UserFavoriteException):
 
 
 class FavoriteNotFoundError(UserFavoriteException):
-    """ Исключение, возникающее при попытке удалить из избранного пользователя, которого там не было.
-        Возвращает статус ответа REDIRECT_WITH_ERROR.
+    """
+    Исключение, возникающее при попытке удалить из избранного пользователя, которого там не было.
+    Возвращает статус ответа REDIRECT_WITH_ERROR.
     """
 
     def __init__(self):
