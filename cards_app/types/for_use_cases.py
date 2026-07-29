@@ -1,7 +1,7 @@
 from typing import TypedDict
 from cards_app.schemas.fight import FightDTO
 from cards_app.schemas.profile import ProfileResponseDTO, FavoriteUsersPageDTO, TransactionsDTO
-from cards_app.schemas.store import CardStoreDTO, AllStoreDTO, OpenBoxExpItemDTO, OpenBoxAmuletDTO
+from cards_app.schemas.store import AllStoreDTO, OpenBoxExpItemDTO, OpenBoxAmuletDTO
 from cards_app.schemas.users import CurrentUserForMenuDTO
 
 
@@ -76,12 +76,6 @@ class FavoriteUsersUseCaseDict(BaseUseCaseDict, ErrorMixin):
     """ Кастомный словарь для возврата данных из FavoriteUsersUseCase """
 
     favorite_users_dto: FavoriteUsersPageDTO | None
-
-
-class ViewCardStoreUseCaseDict(BaseUseCaseDict):
-    """ Кастомный словарь для возврата данных из ViewCardStoreUseCase """
-
-    card_store_dto: CardStoreDTO | None
 
 
 class BuyStoreCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):

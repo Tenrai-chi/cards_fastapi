@@ -5,9 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
                                  CardInStoreNotFoundError, BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError,
                                  AmuletNotOnSaleError)
-from cards_app.schemas.store import (CardInStoreDTO, CardStoreDTO, BoxStoreDTO, AllStoreDTO, AmuletsStoreDTO,
+from cards_app.schemas.response import ViewCardStoreUseCaseResponse
+from cards_app.schemas.store import (BoxStoreDTO, AllStoreDTO, AmuletsStoreDTO,
                                      UpgradeItemsStoreDTO, ExpItemsStoreDTO, ExpItemRewardDTO, OpenBoxExpItemDTO,
                                      OpenBoxAmuletDTO, AmuletRewardDTO)
+from cards_app.schemas.store_new import CardInStoreDTO, CardStoreDTO
 from cards_app.services.cards import (get_temp_card_in_store, create_new_card_from_template,
                                       create_record_in_history_receiving_card)
 from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
@@ -15,9 +17,10 @@ from cards_app.services.store import (get_cards_in_store, get_box_in_store, get_
                                       get_upgrade_items_in_store, get_exp_items_in_store, get_box_info, open_box_card,
                                       open_box_exp_item, open_box_amulet, buy_exp_items, buy_amulet, buy_upgrade_item)
 from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
-from cards_app.types import (ViewCardStoreUseCaseDict, BuyStoreCardUseCaseDict, ViewItemStoreUseCaseDict,
+from cards_app.types import (BuyStoreCardUseCaseDict, ViewItemStoreUseCaseDict,
                              BuyBoxUseCaseDict, BuyItemUseCaseDict)
 from cards_app.utils.common import calculate_final_price
+from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
 
@@ -30,40 +33,48 @@ class ViewCardStoreUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self) -> ViewCardStoreUseCaseDict:
-        """ Выполняет получение списка карт, доступных в магазине, и формирует DTO.
-            Returns:
-                ViewCardStoreUseCaseDict:
-                    - status_code (int): HTTP статус-код.
-                    - card_store_dto (CardStoreDTO | None): DTO со списком карт в магазине.
-            Note:
-                - 200: успешное получение данных.
-                - 500: непредвиденная ошибка.
+    async def execute(self) -> ViewCardStoreUseCaseResponse:
+        """
+        Выполняет получение списка карт, доступных в магазине, и формирует DTO.
+        Returns:
+            ViewCardStoreUseCaseResponse:
+                - response_type (str): статус ответа.
+                - card_store (CardStoreDTO | None): DTO со списком карт в магазине.
+        Note:
+            - SUCCESS: успешное получение данных.
+            - SERVER_ERROR: непредвиденная ошибка.
         """
 
-        answer_data = {'status_code': None,
-                       'card_store_dto': None}
+        try:
+            all_cards: list = await get_cards_in_store(session_db=self.session_db)
+            cards_in_store = []
+            for card in all_cards:
+                cards_in_store.append(
+                    CardInStoreDTO(
+                        id=card.id,
+                        class_card_name=card.class_card.name,
+                        rarity_card_name=card.rarity_card.name,
+                        type_card_name=card.type_card.name,
+                        class_card_pic=card.class_card.image,
+                        hp=card.hp,
+                        damage=card.damage,
+                        price=card.price,
+                        discount=card.discount,
+                        discount_now=card.discount_now
+                    )
+                )
+            card_store_dto = CardStoreDTO(cards=cards_in_store)
+            return ViewCardStoreUseCaseResponse(
+                response_type=ResponseType.SUCCESS,
+                card_store=card_store_dto
+            )
 
-        all_cards: list = await get_cards_in_store(session_db=self.session_db)
-        cards_in_store = []
-        for card in all_cards:
-            cards_in_store.append(CardInStoreDTO(id=card.id,
-                                                 class_card_name=card.class_card.name,
-                                                 rarity_card_name=card.rarity_card.name,
-                                                 type_card_name=card.type_card.name,
-                                                 class_card_pic=card.class_card.image,
-                                                 hp=card.hp,
-                                                 damage=card.damage,
-                                                 price=card.price,
-                                                 discount=card.discount,
-                                                 discount_now=card.discount_now
-                                                 )
-                                  )
-        card_store_dto = CardStoreDTO(cards=cards_in_store)
-        answer_data['status_code'] = 200
-        answer_data['card_store_dto'] = card_store_dto
-
-        return answer_data
+        except Exception as error:
+            logger.error(f'Непредвиденная ошибка в ViewInventoryUseCase: {error}', exc_info=True)
+            return ViewCardStoreUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                card_store=None
+            )
 
 
 class BuyStoreCardUseCase:

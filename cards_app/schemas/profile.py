@@ -43,13 +43,12 @@ class ProfileBaseDTO(BaseModel):
     rating: int
 
 
-class ProfileResponseDTO(BaseModel):
+class ProfileResponseDTO(ProfileBaseDTO):
     """ Полный профиль для вывода на страницу.
         Разные данные для разных сценариев (неавторизованный гость, гость, владелец)
     """
 
     # Поля доступные всем
-    profile: ProfileBaseDTO
     guild: GuildDTO | None = None
     card: CardDTO | None = None
     amulet: AmuletBase | None = None

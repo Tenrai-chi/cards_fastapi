@@ -4,7 +4,7 @@ from cards_app.utils.response_types import ResponseType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.schemas.base import AmuletBase
-from cards_app.schemas.inventory_new import FullInfoUpgradingDTO, CardUpgradingDTO, UpgradeItemsInventoryDTO
+from cards_app.schemas.inventory import FullInfoUpgradingDTO, CardUpgradingDTO, UpgradeItemsInventoryDTO
 from cards_app.schemas.response import (
     ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
     GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,

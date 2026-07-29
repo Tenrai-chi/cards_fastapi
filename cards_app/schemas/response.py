@@ -1,9 +1,10 @@
 from cards_app.schemas.base import UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin
 from cards_app.schemas.cards import CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
-from cards_app.schemas.inventory_new import FullInfoUpgradingDTO, FullInventoryDTO
+from cards_app.schemas.inventory import FullInfoUpgradingDTO, FullInventoryDTO
 from cards_app.schemas.news import NewsDTO
 from cards_app.schemas.profile import RatingTableDTO
 from cards_app.schemas.start_event import StartEventAwardsDTO
+from cards_app.schemas.store_new import CardStoreDTO
 
 
 # -------- Cards --------
@@ -93,3 +94,8 @@ class SaleAmuletUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessa
     """ Ответ на запрос продажи амулета из инвентаря """
 
 
+# -------- Store --------
+class ViewCardStoreUseCaseResponse(UseCaseResponse):
+    """ Ответ на запрос просмотра магазина карт """
+
+    card_store: CardStoreDTO | None

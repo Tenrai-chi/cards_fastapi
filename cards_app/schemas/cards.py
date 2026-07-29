@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from .base import CardBase, AmuletBase
+from cards_app.schemas.base import CardBase, AmuletBase
 
 
 class CardDTO(CardBase):

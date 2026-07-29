@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, Form
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import quote
@@ -7,14 +7,17 @@ from urllib.parse import quote
 from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
+from cards_app.routers.response_mapping import RESPONSE_TYPE_TO_HTTP, get_error_template
+from cards_app.schemas.response import ViewCardStoreUseCaseResponse
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import (ViewCardStoreUseCaseDict, ViewItemStoreUseCaseDict, BuyBoxUseCaseDict,
+from cards_app.types import (ViewItemStoreUseCaseDict, BuyBoxUseCaseDict,
                              BuyItemUseCaseDict, BuyStoreCardUseCaseDict)
 from cards_app.use_cases.store import (BuyStoreCardUseCase, ViewItemStoreUseCase, BuyBoxUseCase, BuyExpItemUseCase,
                                        BuyAmuletUseCase, BuyUpgradeItemUseCase)
 
 from cards_app.models.users import User
 from cards_app.use_cases.store import ViewCardStoreUseCase
+from cards_app.utils.response_types import ResponseType
 
 router = APIRouter(prefix='/store', tags=['store'])
 
@@ -22,27 +25,46 @@ templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
 
 
 @router.get(path='/cards', name='card_store')
-async def view_card_store(request: Request,
-                          session_db: AsyncSession = Depends(get_db_session),
-                          current_user: User | None = Depends(get_current_user_with_profile),
-                          error: str = None
-                          ):
+async def view_card_store(
+        request: Request,
+        session_db: AsyncSession = Depends(get_db_session),
+        current_user: User | None = Depends(get_current_user_with_profile),
+        error: str = None
+) -> Response:
     """ Просмотр страницы магазина карт """
 
     current_user_dto = await user_info_to_dto(current_user)
     use_case = ViewCardStoreUseCase(session_db)
-    data: ViewCardStoreUseCaseDict = await use_case.execute()
+    data: ViewCardStoreUseCaseResponse = await use_case.execute()
 
-    context = {'request': request,
-               'current_user': current_user_dto,
-               'card_store_dto': data.get('card_store_dto'),
-               'error_message': error,
-               }
+    if data.response_type == ResponseType.SUCCESS:
+        context = {
+            'request': request,
+            'current_user': current_user_dto,
+            'card_store_dto': data.card_store,
+            'error_message': error,
+        }
 
-    return templates.TemplateResponse(request=request,
-                                      name='store/card_store.html',
-                                      context=context,
-                                      status_code=data.get('status_code'))
+        return templates.TemplateResponse(
+            request=request,
+            name='store/card_store.html',
+            context=context,
+            status_code=200
+        )
+    else:
+        status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
+        template_name = get_error_template(status_code)
+        context = {
+            'error': data.error_message,
+            'error_code': status_code,
+            'current_user': current_user_dto
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name=template_name,
+            context=context,
+            status_code=status_code
+        )
 
 
 @router.get(path='/items/{store_filter}', name='item_store')

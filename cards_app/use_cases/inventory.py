@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import InventoryException
 from cards_app.models import User
-from cards_app.schemas.inventory_new import (
+from cards_app.schemas.inventory import (
     ExpItemsInventoryDTO, AmuletsInventoryDTO,
     UpgradeItemsInventoryDTO, FullInventoryDTO
 )
@@ -54,57 +54,65 @@ class ViewInventoryUseCase:
                 inventory=None
             )
 
-        if inventory_filter == 'exp_items':
-            inventory_dto = FullInventoryDTO(
-                exp_items=await self._get_exp_items_dto(owner_id=current_user.profile.id),
-                amulets=None,
-                upgrade_items=None,
-            )
+        try:
+            if inventory_filter == 'exp_items':
+                inventory_dto = FullInventoryDTO(
+                    exp_items=await self._get_exp_items_dto(owner_id=current_user.profile.id),
+                    amulets=None,
+                    upgrade_items=None,
+                )
 
-        elif inventory_filter == 'amulets':
-            amulets_list = await self._get_amulets_dto(owner_id=current_user.profile.id)
-            inventory_dto = FullInventoryDTO(
-                exp_items=None,
-                amulets=amulets_list,
-                upgrade_items=None,
-                count_amulet=len(amulets_list),
-                max_count_amulets=current_user.profile.amulet_slots
-            )
+            elif inventory_filter == 'amulets':
+                amulets_list = await self._get_amulets_dto(owner_id=current_user.profile.id)
+                inventory_dto = FullInventoryDTO(
+                    exp_items=None,
+                    amulets=amulets_list,
+                    upgrade_items=None,
+                    count_amulet=len(amulets_list),
+                    max_count_amulets=current_user.profile.amulet_slots
+                )
 
-        elif inventory_filter == 'upgrade_items':
-            inventory_dto = FullInventoryDTO(
-                exp_items=None,
-                amulets=None,
-                upgrade_items=await self._get_upgrade_items_dto(owner_id=current_user.profile.id)
-            )
+            elif inventory_filter == 'upgrade_items':
+                inventory_dto = FullInventoryDTO(
+                    exp_items=None,
+                    amulets=None,
+                    upgrade_items=await self._get_upgrade_items_dto(owner_id=current_user.profile.id)
+                )
 
-        elif inventory_filter == 'all':
+            elif inventory_filter == 'all':
 
-            exp, amu, upg = await asyncio.gather(
-                self._get_exp_items_dto(owner_id=current_user.profile.id),
-                self._get_amulets_dto(owner_id=current_user.profile.id),
-                self._get_upgrade_items_dto(owner_id=current_user.profile.id),
-            )
-            inventory_dto = FullInventoryDTO(
-                exp_items=exp,
-                amulets=amu,
-                upgrade_items=upg,
-                count_amulet=len(amu),
-                max_count_amulets=current_user.profile.amulet_slots
-            )
+                exp, amu, upg = await asyncio.gather(
+                    self._get_exp_items_dto(owner_id=current_user.profile.id),
+                    self._get_amulets_dto(owner_id=current_user.profile.id),
+                    self._get_upgrade_items_dto(owner_id=current_user.profile.id),
+                )
+                inventory_dto = FullInventoryDTO(
+                    exp_items=exp,
+                    amulets=amu,
+                    upgrade_items=upg,
+                    count_amulet=len(amu),
+                    max_count_amulets=current_user.profile.amulet_slots
+                )
 
-        else:
+            else:
+                return ViewInventoryUseCaseResponse(
+                    response_type=ResponseType.BAD_REQUEST,
+                    error_message=f'Неверный фильтр инвентаря',
+                    inventory=None
+                )
+
             return ViewInventoryUseCaseResponse(
-                response_type=ResponseType.BAD_REQUEST,
-                error_message=f'Неверный фильтр инвентаря',
+                response_type=ResponseType.SUCCESS,
+                error_message=None,
+                inventory=inventory_dto
+            )
+        except Exception as error:
+            logger.error(f'Непредвиденная ошибка в ViewInventoryUseCase: {error}', exc_info=True)
+            return ViewInventoryUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
                 inventory=None
             )
-
-        return ViewInventoryUseCaseResponse(
-            response_type=ResponseType.SUCCESS,
-            error_message=None,
-            inventory=inventory_dto
-        )
 
     async def _get_exp_items_dto(self, owner_id: int) -> list[ExpItemsInventoryDTO]:
         """ Преобразует DTO для предметов опыта """
