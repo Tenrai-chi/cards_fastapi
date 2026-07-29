@@ -77,3 +77,11 @@ class AmuletBase(BaseModel):
     bonus_hp: int
     bonus_damage: int
 
+
+class ExpItemsBase(BaseModel):
+    """ Базовая схема для книг опыта """
+
+    name: str
+    experience_amount: int
+    image: str
+

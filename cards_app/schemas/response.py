@@ -1,10 +1,11 @@
-from cards_app.schemas.base import UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin
+from cards_app.schemas.base import UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, \
+    SuccessMessageMixin, ExpItemsBase
 from cards_app.schemas.cards import CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
 from cards_app.schemas.inventory import FullInfoUpgradingDTO, FullInventoryDTO
 from cards_app.schemas.news import NewsDTO
 from cards_app.schemas.profile import RatingTableDTO
 from cards_app.schemas.start_event import StartEventAwardsDTO
-from cards_app.schemas.store_new import CardStoreDTO
+from cards_app.schemas.store_new import CardStoreDTO, AllStoreDTO, AmuletRewardDTO
 
 
 # -------- Cards --------
@@ -99,3 +100,23 @@ class ViewCardStoreUseCaseResponse(UseCaseResponse):
     """ Ответ на запрос просмотра магазина карт """
 
     card_store: CardStoreDTO | None
+
+
+class ViewItemStoreUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
+    """ Ответ на запрос просмотра магазина предметов """
+
+    store: AllStoreDTO | None
+
+
+class BuyStoreCardUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessageMixin):
+    """ Ответ на запрос покупки карты в магазине карт """
+
+    new_card_id: int | None
+
+
+class BuyBoxUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessageMixin, CurrentUserMixin):
+    """ Ответ на запрос покупки сундука в магазине """
+
+    exp_items_dto: list[ExpItemsBase] | None
+    amulets_items_dto: list[AmuletRewardDTO] | None
+    card_id: int | None

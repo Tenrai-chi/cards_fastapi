@@ -1,7 +1,6 @@
 from typing import TypedDict
 from cards_app.schemas.fight import FightDTO
 from cards_app.schemas.profile import ProfileResponseDTO, FavoriteUsersPageDTO, TransactionsDTO
-from cards_app.schemas.store import AllStoreDTO, OpenBoxExpItemDTO, OpenBoxAmuletDTO
 from cards_app.schemas.users import CurrentUserForMenuDTO
 
 
@@ -78,10 +77,10 @@ class FavoriteUsersUseCaseDict(BaseUseCaseDict, ErrorMixin):
     favorite_users_dto: FavoriteUsersPageDTO | None
 
 
-class BuyStoreCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):
-    """ Кастомный словарь для возврата данных из BuyStoreCardUseCase """
-
-    new_card_id: int | None
+# class BuyStoreCardUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin):
+#     """ Кастомный словарь для возврата данных из BuyStoreCardUseCase """
+#
+#     new_card_id: int | None
 
 
 class ProcessFightUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
@@ -90,10 +89,10 @@ class ProcessFightUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
     fight_dto: FightDTO | None
 
 
-class ViewItemStoreUseCaseDict(BaseUseCaseDict, ErrorMixin):
-    """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
-
-    store_dto: AllStoreDTO | None
+# class ViewItemStoreUseCaseDict(BaseUseCaseDict, ErrorMixin):
+#     """ Кастомный словарь для возврата данных из ViewUsersRatingUseCase """
+#
+#     store_dto: AllStoreDTO | None
 
 
 class UserTransactionsUseCaseDict(BaseUseCaseDict, ErrorMixin):
@@ -101,13 +100,13 @@ class UserTransactionsUseCaseDict(BaseUseCaseDict, ErrorMixin):
 
     transactions_dto: TransactionsDTO | None
 
-
-class BuyBoxUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
-    """ Кастомный словарь для возврата данных из BuyBoxUseCase """
-
-    exp_items_dto: OpenBoxExpItemDTO | None
-    amulets_items_dto: OpenBoxAmuletDTO | None
-    card_id: int | None
+#
+# class BuyBoxUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin):
+#     """ Кастомный словарь для возврата данных из BuyBoxUseCase """
+#
+#     exp_items_dto: OpenBoxExpItemDTO | None
+#     amulets_items_dto: OpenBoxAmuletDTO | None
+#     card_id: int | None
 
 
 class BuyItemUseCaseDict(BaseUseCaseDict, ErrorWithUserMixin, SuccessMixin, SuccessMessageMixin):

@@ -238,8 +238,8 @@ class GetFreeCardUseCase:
             )
 
         await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
-        # current_user получит профиль из сессии при запросе (используется для создания DTO)
         current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
         if current_user is None:
             logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
             return GetFreeCardUseCaseResponse(

@@ -80,17 +80,14 @@ class ViewInventoryUseCase:
                 )
 
             elif inventory_filter == 'all':
-
-                exp, amu, upg = await asyncio.gather(
-                    self._get_exp_items_dto(owner_id=current_user.profile.id),
-                    self._get_amulets_dto(owner_id=current_user.profile.id),
-                    self._get_upgrade_items_dto(owner_id=current_user.profile.id),
-                )
+                exp_items = await self._get_exp_items_dto(owner_id=current_user.profile.id)
+                amulets = await self._get_amulets_dto(owner_id=current_user.profile.id)
+                upgrade_items = await self._get_upgrade_items_dto(owner_id=current_user.profile.id)
                 inventory_dto = FullInventoryDTO(
-                    exp_items=exp,
-                    amulets=amu,
-                    upgrade_items=upg,
-                    count_amulet=len(amu),
+                    exp_items=exp_items,
+                    amulets=amulets,
+                    upgrade_items=upgrade_items,
+                    count_amulet=len(amulets),
                     max_count_amulets=current_user.profile.amulet_slots
                 )
 

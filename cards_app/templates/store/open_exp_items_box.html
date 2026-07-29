@@ -14,7 +14,7 @@
     <p class="page-subtitle">Вы получили следующие предметы:</p>
 
     <div class="store-grid">
-        {% for item in exp_items_dto.boxs %}
+        {% for item in exp_items_dto %}
         <div class="store-card">
             <div class="card-image">
                 <img src="{{ url_for('static', path=item.image) }}" alt="{{ item.name }}">

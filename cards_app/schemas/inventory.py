@@ -1,14 +1,11 @@
 from pydantic import BaseModel
-from cards_app.schemas.base import AmuletBase, CardBase
+from cards_app.schemas.base import AmuletBase, CardBase, ExpItemsBase
 
 
-class ExpItemsInventoryDTO(BaseModel):
+class ExpItemsInventoryDTO(ExpItemsBase):
     """ Данные о книгах опыта в инвентаре пользователя """
 
-    name: str
     rarity: str
-    experience_amount: int
-    image: str
     gold_for_use: int
     amount: int
 

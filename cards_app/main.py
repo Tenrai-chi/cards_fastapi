@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi_sqlalchemy_monitor import SQLAlchemyMonitor
 from fastapi_sqlalchemy_monitor.action import WarnMaxTotalInvocation, PrintStatistics
+from starlette.middleware.sessions import SessionMiddleware
 
 from cards_app.config.settings import settings
 from cards_app.config.logging import setup_logging
@@ -18,9 +19,14 @@ app.add_middleware(
     SQLAlchemyMonitor,
     engine=engine,
     actions=[
-        WarnMaxTotalInvocation(max_invocations=10),  # Warn if too many queries
-        PrintStatistics()  # Print statistics after each request
+        WarnMaxTotalInvocation(max_invocations=10),
+        PrintStatistics()
     ]
+)
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SESSION_SECRET_KEY
 )
 
 app.mount(settings.STATIC_URL,

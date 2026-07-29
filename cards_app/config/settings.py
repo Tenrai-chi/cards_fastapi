@@ -36,14 +36,17 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES')
     REFRESH_TOKEN_EXPIRE_DAYS: int = os.getenv('REFRESH_TOKEN_EXPIRE_DAYS')
 
+    SESSION_SECRET_KEY: str = os.getenv('SESSION_SECRET_KEY')
+
     @computed_field
     @property
     def DATABASE_URL(self) -> str:
         return f'postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
 
-    model_config = SettingsConfigDict(env_file=str(Path(__file__).parent.parent.parent / '.env'),
-                                      env_file_encoding='utf-8',
-                                      )
+    model_config = SettingsConfigDict(
+        env_file=str(Path(__file__).parent.parent.parent / '.env'),
+        env_file_encoding='utf-8',
+    )
 
 
 settings = Settings()
