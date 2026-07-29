@@ -9,16 +9,16 @@ from cards_app.models import News, InitialEventAwards, User
 logger = logging.getLogger(__name__)
 
 
-async def get_paginated_news(session_db: AsyncSession, limit: int, offset: int
-                             ) -> list[News]:
-    """ Возвращает список новостей с пагинацией, отсортированный по дате создания.
-        Args:
-            session_db: сессия базы данных
-            limit: максимальное количество новостей в одной странице
-            offset: сдвиг для пагинации
+async def get_paginated_news(session_db: AsyncSession, limit: int, offset: int) -> list[News]:
+    """
+    Возвращает список новостей с пагинацией, отсортированный по дате создания.
+    Args:
+        session_db: сессия базы данных
+        limit: максимальное количество новостей в одной странице
+        offset: сдвиг для пагинации
 
-        Returns:
-            list[News]: список объектов News
+    Returns:
+        list[News]: список объектов News
     """
 
     stmt_news = (
@@ -33,12 +33,13 @@ async def get_paginated_news(session_db: AsyncSession, limit: int, offset: int
 
 
 async def get_total_news_count(session_db: AsyncSession) -> int:
-    """ Возвращает общее количество новостей для пагинации.
-        Args:
-            session_db: сессия базы данных
+    """
+    Возвращает общее количество новостей для пагинации.
+    Args:
+        session_db: сессия базы данных
 
-        Returns:
-            int: общее число записей в таблице News.
+    Returns:
+        int: общее число записей в таблице News.
     """
 
     stmt_count = select(func.count()).select_from(News)
@@ -48,11 +49,12 @@ async def get_total_news_count(session_db: AsyncSession) -> int:
 
 
 async def get_info_start_event_awards(session_db: AsyncSession) -> list[InitialEventAwards]:
-    """ Возвращает список наград стартового события.
-        Args:
-            session_db: сессия базы данных
-        Returns:
-            list[InitialEventAwards]: список наград (объектов) InitialEventAwards
+    """
+    Возвращает список наград стартового события.
+    Args:
+        session_db: сессия базы данных
+    Returns:
+        list[InitialEventAwards]: список наград (объектов) InitialEventAwards
     """
 
     stmt_awards = (select(InitialEventAwards)
@@ -63,11 +65,12 @@ async def get_info_start_event_awards(session_db: AsyncSession) -> list[InitialE
 
 
 def can_get_start_event_award(user: User) -> bool:
-    """ Проверяет, что пользователь может получить награду стартового события.
-        Args:
-            user: User + Profile пользователя
-        Returns:
-            bool: True, если пользователь может получить награду
+    """
+    Проверяет, что пользователь может получить награду стартового события.
+    Args:
+        user: User + Profile пользователя
+    Returns:
+        bool: True, если пользователь может получить награду
     """
 
     if user.profile.event_visit >= 30:
@@ -81,13 +84,15 @@ def can_get_start_event_award(user: User) -> bool:
     return is_day_passed
 
 
-async def update_profile_event_award_received(session_db: AsyncSession,
-                                              user: User
-                                              ) -> None:
-    """ Обновляет информацию в профиле пользователя при получении награды.
-        Args:
-            session_db: сессия базы данных
-            user: с подгруженным profile из depends
+async def update_profile_event_award_received(
+        session_db: AsyncSession,
+        user: User
+) -> None:
+    """
+    Обновляет информацию в профиле пользователя при получении награды.
+    Args:
+        session_db: сессия базы данных
+        user: с подгруженным profile из depends
     """
 
     user.profile.event_visit += 1
@@ -96,15 +101,17 @@ async def update_profile_event_award_received(session_db: AsyncSession,
     logger.info(f'Пользователь ID {user.id} увеличил счетчик посещений в стартовом событии')
 
 
-async def get_info_award(session_db: AsyncSession,
-                         day_visit: int
-                         ) -> InitialEventAwards:
-    """ Получает запись награды по дню.
-        Args:
-            session_db: сессия базы данных
-            day_visit: день получения награды
-        Returns:
-            InitialEventAwards: награда этого дня
+async def get_info_award(
+        session_db: AsyncSession,
+        day_visit: int
+) -> InitialEventAwards:
+    """
+    Получает запись награды по дню.
+    Args:
+        session_db: сессия базы данных
+        day_visit: день получения награды
+    Returns:
+        InitialEventAwards: награда этого дня
     """
 
     stmt_award = (select(InitialEventAwards)

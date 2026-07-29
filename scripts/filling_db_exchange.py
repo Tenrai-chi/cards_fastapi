@@ -31,11 +31,14 @@ async def load_amulet_rarities():
 
             for rarity in all_rarities:
                 if rarity['name'] not in existing_names:
-                    new_records.append(AmuletRarity(name=rarity['name'],
-                                                    chance_drop_on_fight=rarity['chance_drop_on_fight'],
-                                                    chance_drop_on_box=rarity['chance_drop_on_box'],
-                                                    max_upgrade=rarity['max_upgrade'],
-                                                    ))
+                    new_records.append(
+                        AmuletRarity(
+                            name=rarity['name'],
+                            chance_drop_on_fight=rarity['chance_drop_on_fight'],
+                            chance_drop_on_box=rarity['chance_drop_on_box'],
+                            max_upgrade=rarity['max_upgrade'],
+                        )
+                    )
                     logger.info(f'Добавлена редкость амулетов: {rarity["name"]}')
                 else:
                     logger.info(f'Редкость амулетов {rarity["name"]} уже существует, пропускаем')
@@ -67,7 +70,7 @@ async def load_amulet_types():
             file_path = os.path.join(os.path.dirname(__file__), 'db_info/exchange/amulet_types.json')
             with open(file_path, 'r', encoding='utf-8') as file_json:
                 data = json.load(file_json)
-            all_types= data.get('amulet_type', [])
+            all_types = data.get('amulet_type', [])
             new_records = []
 
             rarity_result = await session.execute(select(AmuletRarity))
@@ -84,16 +87,19 @@ async def load_amulet_types():
                 if amulet_type['name'] not in existing_names:
                     rarity_name = amulet_type['rarity']
                     rarity_obj = rarity_map.get(rarity_name)
-                    new_records.append(AmuletType(name=amulet_type['name'],
-                                                  bonus_hp=amulet_type['bonus_hp'],
-                                                  bonus_damage=amulet_type['bonus_damage'],
-                                                  price=amulet_type['price'],
-                                                  sale_now=amulet_type['sale_now'],
-                                                  image=amulet_type['image'],
-                                                  discount=amulet_type['discount'],
-                                                  discount_now=amulet_type['discount_now'],
-                                                  rarity_id=rarity_obj.id,
-                                                  ))
+                    new_records.append(
+                        AmuletType(
+                            name=amulet_type['name'],
+                            bonus_hp=amulet_type['bonus_hp'],
+                            bonus_damage=amulet_type['bonus_damage'],
+                            price=amulet_type['price'],
+                            sale_now=amulet_type['sale_now'],
+                            image=amulet_type['image'],
+                            discount=amulet_type['discount'],
+                            discount_now=amulet_type['discount_now'],
+                            rarity_id=rarity_obj.id,
+                        )
+                    )
                     logger.info(f'Добавлен тип амулета: {amulet_type["name"]}')
                 else:
                     logger.info(f'Тип амулета {amulet_type["name"]} уже существует, пропускаем')
@@ -137,16 +143,19 @@ async def load_experience_items():
                     continue
 
                 if item['name'] not in existing_names:
-                    new_records.append(ExperienceItems(name=item['name'],
-                                                       rarity=item['rarity'],
-                                                       experience_amount=item['experience_amount'],
-                                                       chance_drop_on_fight=item['chance_drop_on_fight'],
-                                                       chance_drop_on_box=item['chance_drop_on_box'],
-                                                       price=item['price'],
-                                                       image=item['image'],
-                                                       gold_for_use=item['gold_for_use'],
-                                                       sale_now=bool(item['sale_now']),
-                                                       ))
+                    new_records.append(
+                        ExperienceItems(
+                            name=item['name'],
+                            rarity=item['rarity'],
+                            experience_amount=item['experience_amount'],
+                            chance_drop_on_fight=item['chance_drop_on_fight'],
+                            chance_drop_on_box=item['chance_drop_on_box'],
+                            price=item['price'],
+                            image=item['image'],
+                            gold_for_use=item['gold_for_use'],
+                            sale_now=bool(item['sale_now']),
+                        )
+                    )
                     logger.info(f'Добавлена: {item["name"]}')
                 else:
                     logger.info(f'{item["name"]} уже существует, пропускаем')
@@ -190,14 +199,17 @@ async def load_upgrade_items_types():
                     continue
 
                 if item_type['name'] not in existing_names:
-                    new_records.append(UpgradeItemsType(name=item_type['name'],
-                                                        description=item_type['description'],
-                                                        type=item_type['type'],
-                                                        amount_up=item_type['amount_up'],
-                                                        image=item_type['image'],
-                                                        price=item_type['price'],
-                                                        price_of_use=item_type['price_of_use'],
-                                                       ))
+                    new_records.append(
+                        UpgradeItemsType(
+                            name=item_type['name'],
+                            description=item_type['description'],
+                            type=item_type['type'],
+                            amount_up=item_type['amount_up'],
+                            image=item_type['image'],
+                            price=item_type['price'],
+                            price_of_use=item_type['price_of_use'],
+                        )
+                    )
                     logger.info(f'Добавлен тип предмета усиления: {item_type["name"]}')
                 else:
                     logger.info(f'Тип предмета усиления {item_type["name"]} уже существует, пропускаем')
@@ -241,13 +253,16 @@ async def load_boxes_in_store():
                     continue
 
                 if box['name'] not in existing_names:
-                    new_records.append(Boxes(name=box['name'],
-                                             description=box['description'],
-                                             image=box['image'],
-                                             price=box['price'],
-                                             reward_type=box['reward_type'],
-                                             reward_amount=box['reward_amount']
-                                             ))
+                    new_records.append(
+                        Boxes(
+                            name=box['name'],
+                            description=box['description'],
+                            image=box['image'],
+                            price=box['price'],
+                            reward_type=box['reward_type'],
+                            reward_amount=box['reward_amount']
+                        )
+                    )
                     logger.info(f'Добавлен сундук в магазин: {box["name"]}')
                 else:
                     logger.info(f'Сундук {box["name"]} уже существует в магазине, пропускаем')

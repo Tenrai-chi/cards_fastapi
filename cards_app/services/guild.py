@@ -6,15 +6,17 @@ from cards_app.models import User
 logger = logging.getLogger(__name__)
 
 
-async def update_guild_points_user(session_db: AsyncSession,
-                                   user: User,
-                                   result_battle: str
-                                   ) -> None:
-    """ Обновление очков гильдии пользователя после участия в рейтинговой битве.
-        Args:
-            session_db: сессия базы данных
-            user: User + Profile + Guild пользователя
-            result_battle: итог битвы
+async def update_guild_points_user(
+        session_db: AsyncSession,
+        user: User,
+        result_battle: str
+) -> None:
+    """
+    Обновление очков гильдии пользователя после участия в рейтинговой битве.
+    Args:
+        session_db: сессия базы данных
+        user: User + Profile + Guild пользователя
+        result_battle: итог битвы
     """
 
     win_points = 30

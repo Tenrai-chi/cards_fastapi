@@ -6,27 +6,32 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, contains_eager
 
-from cards_app.exeptions import (BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError, AmuletNotOnSaleError,
-                                 UpgradeItemNotFoundError)
+from cards_app.exeptions import (
+    BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError, AmuletNotOnSaleError,
+    UpgradeItemNotFoundError
+)
 from cards_app.models import CardStore, Rarity, Boxes, AmuletType, UpgradeItemsType, ExperienceItems, User
-from cards_app.services.cards import generate_max_stat_ur_card, create_record_in_history_receiving_card
-from cards_app.services.inventory import (add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch,
-                                          add_upgrade_item_to_user)
-from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
+from cards_app.services.cards import generate_max_stat_ur_card
+from cards_app.services.inventory import (
+    add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch,
+    add_upgrade_item_to_user
+)
+from cards_app.services.profile import check_can_user_receive_card
 
 logger = logging.getLogger(__name__)
 
 
 async def get_cards_in_store(session_db: AsyncSession) -> list[CardStore]:
-    """ Возвращает список карт, доступных для покупки в магазине.
-        Args:
-            session_db: сессия базы данных
-        Returns:
-            list[CardStore]: список карт-шаблонов, у которых sale_now == True.
-            Каждый объект содержит подгруженные атрибуты:
-                - rarity_card (Rarity)
-                - type_card (Type)
-                - class_card (ClassCard)
+    """
+    Возвращает список карт, доступных для покупки в магазине.
+    Args:
+        session_db: сессия базы данных
+    Returns:
+        list[CardStore]: список карт-шаблонов, у которых sale_now == True.
+        Каждый объект содержит подгруженные атрибуты:
+            - rarity_card (Rarity)
+            - type_card (Type)
+            - class_card (ClassCard)
     """
 
     stmt_cards = (
@@ -47,11 +52,12 @@ async def get_cards_in_store(session_db: AsyncSession) -> list[CardStore]:
 
 
 async def get_box_in_store(session_db: AsyncSession) -> list[Boxes]:
-    """ Возвращает список сундуков, доступных для покупки в магазине.
-        Args:
-            session_db: сессия базы данных
-        Returns:
-            list[Boxes]: список сундуков, доступных к покупке
+    """
+    Возвращает список сундуков, доступных для покупки в магазине.
+    Args:
+        session_db: сессия базы данных
+    Returns:
+        list[Boxes]: список сундуков, доступных к покупке
     """
 
     result_boxes = await session_db.execute(select(Boxes))
@@ -60,11 +66,12 @@ async def get_box_in_store(session_db: AsyncSession) -> list[Boxes]:
 
 
 async def get_amulets_in_store(session_db: AsyncSession) -> list[AmuletType]:
-    """ Возвращает список амулетов, доступных для покупки в магазине.
-        Args:
-            session_db: сессия базы данных
-        Returns:
-            list[AmuletType]: список амулетов, доступных к покупке
+    """
+    Возвращает список амулетов, доступных для покупки в магазине.
+    Args:
+        session_db: сессия базы данных
+    Returns:
+        list[AmuletType]: список амулетов, доступных к покупке
     """
 
     stmt_amulets = (
@@ -79,12 +86,13 @@ async def get_amulets_in_store(session_db: AsyncSession) -> list[AmuletType]:
 
 
 async def get_amulet_by_name(session_db: AsyncSession, name: str) -> AmuletType:
-    """ Получает тип амулета по его имени
-        Args:
-            session_db: сессия базы данных
-            name: название амулета
-        Returns:
-            AmuletType: список амулетов, доступных к покупке
+    """
+    Получает тип амулета по его имени
+    Args:
+        session_db: сессия базы данных
+        name: название амулета
+    Returns:
+        AmuletType: список амулетов, доступных к покупке
     """
 
     stmt_amulet = select(AmuletType).where(AmuletType.name == name)
@@ -94,11 +102,12 @@ async def get_amulet_by_name(session_db: AsyncSession, name: str) -> AmuletType:
 
 
 async def get_upgrade_items_in_store(session_db: AsyncSession) -> list[UpgradeItemsType]:
-    """ Возвращает список предметов усиления, доступных для покупки в магазине
-        Args:
-            session_db: сессия базы данных
-        Returns:
-            list[UpgradeItemsType]: список предметов усиления, доступных к покупке
+    """
+    Возвращает список предметов усиления, доступных для покупки в магазине
+    Args:
+        session_db: сессия базы данных
+    Returns:
+        list[UpgradeItemsType]: список предметов усиления, доступных к покупке
     """
 
     result_upgrade_items = await session_db.execute(select(UpgradeItemsType))
@@ -107,11 +116,12 @@ async def get_upgrade_items_in_store(session_db: AsyncSession) -> list[UpgradeIt
 
 
 async def get_exp_items_in_store(session_db: AsyncSession) -> list[ExperienceItems]:
-    """ Возвращает список книг опыта, доступных для покупки в магазине
-        Args:
-            session_db: сессия базы данных
-        Returns:
-            list[ExperienceItems]: список книг опыта, доступных к покупке
+    """
+    Возвращает список книг опыта, доступных для покупки в магазине
+    Args:
+        session_db: сессия базы данных
+    Returns:
+        list[ExperienceItems]: список книг опыта, доступных к покупке
     """
 
     result_exp_items = await session_db.execute(select(ExperienceItems))
@@ -120,14 +130,15 @@ async def get_exp_items_in_store(session_db: AsyncSession) -> list[ExperienceIte
 
 
 async def get_box_info(session_db: AsyncSession, box_id: int) -> Boxes:
-    """ Возвращает информацию о сундуке
-        Args:
-            session_db: сессия базы данных
-            box_id: ID сундука
-        Returns:
-            Boxes: информация о сундуке
-        Raises:
-            BoxNotFoundError: если сундук не существует
+    """
+    Возвращает информацию о сундуке
+    Args:
+        session_db: сессия базы данных
+        box_id: ID сундука
+    Returns:
+        Boxes: информация о сундуке
+    Raises:
+        BoxNotFoundError: если сундук не существует
     """
 
     result = await session_db.execute(select(Boxes).where(Boxes.id == box_id))
@@ -138,37 +149,39 @@ async def get_box_info(session_db: AsyncSession, box_id: int) -> Boxes:
 
 
 async def open_box_card(session_db: AsyncSession, user: User) -> int:
-    """ Открытие сундука с картой.
-        Проверяет, может ли пользователь получить награду из сундука.
-        Запускает создание карты.
-        Args:
-            session_db: сессия базы данных
-            user: User + Profile текущего пользователя
-        Return:
-            int: ID созданной карты
+    """
+    Открытие сундука с картой.
+    Проверяет, может ли пользователь получить награду из сундука.
+    Запускает создание карты.
+    Args:
+        session_db: сессия базы данных
+        user: User + Profile текущего пользователя
+    Return:
+        int: ID созданной карты
     """
 
-    await check_can_user_receive_card(session_db=session_db,
-                                      current_user=user,
-                                      need_slots=1)
-    new_card_id = await generate_max_stat_ur_card(session_db=session_db,
-                                                  user_profile_id=user.profile.id)
+    await check_can_user_receive_card(
+        session_db=session_db,
+        current_user=user,
+        need_slots=1
+    )
+    new_card_id = await generate_max_stat_ur_card(session_db=session_db, user_profile_id=user.profile.id)
 
     return new_card_id
 
 
-async def open_box_exp_item(session_db: AsyncSession, user: User
-                            ) -> list[ExperienceItems]:
-    """ Открытие сундука с предметами опыта.
-        Генерирует список из 10 книг, которые получит пользователь при открытии.
-        Как минимум одна книга в списке будет UR редкости.
-        Отправляет награду в инвентарь пользователя.
-        Возвращает список созданных книг опыта.
-        Args:
-            session_db: сессия базы данных
-            user: User + Profile текущего пользователя
-        Returns:
-            list[ExperienceItems]: список книг, полученных пользователем
+async def open_box_exp_item(session_db: AsyncSession, user: User) -> list[ExperienceItems]:
+    """
+    Открытие сундука с предметами опыта.
+    Генерирует список из 10 книг, которые получит пользователь при открытии.
+    Как минимум одна книга в списке будет UR редкости.
+    Отправляет награду в инвентарь пользователя.
+    Возвращает список созданных книг опыта.
+    Args:
+        session_db: сессия базы данных
+        user: User + Profile текущего пользователя
+    Returns:
+        list[ExperienceItems]: список книг, полученных пользователем
     """
 
     stmt_all_books = select(ExperienceItems).order_by(ExperienceItems.rarity)
@@ -187,30 +200,33 @@ async def open_box_exp_item(session_db: AsyncSession, user: User
         reward_books.append(chosen)
 
     counter = Counter(book.id for book in reward_books)
-    await add_experience_books_batch(session_db=session_db,
-                                     user_profile_id=user.profile.id,
-                                     items_amount=dict(counter)
-                                     )
+    await add_experience_books_batch(
+        session_db=session_db,
+        user_profile_id=user.profile.id,
+        items_amount=dict(counter)
+    )
     return reward_books
 
 
-async def open_box_amulet(session_db: AsyncSession, user: User
-                          ) -> list[AmuletType]:
-    """ Открытие сундука с амулетами.
-        Генерирует список из 5 амулетов, которые получит пользователь при открытии.
-        Как минимум один амулет будет редкости UR.
-        Отправляет награду в инвентарь пользователя.
-        Возвращает список созданных книг опыта.
-        Args:
-            session_db: сессия базы данных
-            user: User + Profile текущего пользователя
-        Returns:
-            list[AmuletType]: список амулетов полученных из сундука
+async def open_box_amulet(session_db: AsyncSession, user: User) -> list[AmuletType]:
+    """
+    Открытие сундука с амулетами.
+    Генерирует список из 5 амулетов, которые получит пользователь при открытии.
+    Как минимум один амулет будет редкости UR.
+    Отправляет награду в инвентарь пользователя.
+    Возвращает список созданных книг опыта.
+    Args:
+        session_db: сессия базы данных
+        user: User + Profile текущего пользователя
+    Returns:
+        list[AmuletType]: список амулетов полученных из сундука
     """
 
-    await can_user_receive_amulet(session_db=session_db,
-                                  current_user=user,
-                                  need_slots=5)
+    await can_user_receive_amulet(
+        session_db=session_db,
+        current_user=user,
+        need_slots=5
+    )
 
     stmt_amulets = select(AmuletType).options(joinedload(AmuletType.rarity))
     result = await session_db.execute(stmt_amulets)
@@ -244,21 +260,23 @@ async def open_box_amulet(session_db: AsyncSession, user: User
     return reward_amulets
 
 
-async def buy_exp_items(session_db: AsyncSession,
-                        exp_item_id: int,
-                        exp_item_amount: int,
-                        user: User
-                        ) -> int:
-    """ Покупка книг в магазине предметов.
-        Args:
-            session_db: сессия базы данных
-            exp_item_id: ID покупаемой книги
-            exp_item_amount: количество покупаемых книг
-            user: User + Profile текущего пользователя
-        Returns:
-            int: Количество золота необходимое для покупки
-        Raises:
-            ExpItemNotFoundError: если запрашивается покупка несуществующей книги
+async def buy_exp_items(
+        session_db: AsyncSession,
+        exp_item_id: int,
+        exp_item_amount: int,
+        user: User
+) -> int:
+    """
+    Покупка книг в магазине предметов.
+    Args:
+        session_db: сессия базы данных
+        exp_item_id: ID покупаемой книги
+        exp_item_amount: количество покупаемых книг
+        user: User + Profile текущего пользователя
+    Returns:
+        int: Количество золота необходимое для покупки
+    Raises:
+        ExpItemNotFoundError: если запрашивается покупка несуществующей книги
     """
 
     stmt_exp_item = select(ExperienceItems).where(ExperienceItems.id == exp_item_id).with_for_update()
@@ -278,25 +296,29 @@ async def buy_exp_items(session_db: AsyncSession,
     return need_gold
 
 
-async def buy_amulet(session_db: AsyncSession,
-                     amulet_id: int,
-                     user: User
-                     ) -> int:
-    """ Покупка амулета в магазине предметов.
-        Args:
-            session_db: сессия базы данных
-            amulet_id: ID покупаемого амулета
-            user: User + Profile текущего пользователя
-        Returns:
-            int: цена амулета при покупке
-        Raises:
-            AmuletNotFoundError: если запрашивается покупка несуществующего амулета
-            AmuletNotOnSaleError: попытка купить амулет, который не продается
+async def buy_amulet(
+        session_db: AsyncSession,
+        amulet_id: int,
+        user: User
+) -> int:
+    """
+    Покупка амулета в магазине предметов.
+    Args:
+        session_db: сессия базы данных
+        amulet_id: ID покупаемого амулета
+        user: User + Profile текущего пользователя
+    Returns:
+        int: цена амулета при покупке
+    Raises:
+        AmuletNotFoundError: если запрашивается покупка несуществующего амулета
+        AmuletNotOnSaleError: попытка купить амулет, который не продается
     """
 
-    await can_user_receive_amulet(session_db=session_db,
-                                  current_user=user,
-                                  need_slots=1)
+    await can_user_receive_amulet(
+        session_db=session_db,
+        current_user=user,
+        need_slots=1
+    )
 
     stmt_amulet = select(AmuletType).where(AmuletType.id == amulet_id)
     result = await session_db.execute(stmt_amulet)
@@ -309,25 +331,29 @@ async def buy_amulet(session_db: AsyncSession,
                        f'ID {amulet_id}, который находится не в продаже')
         raise AmuletNotOnSaleError()
 
-    await give_amulets_to_user_butch(session_db=session_db,
-                                     owner_id=user.profile.id,
-                                     amulets_amount={amulet.id: 1})
+    await give_amulets_to_user_butch(
+        session_db=session_db,
+        owner_id=user.profile.id,
+        amulets_amount={amulet.id: 1}
+    )
     return amulet.price
 
 
-async def buy_upgrade_item(session_db: AsyncSession,
-                           upgrade_item_id: int,
-                           user: User
-                           ) -> int:
-    """ Покупка предмета усиления в магазине предметов.
-        Args:
-            session_db: сессия базы данных
-            upgrade_item_id: ID предмета усиления
-            user: User + Profile текущего пользователя
-        Returns:
-            int: цена покупки предмета усиления
-        Raises:
-            UpgradeItemNotFoundError: если запрашивается покупка несуществующего предмета усиления
+async def buy_upgrade_item(
+        session_db: AsyncSession,
+        upgrade_item_id: int,
+        user: User
+) -> int:
+    """
+    Покупка предмета усиления в магазине предметов.
+    Args:
+        session_db: сессия базы данных
+        upgrade_item_id: ID предмета усиления
+        user: User + Profile текущего пользователя
+    Returns:
+        int: цена покупки предмета усиления
+    Raises:
+        UpgradeItemNotFoundError: если запрашивается покупка несуществующего предмета усиления
     """
 
     stmt_upgrade_item = select(UpgradeItemsType).where(UpgradeItemsType.id == upgrade_item_id)
@@ -338,21 +364,23 @@ async def buy_upgrade_item(session_db: AsyncSession,
                        f'предмет усиления ID {upgrade_item_id}')
         raise UpgradeItemNotFoundError()
 
-    await add_upgrade_item_to_user(session_db=session_db,
-                                   user_profile_id=user.profile.id,
-                                   upgrade_item=upgrade_item)
+    await add_upgrade_item_to_user(
+        session_db=session_db,
+        user_profile_id=user.profile.id,
+        upgrade_item=upgrade_item
+    )
 
     return upgrade_item.price
 
 
-async def get_book_by_name(session_db: AsyncSession, book_name: str
-                           ) -> ExperienceItems:
-    """ Получить книгу опыта по ее названию.
-        Args:
-            session_db: сессия базы данных
-            book_name: название книги
-        Returns:
-            ExperienceItems: книга опыта
+async def get_book_by_name(session_db: AsyncSession, book_name: str) -> ExperienceItems:
+    """
+    Получить книгу опыта по ее названию.
+    Args:
+        session_db: сессия базы данных
+        book_name: название книги
+    Returns:
+        ExperienceItems: книга опыта
     """
 
     stmt = select(ExperienceItems).where(ExperienceItems.name == book_name)

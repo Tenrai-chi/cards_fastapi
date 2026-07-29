@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,8 +26,7 @@ class ViewInventoryUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None, inventory_filter: str
-                      ) -> ViewInventoryUseCaseResponse:
+    async def execute(self, current_user: User | None, inventory_filter: str) -> ViewInventoryUseCaseResponse:
         """
         Выполняет получение инвентаря пользователя с примененным фильтром.
         Args:

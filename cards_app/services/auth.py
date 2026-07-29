@@ -13,17 +13,19 @@ from cards_app.models import User, Profile
 logger = logging.getLogger(__name__)
 
 
-async def create_user_and_profile(db_session: AsyncSession,
-                                  username: str,
-                                  email: str,
-                                  password: str
-                                  ) -> dict[str, Any]:
-    """ Создаёт нового пользователя и связанный с ним профиль.
-        Args:
-            db_session: сессия базы данных
-            username: имя пользователя (уникальный)
-            email: email пользователя (уникальный)
-            password: пароль (будет хэширован)
+async def create_user_and_profile(
+        db_session: AsyncSession,
+        username: str,
+        email: str,
+        password: str
+) -> dict[str, Any]:
+    """
+    Создаёт нового пользователя и связанный с ним профиль.
+    Args:
+        db_session: сессия базы данных
+        username: имя пользователя (уникальный)
+        email: email пользователя (уникальный)
+        password: пароль (будет хэширован)
 
     Returns:
         dict:
@@ -31,8 +33,10 @@ async def create_user_and_profile(db_session: AsyncSession,
             - error_message (str | None): Текст ошибки, если она произошла, иначе None.
     """
 
-    answer_data = {'user': None,
-                   'error_message': None}
+    answer_data = {
+        'user': None,
+        'error_message': None
+    }
     result = await db_session.execute(select(User).where(User.username == username))
     if result.scalar_one_or_none():
         answer_data['error_message'] = 'Пользователь с таким именем уже существует'
@@ -46,11 +50,13 @@ async def create_user_and_profile(db_session: AsyncSession,
         return answer_data
 
     hashed = get_password_hash(password)
-    user = User(username=username,
-                email=email,
-                hashed_password=hashed,
-                is_active=True,
-                email_verified=False)
+    user = User(
+        username=username,
+        email=email,
+        hashed_password=hashed,
+        is_active=True,
+        email_verified=False
+    )
     db_session.add(user)
     await db_session.flush()
     profile = Profile(user_id=user.id)
@@ -62,29 +68,33 @@ async def create_user_and_profile(db_session: AsyncSession,
     return answer_data
 
 
-async def authenticate_and_create_tokens(db_session: AsyncSession,
-                                         username: str,
-                                         password: str
-                                         ) -> dict[str, Any]:
-    """ Аутентифицирует пользователя по login/email и паролю.
-        При успехе обновляет поле last_login и генерирует пару success и refresh токенов
-        Args:
-            db_session: Асинхронная сессия SQLAlchemy.
-            username: Логин или email пользователя.
-            password: Пароль в открытом виде.
+async def authenticate_and_create_tokens(
+        db_session: AsyncSession,
+        username: str,
+        password: str
+) -> dict[str, Any]:
+    """
+    Аутентифицирует пользователя по login/email и паролю.
+    При успехе обновляет поле last_login и генерирует пару success и refresh токенов
+    Args:
+        db_session: Асинхронная сессия SQLAlchemy.
+        username: Логин или email пользователя.
+        password: Пароль в открытом виде.
 
-        Returns:
-            dict:
-                - user (User | None): объект пользователя при успехе
-                - access_token (str | None): JWT access токен при успехе
-                - refresh_token (str | None): JWT refresh токен при успехе
-                - error_message (str | None): текст ошибки
+    Returns:
+        dict:
+            - user (User | None): объект пользователя при успехе
+            - access_token (str | None): JWT access токен при успехе
+            - refresh_token (str | None): JWT refresh токен при успехе
+            - error_message (str | None): текст ошибки
     """
 
-    answer_data = {'user': None,
-                   'access_token': None,
-                   'refresh_token': None,
-                   'error_message': None}
+    answer_data = {
+        'user': None,
+        'access_token': None,
+        'refresh_token': None,
+        'error_message': None
+    }
 
     result = await db_session.execute(select(User).where((User.username == username) | (User.email == username)))
     user = result.scalar_one_or_none()

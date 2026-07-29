@@ -30,10 +30,13 @@ async def load_guild_buffs():
 
             for buff in buffs:
                 if buff['name'] not in existing_names:
-                    new_records.append(GuildBuff(name=buff['name'],
-                                                 description=buff['description'],
-                                                 numeric_value=buff['numeric_value']
-                                                 ))
+                    new_records.append(
+                        GuildBuff(
+                            name=buff['name'],
+                            description=buff['description'],
+                            numeric_value=buff['numeric_value']
+                        )
+                    )
                     logger.info(f'Добавлено усиление гильдии: {buff["name"]}')
                 else:
                     logger.info(f'Усиление {buff["name"]} уже существует, пропускаем')

@@ -3,21 +3,26 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import UserFavoriteException
-from cards_app.schemas.base import AmuletBase, ProfileBase, GuildBase, CardBase
-from cards_app.schemas.profile import FavoriteUsersPageDTO, FavoriteUserDTO, RecordTransaction, TransactionsDTO, \
-    FightHistoryRecordDTO, ProfileFullInfoDTO
-from cards_app.schemas.response import FavoriteUsersUseCaseResponse, UserTransactionsUseCaseResponse, \
-    ViewProfileUseCaseResponse, ToggleFavoriteUserUseCaseResponse
-from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
-                                        get_user_fight_history, is_favorite, add_user_to_favorite,
-                                        remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user,
-                                        get_user_transactions)
-from cards_app.services.cards import get_card_with_details
+from cards_app.schemas.base import AmuletBase, GuildBase, CardBase
 from cards_app.schemas.profile import (
-                                       CardDTO)
+    FavoriteUsersPageDTO, FavoriteUserDTO, RecordTransaction, TransactionsDTO,
+    FightHistoryRecordDTO, ProfileFullInfoDTO
+)
+from cards_app.schemas.response import (
+    FavoriteUsersUseCaseResponse, UserTransactionsUseCaseResponse,
+    ViewProfileUseCaseResponse, ToggleFavoriteUserUseCaseResponse
+)
+from cards_app.services.profile import (
+    get_base_info_profile, get_battle_stats,
+    get_user_fight_history, is_favorite, add_user_to_favorite,
+    remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user,
+    get_user_transactions
+)
+from cards_app.services.cards import get_card_with_details
+from cards_app.schemas.profile import CardDTO
 from cards_app.models.users import User
 from cards_app.exeptions import UserNotFoundError, NotEnoughSlotsError
-from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
+from cards_app.services.users import get_profile_for_update, get_user_with_profile
 
 from cards_app.utils.response_types import ResponseType
 
@@ -25,9 +30,10 @@ logger = logging.getLogger(__name__)
 
 
 class ViewProfileUseCase:
-    """ Use case для просмотра профиля пользователя.
-        Координирует получение данных профиля в зависимости от того, кто просматривает профиль.
-        Возможны 3 случая: аноним, гость, хозяин
+    """
+    Use case для просмотра профиля пользователя.
+    Координирует получение данных профиля в зависимости от того, кто просматривает профиль.
+    Возможны 3 случая: аноним, гость, хозяин
     """
 
     def __init__(self, session_db: AsyncSession):
@@ -38,20 +44,21 @@ class ViewProfileUseCase:
             current_user: User | None,
             target_user_id: int
     ) -> ViewProfileUseCaseResponse:
-        """ Выполняет получение и подготовку данных профиля для отображения
-            Args:
-                current_user: User + Profile текущего пользователя
-                target_user_id: ID Profile пользователя, чей профиль просматривается
+        """
+        Выполняет получение и подготовку данных профиля для отображения
+        Args:
+            current_user: User + Profile текущего пользователя
+            target_user_id: ID Profile пользователя, чей профиль просматривается
 
-            Returns:
-                ViewProfileUseCaseResponse:
-                    - user_info (ProfileResponseDTO | None): DTO с полной информацией профиля
-                    - error_message (str | None): сообщение об ошибке
-                    - response_type (str): статус ответа.
-            Note:
-                - SUCCESS: успешное получение данных
-                - NOT_FOUND: пользователь не найден
-                - SERVER_ERROR: непредвиденная ошибка
+        Returns:
+            ViewProfileUseCaseResponse:
+                - user_info (ProfileResponseDTO | None): DTO с полной информацией профиля
+                - error_message (str | None): сообщение об ошибке
+                - response_type (str): статус ответа.
+        Note:
+            - SUCCESS: успешное получение данных
+            - NOT_FOUND: пользователь не найден
+            - SERVER_ERROR: непредвиденная ошибка
         """
 
         try:
@@ -189,23 +196,24 @@ class ViewProfileUseCase:
                     target_profile_id=target_user.profile.id
                 )
 
-        user_info = ProfileFullInfoDTO(id=target_user.id,
-                                       username=target_user.username,
-                                       about_user=target_user.profile.about_user,
-                                       profile_pic=target_user.profile.profile_pic,
-                                       win=target_user.profile.win,
-                                       lose=target_user.profile.lose,
-                                       rating=target_user.profile.rating,
-                                       guild=guild_dto,
-                                       card=card_dto,
-                                       amulet=amulet_dto,
-                                       user_email=user_email,
-                                       battle_history=battle_history,
-                                       win_vs=win_vs,
-                                       lose_vs=lose_vs,
-                                       is_favorite=is_fav,
-                                       role=role,
-                                       )
+        user_info = ProfileFullInfoDTO(
+            id=target_user.id,
+            username=target_user.username,
+            about_user=target_user.profile.about_user,
+            profile_pic=target_user.profile.profile_pic,
+            win=target_user.profile.win,
+            lose=target_user.profile.lose,
+            rating=target_user.profile.rating,
+            guild=guild_dto,
+            card=card_dto,
+            amulet=amulet_dto,
+            user_email=user_email,
+            battle_history=battle_history,
+            win_vs=win_vs,
+            lose_vs=lose_vs,
+            is_favorite=is_fav,
+            role=role,
+        )
         return ViewProfileUseCaseResponse(
             response_type=ResponseType.SUCCESS,
             error_message=None,
@@ -219,10 +227,11 @@ class AddFavoriteUserUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user_id: int | None,
-                      target_user_id: int
-                      ) -> ToggleFavoriteUserUseCaseResponse:
+    async def execute(
+            self,
+            current_user_id: int | None,
+            target_user_id: int
+    ) -> ToggleFavoriteUserUseCaseResponse:
         """
         Добавляет целевого пользователя в избранное текущего.
         Args:
@@ -382,24 +391,22 @@ class FavoriteUsersUseCase:
         self.session_db = session_db
 
     async def execute(self, current_user: User | None) -> FavoriteUsersUseCaseResponse:
-        """ Формирует FavoriteUsersPageDTO для просмотра списка избранных пользователей
-            Args:
-                current_user: User + Profile текущего пользователя
-            Returns:
-                FavoriteUsersUseCaseResponse:
-                    - favorite_users (FavoriteUsersPageDTO | None): DTO избранных пользователей
-                    - error_message (str | None): сообщение об ошибке.
-                    - response_type (str): статус ответа.
-            Note:
-                - SUCCESS: успешное получение данных.
-                - UNAUTHORIZED: неавторизованный пользователь.
-                - SERVER_ERROR: любая ошибка.
+        """
+        Формирует FavoriteUsersPageDTO для просмотра списка избранных пользователей
+        Args:
+            current_user: User + Profile текущего пользователя
+        Returns:
+            FavoriteUsersUseCaseResponse:
+                - favorite_users (FavoriteUsersPageDTO | None): DTO избранных пользователей
+                - error_message (str | None): сообщение об ошибке.
+                - response_type (str): статус ответа.
+        Note:
+            - SUCCESS: успешное получение данных.
+            - UNAUTHORIZED: неавторизованный пользователь.
+            - SERVER_ERROR: любая ошибка.
         """
 
         if current_user is None:
-            # answer_data['error_message'] = f'Вы должны быть авторизованы'
-            # answer_data['status_code'] = 404
-            # return answer_data
             return FavoriteUsersUseCaseResponse(
                 response_type=ResponseType.UNAUTHORIZED,
                 error_message=f'Для просмотра избранных вы должны быть авторизованы',
@@ -421,10 +428,6 @@ class FavoriteUsersUseCase:
                 max_amount_users=current_user.profile.max_favorite,
                 favorite_users=favorite_users
             )
-            # answer_data['status_code'] = 200
-            # answer_data['favorite_users_dto'] = favorite_users_dto
-            #
-            # return answer_data
             return FavoriteUsersUseCaseResponse(
                 response_type=ResponseType.SUCCESS,
                 error_message=None,
@@ -449,18 +452,19 @@ class UserTransactionsUseCase:
 
     async def execute(self, current_user: User | None,
                       ) -> UserTransactionsUseCaseResponse:
-        """ Формирует TransactionsDTO пользователя
-            Args:
-                current_user: User + Profile текущего пользователя
-            Returns:
-                UserTransactionsUseCaseDict:
-                    - transactions (TransactionsDTO | None): DTO избранных пользователей
-                    - response_type (str): статус ответа.
-                    - error_message: текст ошибки.
-            Note:
-                - SUCCESS: успешное получение данных.
-                - UNAUTHORIZED: если пользователь не авторизован.
-                - SERVER_ERROR: любая другая ошибка.
+        """
+        Формирует TransactionsDTO пользователя
+        Args:
+            current_user: User + Profile текущего пользователя
+        Returns:
+            UserTransactionsUseCaseDict:
+                - transactions (TransactionsDTO | None): DTO избранных пользователей
+                - response_type (str): статус ответа.
+                - error_message: текст ошибки.
+        Note:
+            - SUCCESS: успешное получение данных.
+            - UNAUTHORIZED: если пользователь не авторизован.
+            - SERVER_ERROR: любая другая ошибка.
         """
 
         if current_user is None:

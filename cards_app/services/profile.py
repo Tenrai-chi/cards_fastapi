@@ -7,26 +7,27 @@ from sqlalchemy import func, or_, select, desc, case, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
-from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, SelfFavoriteError,
-                                 DuplicateFavoriteError, UserNotFoundError, SelfFavoriteRemoveError,
-                                 FavoriteNotFoundError)
+from cards_app.exeptions import (
+    InsufficientFundsUserError, NotEnoughSlotsError, SelfFavoriteError,
+    DuplicateFavoriteError, UserNotFoundError, SelfFavoriteRemoveError,
+    FavoriteNotFoundError
+)
 from cards_app.models import User, Profile, Card, FightHistory, Transactions, FavoriteUsers
-from cards_app.services.cards import get_all_cards_user
 from cards_app.types import AddGoldForFightDict
 
 logger = logging.getLogger(__name__)
 
 
-async def get_base_info_profile(session_db: AsyncSession, user_id: int
-                                ) -> User:
-    """ Возвращает базовую информацию профиля с подгруженной гильдией.
-        Args:
-            session_db: сессия базы данных
-            user_id: ID User пользователя
-        Returns:
-            User: User + Profile + Guild
-        Raises:
-            UserNotFoundError: если пользователь с указанным ID не найден в БД.
+async def get_base_info_profile(session_db: AsyncSession, user_id: int) -> User:
+    """
+    Возвращает базовую информацию профиля с подгруженной гильдией.
+    Args:
+        session_db: сессия базы данных
+        user_id: ID User пользователя
+    Returns:
+        User: User + Profile + Guild
+    Raises:
+        UserNotFoundError: если пользователь с указанным ID не найден в БД.
     """
 
     stmt_user = (
@@ -43,15 +44,15 @@ async def get_base_info_profile(session_db: AsyncSession, user_id: int
     return user
 
 
-async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_id: int
-                           ) -> tuple[int, int]:
-    """ Возвращает статистику побед / поражений пользователя против другого.
-        Args:
-            session_db: сессия базы данных
-            profile1_id: ID Profile текущего пользователя
-            profile2_id: ID Profile соперника
-        Returns:
-            tuple[int, int]: кортеж побед и поражений текущего пользователя против соперника, либо 0, 0
+async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_id: int) -> tuple[int, int]:
+    """
+    Возвращает статистику побед / поражений пользователя против другого.
+    Args:
+        session_db: сессия базы данных
+        profile1_id: ID Profile текущего пользователя
+        profile2_id: ID Profile соперника
+    Returns:
+        tuple[int, int]: кортеж побед и поражений текущего пользователя против соперника, либо 0, 0
     """
 
     stmt_fights = (
@@ -73,17 +74,17 @@ async def get_battle_stats(session_db: AsyncSession, profile1_id: int, profile2_
     return wins, loses
 
 
-async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limit: int = 50
-                                 ) -> list[FightHistory]:
-    """ Возвращает список боёв, где профиль был участником, с подгрузкой соперника и карт.
-         Args:
-            session_db: сессия базы данных
-            profile_id: ID Profile, историю боёв которого нужно получить
-            limit: максимальное количество возвращаемых записей. По умолчанию 50
+async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limit: int = 50) -> list[FightHistory]:
+    """
+    Возвращает список боёв, где профиль был участником, с подгрузкой соперника и карт.
+    Args:
+    session_db: сессия базы данных
+    profile_id: ID Profile, историю боёв которого нужно получить
+    limit: максимальное количество возвращаемых записей. По умолчанию 50
 
-        Returns:
-            list[FightHistory]: список объектов FightHistory, отсортированных по дате
-            от новых к старым. Каждый объект содержит подгруженные связи
+    Returns:
+    list[FightHistory]: список объектов FightHistory, отсортированных по дате
+    от новых к старым. Каждый объект содержит подгруженные связи
     """
 
     stmt_battle_history = (
@@ -113,16 +114,16 @@ async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limi
     return battle_history
 
 
-async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_profile_id: int
-                      ) -> bool:
-    """ Возвращает флаг о том, находится ли выбранный пользователь в списке избранных у текущего.
-        Args:
-            session_db: сессия базы данных
-            current_profile_id: ID Profile текущего пользователя
-            target_profile_id: ID Profile целевого пользователя
+async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_profile_id: int) -> bool:
+    """
+    Возвращает флаг о том, находится ли выбранный пользователь в списке избранных у текущего.
+    Args:
+        session_db: сессия базы данных
+        current_profile_id: ID Profile текущего пользователя
+        target_profile_id: ID Profile целевого пользователя
 
-        Returns:
-            bool: True, если target_profile_id есть в избранном у current_profile_id, иначе False.
+    Returns:
+        bool: True, если target_profile_id есть в избранном у current_profile_id, иначе False.
     """
 
     stmt_user = (
@@ -130,16 +131,17 @@ async def is_favorite(session_db: AsyncSession, current_profile_id: int, target_
         .where(FavoriteUsers.user_id == current_profile_id,
                FavoriteUsers.favorite_user_id == target_profile_id
                )
-        )
+    )
     result = await session_db.execute(stmt_user)
     return result.scalar_one_or_none() is not None
 
 
 async def update_user_receiving_timer(session_db: AsyncSession, current_user: User) -> None:
-    """ Обновление таймера при получении бесплатной карты.
-        Args:
-            session_db: сессия базы данных
-            current_user: объект User текущего пользователя
+    """
+    Обновление таймера при получении бесплатной карты.
+    Args:
+        session_db: сессия базы данных
+        current_user: объект User текущего пользователя
     """
 
     current_user.profile.receiving_timer = datetime.now()
@@ -147,16 +149,16 @@ async def update_user_receiving_timer(session_db: AsyncSession, current_user: Us
     logger.info(f'Пользователь ID {current_user.profile.id} обновил таймер получения')
 
 
-async def check_can_user_receive_card(session_db: AsyncSession, current_user: User, need_slots: int
-                                      ) -> None:
-    """ Проверяет, хватит ли у пользователя места в инвентаре для новых карт.
-        Блокирует строки карт для избежания ситуации race condition
-        Args:
-            session_db: сессия базы данных
-            current_user: объект User + Profile текущего пользователя
-            need_slots: количество слотов, необходимых для новых карт
-        Raises:
-            NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
+async def check_can_user_receive_card(session_db: AsyncSession, current_user: User, need_slots: int) -> None:
+    """
+    Проверяет, хватит ли у пользователя места в инвентаре для новых карт.
+    Блокирует строки карт для избежания ситуации race condition
+    Args:
+        session_db: сессия базы данных
+        current_user: объект User + Profile текущего пользователя
+        need_slots: количество слотов, необходимых для новых карт
+    Raises:
+        NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
     """
 
     lock_stmt = select(Card).where(Card.owner_id == current_user.profile.id).with_for_update()
@@ -171,25 +173,29 @@ async def check_can_user_receive_card(session_db: AsyncSession, current_user: Us
         raise NotEnoughSlotsError('У вас недостаточно места для новых карт')
 
 
-async def charge_user_gold(session_db: AsyncSession,
-                           current_user: User,
-                           need_gold: int
-                           ) -> dict[str, int]:
-    """ Списывает золото у пользователя.
-        Args:
-            session_db: сессия базы данных
-            current_user: объект текущего пользователя (User) с подгруженным профилем
-            need_gold: количество золота для списания.
-        Returns:
-            dict:
-                - gold_before (int): количество золота до списания
-                - gold_after (int): количество золота после списания
-        Raises:
-            InsufficientFundsUserError: если у пользователя недостаточно золота.
+async def charge_user_gold(
+        session_db: AsyncSession,
+        current_user: User,
+        need_gold: int
+) -> dict[str, int]:
+    """
+    Списывает золото у пользователя.
+    Args:
+        session_db: сессия базы данных
+        current_user: объект текущего пользователя (User) с подгруженным профилем
+        need_gold: количество золота для списания.
+    Returns:
+        dict:
+            - gold_before (int): количество золота до списания
+            - gold_after (int): количество золота после списания
+    Raises:
+        InsufficientFundsUserError: если у пользователя недостаточно золота.
     """
 
-    answer_data = {'gold_before': None,
-                   'gold_after': None}
+    answer_data = {
+        'gold_before': None,
+        'gold_after': None
+    }
 
     if current_user.profile.gold < need_gold:
         logger.warning(f'Попытка пользователя ID {current_user.profile.id} списать {need_gold} золота, '
@@ -208,25 +214,29 @@ async def charge_user_gold(session_db: AsyncSession,
     return answer_data
 
 
-async def add_user_gold(session_db: AsyncSession,
-                        current_user: User,
-                        add_gold: int
-                        ) -> dict[str, int]:
-    """ Добавляет пользователю золото.
-        Args:
-            session_db: сессия базы данных
-            current_user: User + Profile текущего пользователя
-            add_gold: количество полученного золота
-        Returns:
-            dict:
-                - gold_before (int): количество золота до списания.
-                - gold_after (int): количество золота после списания.
-        Raises:
-            InsufficientFundsUserError: если у пользователя недостаточно золота.
+async def add_user_gold(
+        session_db: AsyncSession,
+        current_user: User,
+        add_gold: int
+) -> dict[str, int]:
+    """
+    Добавляет пользователю золото.
+    Args:
+        session_db: сессия базы данных
+        current_user: User + Profile текущего пользователя
+        add_gold: количество полученного золота
+    Returns:
+        dict:
+            - gold_before (int): количество золота до списания.
+            - gold_after (int): количество золота после списания.
+    Raises:
+        InsufficientFundsUserError: если у пользователя недостаточно золота.
     """
 
-    answer_data = {'gold_before': None,
-                   'gold_after': None}
+    answer_data = {
+        'gold_before': None,
+        'gold_after': None
+    }
 
     answer_data['gold_before'] = current_user.profile.gold
     gold_after = current_user.profile.gold + add_gold
@@ -239,45 +249,51 @@ async def add_user_gold(session_db: AsyncSession,
     return answer_data
 
 
-async def create_transaction(session_db: AsyncSession,
-                             user_profile_id: int,
-                             gold_before: int,
-                             gold_after: int,
-                             comment: str
-                             ) -> None:
-    """ Создает транзакцию пользователя.
-        Args:
-            session_db: сессия базы данных
-            user_profile_id: ID Profile текущего пользователя
-            gold_before: количество золота до списания
-            gold_after: количество золота после списания
-            comment: цель траты
+async def create_transaction(
+        session_db: AsyncSession,
+        user_profile_id: int,
+        gold_before: int,
+        gold_after: int,
+        comment: str
+) -> None:
+    """
+    Создает транзакцию пользователя.
+    Args:
+        session_db: сессия базы данных
+        user_profile_id: ID Profile текущего пользователя
+        gold_before: количество золота до списания
+        gold_after: количество золота после списания
+        comment: цель траты
     """
 
-    new_transaction = Transactions(date_and_time=datetime.now(),
-                                   user_id=user_profile_id,
-                                   before=gold_before,
-                                   after=gold_after,
-                                   comment=comment)
+    new_transaction = Transactions(
+        date_and_time=datetime.now(),
+        user_id=user_profile_id,
+        before=gold_before,
+        after=gold_after,
+        comment=comment
+    )
     session_db.add(new_transaction)
     logger.info(f'Создана транзакция для пользователя ID {user_profile_id}: '
                 f'{comment} (было {gold_before} → стало {gold_after})')
 
 
-async def add_user_to_favorite(session_db: AsyncSession,
-                               current_user_id: int,
-                               target_user_id: int
-                               ) -> None:
-    """ Добавляет выбранного пользователя в список избранных текущего пользователя.
-        Args:
-            session_db: сессия базы данных.
-            current_user_id: ID Profile текущего пользователя.
-            target_user_id: ID Profile пользователя, которого добавляют в избранное.
+async def add_user_to_favorite(
+        session_db: AsyncSession,
+        current_user_id: int,
+        target_user_id: int
+) -> None:
+    """
+    Добавляет выбранного пользователя в список избранных текущего пользователя.
+    Args:
+        session_db: сессия базы данных.
+        current_user_id: ID Profile текущего пользователя.
+        target_user_id: ID Profile пользователя, которого добавляют в избранное.
 
-        Raises:
-            SelfFavoriteError: попытка добавить самого себя
-            UserNotFoundError: профиль target_user_id не найден.
-            DuplicateFavoriteError: пользователь уже есть в избранном.
+    Raises:
+        SelfFavoriteError: попытка добавить самого себя
+        UserNotFoundError: профиль target_user_id не найден.
+        DuplicateFavoriteError: пользователь уже есть в избранном.
     """
 
     if current_user_id == target_user_id:
@@ -306,20 +322,22 @@ async def add_user_to_favorite(session_db: AsyncSession,
     logger.info(f'Пользователь ID {current_user_id} добавил профиль {target_user_id} в избранное')
 
 
-async def remove_user_from_favorite(session_db: AsyncSession,
-                                    current_user_id: int,
-                                    target_user_id: int
-                                    ) -> None:
-    """ Удаляет выбранного пользователя из списка избранных текущего пользователя.
-        Args:
-            session_db: сессия базы данных.
-            current_user_id: ID Profile текущего пользователя
-            target_user_id: ID Profile пользователя, которого пытаются удалить из избранного
+async def remove_user_from_favorite(
+        session_db: AsyncSession,
+        current_user_id: int,
+        target_user_id: int
+) -> None:
+    """
+    Удаляет выбранного пользователя из списка избранных текущего пользователя.
+    Args:
+        session_db: сессия базы данных.
+        current_user_id: ID Profile текущего пользователя
+        target_user_id: ID Profile пользователя, которого пытаются удалить из избранного
 
-        Raises:
-            SelfFavoriteError: попытка удалить самого себя.
-            UserNotFoundError: профиль target_user_id не найден.
-            FavoriteNotFoundError: пользователь не найден в списке избранных
+    Raises:
+        SelfFavoriteError: попытка удалить самого себя.
+        UserNotFoundError: профиль target_user_id не найден.
+        FavoriteNotFoundError: пользователь не найден в списке избранных
     """
 
     if current_user_id == target_user_id:
@@ -346,20 +364,21 @@ async def remove_user_from_favorite(session_db: AsyncSession,
     logger.info(f'Пользователь ID {current_user_id} удалил профиль {target_user_id} из избранного')
 
 
-async def ensure_favorite_slot_available(session_db: AsyncSession, current_user: User
-                                         ) -> None:
-    """ Проверяет, что у пользователя есть место для добавления нового пользователя в избранное.
-        Args:
-            session_db: сессия базы данных
-            current_user: объект пользователя
-        Raises:
-            NotEnoughSlotsError: недостаточно места для добавления в избранное нового пользователя
+async def ensure_favorite_slot_available(session_db: AsyncSession, current_user: User) -> None:
+    """
+    Проверяет, что у пользователя есть место для добавления нового пользователя в избранное.
+    Args:
+        session_db: сессия базы данных
+        current_user: объект пользователя
+    Raises:
+        NotEnoughSlotsError: недостаточно места для добавления в избранное нового пользователя
     """
 
-    stmt_count_fav_users = (select(func.count())
-                            .select_from(FavoriteUsers)
-                            .where(FavoriteUsers.user_id == current_user.profile.id)
-                            )
+    stmt_count_fav_users = (
+        select(func.count())
+        .select_from(FavoriteUsers)
+        .where(FavoriteUsers.user_id == current_user.profile.id)
+    )
     result = await session_db.execute(stmt_count_fav_users)
     favorites_count = result.scalar_one()
 
@@ -368,14 +387,14 @@ async def ensure_favorite_slot_available(session_db: AsyncSession, current_user:
         raise NotEnoughSlotsError('У вас недостаточно места в списке избранных для добавления нового пользователя')
 
 
-async def get_favorite_user(session_db: AsyncSession, user_profile_id: int
-                            ) -> list[FavoriteUsers]:
-    """ Возвращает список избранных пользователей.
-        Args:
-            session_db: сессия базы данных
-            user_profile_id: ID Profile пользователя
-        Returns:
-            list [FavoriteUsers]: список избранных пользователей
+async def get_favorite_user(session_db: AsyncSession, user_profile_id: int) -> list[FavoriteUsers]:
+    """
+    Возвращает список избранных пользователей.
+    Args:
+        session_db: сессия базы данных
+        user_profile_id: ID Profile пользователя
+    Returns:
+        list [FavoriteUsers]: список избранных пользователей
     """
 
     stmt_fav_users = (
@@ -391,16 +410,18 @@ async def get_favorite_user(session_db: AsyncSession, user_profile_id: int
     return favorite_users
 
 
-async def update_win_lose(session_db: AsyncSession,
-                          winner: User,
-                          loser: User
-                          ) -> None:
-    """ Обновляет статистику побед/поражений у пользователей после битвы.
-        Вызывается только если у битвы был победитель.
-        Args:
-            session_db: сессия базы данных
-            winner: User + Profile победителя
-            loser: User + Profile проигравшего
+async def update_win_lose(
+        session_db: AsyncSession,
+        winner: User,
+        loser: User
+) -> None:
+    """
+    Обновляет статистику побед/поражений у пользователей после битвы.
+    Вызывается только если у битвы был победитель.
+    Args:
+        session_db: сессия базы данных
+        winner: User + Profile победителя
+        loser: User + Profile проигравшего
     """
 
     winner.profile.win += 1
@@ -410,24 +431,26 @@ async def update_win_lose(session_db: AsyncSession,
     logger.info(f'Пользователи ID {winner.id} и ID {loser.id} обновили свою статистику побед/поражений')
 
 
-async def add_gold_for_fight(session_db: AsyncSession,
-                             user: User,
-                             result_battle: str
-                             ) -> AddGoldForFightDict:
-    """ Вычисляет количество золота, которое должен получить пользователь за участие в битве,
-        затем вызывает функцию начисления золота.
-        Количество золота зависит от итога боя и наличия усиления гильдии.
-        Args:
-            session_db: сессия базы данных
-            user: User + Profile участника боя
-            result_battle: итог боя
-        Returns:
-            AddGoldForFightDict:
-                - gold_before (int): золото до получения награды
-                - gold_after (int): золото после получения награды
-                - comment (str): строка пояснение для создания транзакции
-        Raises:
-            ValueError: если итог боя невалидный (пришли неверные данные)
+async def add_gold_for_fight(
+        session_db: AsyncSession,
+        user: User,
+        result_battle: str
+) -> AddGoldForFightDict:
+    """
+    Вычисляет количество золота, которое должен получить пользователь за участие в битве,
+    затем вызывает функцию начисления золота.
+    Количество золота зависит от итога боя и наличия усиления гильдии.
+    Args:
+        session_db: сессия базы данных
+        user: User + Profile участника боя
+        result_battle: итог боя
+    Returns:
+        AddGoldForFightDict:
+            - gold_before (int): золото до получения награды
+            - gold_after (int): золото после получения награды
+            - comment (str): строка пояснение для создания транзакции
+    Raises:
+        ValueError: если итог боя невалидный (пришли неверные данные)
     """
 
     gold_for_win = 100
@@ -450,21 +473,23 @@ async def add_gold_for_fight(session_db: AsyncSession,
         logger.error(f'Получен неверный итог боя между пользователями: {result_battle}')
         raise ValueError(f'Принят неверный результат битвы result_battle: {result_battle}')
 
-    answer_data: dict = await add_user_gold(session_db=session_db,
-                                            current_user=user,
-                                            add_gold=reward_gold)
+    answer_data: dict = await add_user_gold(
+        session_db=session_db,
+        current_user=user,
+        add_gold=reward_gold
+    )
     answer_data['comment'] = comment
     return answer_data
 
 
-async def update_rating_user(session_db: AsyncSession, user: User, user_fight_result: str
-                             ) -> None:
-    """ Обновляет рейтинг участника битвы. При победе/поражении начисляет/отнимает 25 рейтинга пользователя.
-        При ничьей начисляет 5 очков.
-        Args:
-            session_db: сессия базы данных
-            user: User + Profile участника битвы
-            user_fight_result: итог битвы для пользователя win/lose/draw
+async def update_rating_user(session_db: AsyncSession, user: User, user_fight_result: str) -> None:
+    """
+    Обновляет рейтинг участника битвы. При победе/поражении начисляет/отнимает 25 рейтинга пользователя.
+    При ничьей начисляет 5 очков.
+    Args:
+        session_db: сессия базы данных
+        user: User + Profile участника битвы
+        user_fight_result: итог битвы для пользователя win/lose/draw
     """
 
     win_delta = 25
@@ -481,15 +506,15 @@ async def update_rating_user(session_db: AsyncSession, user: User, user_fight_re
     session_db.add(user)
 
 
-async def get_rating_users(session_db: AsyncSession, limit: int, offset: int
-                           ) -> list[User]:
-    """ Возвращает таблицу рейтинга с пагинацией, отсортированный по уменьшению рейтинга.
-        Args:
-            session_db: сессия базы данных
-            limit: максимальное количество пользователей в одной странице
-            offset: сдвиг для пагинации
-        Returns:
-            list[User]: список пользователей с профилем
+async def get_rating_users(session_db: AsyncSession, limit: int, offset: int) -> list[User]:
+    """
+    Возвращает таблицу рейтинга с пагинацией, отсортированный по уменьшению рейтинга.
+    Args:
+        session_db: сессия базы данных
+        limit: максимальное количество пользователей в одной странице
+        offset: сдвиг для пагинации
+    Returns:
+        list[User]: список пользователей с профилем
     """
 
     stmt_users = (
@@ -507,12 +532,13 @@ async def get_rating_users(session_db: AsyncSession, limit: int, offset: int
 
 
 async def get_total_users_count(session_db: AsyncSession) -> int:
-    """ Возвращает общее количество пользователей рейтинга для пагинации
-        Args:
-            session_db: сессия базы данных
+    """
+    Возвращает общее количество пользователей рейтинга для пагинации
+    Args:
+        session_db: сессия базы данных
 
-        Returns:
-            int: общее число записей в таблице Users.
+    Returns:
+        int: общее число записей в таблице Users.
     """
 
     stmt_count = (
@@ -526,8 +552,7 @@ async def get_total_users_count(session_db: AsyncSession) -> int:
     return count
 
 
-async def get_user_transactions(session_db: AsyncSession, user_id: int
-                                ) -> list[Transactions]:
+async def get_user_transactions(session_db: AsyncSession, user_id: int) -> list[Transactions]:
     """ Возвращает список последних 50 транзакций пользователя """
 
     stms_transactions = (

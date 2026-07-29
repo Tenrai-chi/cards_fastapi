@@ -60,20 +60,22 @@ class ViewNewsUseCase:
             total_pages = (total + size - 1) // size
 
             news_records = [
-                NewsRecordDTO(title=item.title,
-                              theme=item.theme,
-                              text=item.text,
-                              date_and_time=item.date_time_create
-                              )
+                NewsRecordDTO(
+                    title=item.title,
+                    theme=item.theme,
+                    text=item.text,
+                    date_and_time=item.date_time_create
+                )
                 for item in news_models
             ]
 
-            news_dto = NewsDTO(items=news_records,
-                               total=total,
-                               page=page,
-                               size=size,
-                               total_pages=total_pages
-                               )
+            news_dto = NewsDTO(
+                items=news_records,
+                total=total,
+                page=page,
+                size=size,
+                total_pages=total_pages
+            )
             return ViewNewsUseCaseResponse(
                 response_type=ResponseType.SUCCESS,
                 news=news_dto
@@ -144,30 +146,34 @@ class ViewUsersRatingUseCase:
 
 
 class ViewStartEventUseCase:
-    """ Use case для просмотра страницы стартового события.
-    """
+    """ Use case для просмотра страницы стартового события. """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
     async def execute(self, current_user: User | None) -> ViewStartEventUseCaseResponse:
-        """ Выполняет получение списка наград стартового события и формирует DTO для отображения.
-            Args:
-                current_user: User + Profile текущего пользователя
-            Returns:
-                ViewStartEventUseCaseResponse:
-                    - start_event_awards_dto (StartEventAwardsDTO | None): DTO с новостями и пагинацией (если пользователь авторизован).
-                    - response_type (str): статус ответа.
+        """
+        Выполняет получение списка наград стартового события и формирует DTO для отображения.
+        Args:
+            current_user: User + Profile текущего пользователя
+        Returns:
+            ViewStartEventUseCaseResponse:
+                - start_event_awards_dto (StartEventAwardsDTO | None): DTO с новостями и пагинацией (если пользователь авторизован).
+                - response_type (str): статус ответа.
+        Note:
+            - SUCCESS: успешное получение данных.
+            - SERVER_ERROR: ошибка.
         """
 
         try:
             start_event_awards = await get_info_start_event_awards(session_db=self.session_db)
-            awards = [StartEventAwardDTO(
-                day=award.day_event_visit,
-                type_award=award.type_award,
-                amount_or_rarity=award.amount_or_rarity_award,
-                description=award.description
-            )
+            awards = [
+                StartEventAwardDTO(
+                    day=award.day_event_visit,
+                    type_award=award.type_award,
+                    amount_or_rarity=award.amount_or_rarity_award,
+                    description=award.description
+                )
                 for award in start_event_awards
             ]
             if current_user is None:
@@ -177,9 +183,11 @@ class ViewStartEventUseCase:
                 can_get = can_get_start_event_award(user=current_user)
                 received = current_user.profile.event_visit
 
-            start_event_awards_dto = StartEventAwardsDTO(awards=awards,
-                                                         can_get_award=can_get,
-                                                         received=received)
+            start_event_awards_dto = StartEventAwardsDTO(
+                awards=awards,
+                can_get_award=can_get,
+                received=received
+            )
 
             return ViewStartEventUseCaseResponse(
                 response_type=ResponseType.SUCCESS,
@@ -229,7 +237,6 @@ class GetAwardStartEventUseCase:
             )
 
         await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
-        # current_user получит профиль из сессии при запросе (используется для создания DTO)
         current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
 
         if current_user is None:

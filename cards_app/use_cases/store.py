@@ -31,8 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 class ViewCardStoreUseCase:
-    """ Use case для просмотра магазина карт.
-        Преобразует данные для вывода информации о продаваемых картах.
+    """
+    Use case для просмотра магазина карт.
+    Преобразует данные для вывода информации о продаваемых картах.
     """
 
     def __init__(self, session_db: AsyncSession):
@@ -206,8 +207,9 @@ class BuyStoreCardUseCase:
 
 
 class ViewItemStoreUseCase:
-    """ Use case для просмотра магазина предметов.
-        Преобразует данные для вывода ассортимента магазина в зависимости от фильтра
+    """
+    Use case для просмотра магазина предметов.
+    Преобразует данные для вывода ассортимента магазина в зависимости от фильтра
     """
 
     def __init__(self, session_db: AsyncSession):

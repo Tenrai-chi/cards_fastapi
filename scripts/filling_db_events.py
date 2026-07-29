@@ -31,10 +31,12 @@ async def load_battle_event_awards():
 
             for award in all_awards:
                 if award['rank'] not in existing_ranks:
-                    new_records.append(BattleEventAwards(rank=award['rank'],
-                                                         award=award['award'],
-                                                         amount=award['amount'],
-                                                         ))
+                    new_records.append(BattleEventAwards(
+                        rank=award['rank'],
+                        award=award['award'],
+                        amount=award['amount'],
+                    )
+                    )
                     logger.info(f'Добавлена награда ранга {award["rank"]} в боевом событии')
                 else:
                     logger.info(f'Награда ранга {award["rank"]} уже существует, пропускаем')
@@ -73,11 +75,14 @@ async def load_news():
                 if new['title'] not in existing_news:
                     date_str = new['date_time_create']
                     dt = datetime.fromisoformat(date_str)
-                    new_records.append(News(title=new['title'],
-                                            theme=new['theme'],
-                                            text=new['text'],
-                                            date_time_create=dt,
-                                            ))
+                    new_records.append(
+                        News(
+                            title=new['title'],
+                            theme=new['theme'],
+                            text=new['text'],
+                            date_time_create=dt,
+                        )
+                    )
                     logger.info(f'Добавлена новость {new["title"]}')
                 else:
                     logger.info(f'Новость {new["title"]} уже существует, пропускаем')
@@ -114,11 +119,14 @@ async def load_initial_event_awards():
 
             for award in all_awards:
                 if award['day_event_visit'] not in existing_ranks:
-                    new_records.append(InitialEventAwards(day_event_visit=award['day_event_visit'],
-                                                          type_award=award['type_award'],
-                                                          amount_or_rarity_award=award['amount_or_rarity_award'],
-                                                          description=award['description'],
-                                                          ))
+                    new_records.append(
+                        InitialEventAwards(
+                            day_event_visit=award['day_event_visit'],
+                            type_award=award['type_award'],
+                            amount_or_rarity_award=award['amount_or_rarity_award'],
+                            description=award['description'],
+                        )
+                    )
                     logger.info(f'Добавлена награда дня {award["day_event_visit"]} в стартовом событии')
                 else:
                     logger.info(f'Награда дня {award["day_event_visit"]} уже существует, пропускаем')

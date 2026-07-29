@@ -29,13 +29,17 @@ app.add_middleware(
     secret_key=settings.SESSION_SECRET_KEY
 )
 
-app.mount(settings.STATIC_URL,
-          StaticFiles(directory=str(settings.STATIC_DIR)),
-          name='static')
+app.mount(
+    settings.STATIC_URL,
+    StaticFiles(directory=str(settings.STATIC_DIR)),
+    name='static'
+)
 
-app.mount(settings.MEDIA_URL,
-          StaticFiles(directory=str(settings.MEDIA_DIR)),
-          name='media')
+app.mount(
+    settings.MEDIA_URL,
+    StaticFiles(directory=str(settings.MEDIA_DIR)),
+    name='media'
+)
 
 app.include_router(cards.router)
 app.include_router(auth.router)

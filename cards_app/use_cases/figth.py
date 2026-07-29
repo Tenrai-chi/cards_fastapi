@@ -2,12 +2,13 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.exeptions import UserNotFoundError, NoCurrentCardError, CooldownNotElapsedError
-from cards_app.schemas.base import ExpItemsBase, AmuletBase
 from cards_app.schemas.fight import Participant, FightDTO
 from cards_app.schemas.response import ProcessFightUseCaseResponse
 from cards_app.services.cards import update_card_experience
-from cards_app.services.fight import (validate_battle_preconditions, get_cards_participants, fight_now,
-                                      create_record_fight_history)
+from cards_app.services.fight import (
+    validate_battle_preconditions, get_cards_participants, fight_now,
+    create_record_fight_history
+)
 from cards_app.services.guild import update_guild_points_user
 from cards_app.services.inventory import reward_loot_after_fight
 from cards_app.services.profile import update_win_lose, add_gold_for_fight, create_transaction, update_rating_user
@@ -19,35 +20,34 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessFightUseCase:
-    """ Use case для рейтингового боя между двумя игроками
-        с использованием избранных карт.
+    """ Use case для рейтингового боя между двумя игроками с использованием избранных карт.
     """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, user_id: int | None, enemy_id: int
-                      ) -> ProcessFightUseCaseResponse:
-        """ Оркестрирует процесс рейтинговой битвы.
-            1. Проверяет возможность битвы
-            2. Проводит битву между 2 картами
-            3. Начисляет золото и опыт и награды, обновляет статистику пользователей
-            4. Создает запись в FightHistory
-            Args:
-                user_id: ID User текущего пользователя
-                enemy_id: ID User противника
-            Returns:
-                ProcessFightUseCaseResponse
-                    - fight_dto (FightDTO | None): DTO с результатом битвы
-                    - error_message (str | None): сообщение об ошибке
-                    - response_type (str): статус ответа.
+    async def execute(self, user_id: int | None, enemy_id: int) -> ProcessFightUseCaseResponse:
+        """
+        Оркестрирует процесс рейтинговой битвы.
+        1. Проверяет возможность битвы
+        2. Проводит битву между 2 картами
+        3. Начисляет золото и опыт и награды, обновляет статистику пользователей
+        4. Создает запись в FightHistory
+        Args:
+            user_id: ID User текущего пользователя
+            enemy_id: ID User противника
+        Returns:
+            ProcessFightUseCaseResponse
+                - fight_dto (FightDTO | None): DTO с результатом битвы
+                - error_message (str | None): сообщение об ошибке
+                - response_type (str): статус ответа.
 
-            Note:
-                - REDIRECT_WITH_INFO: успешная битва (перенаправление на итог битвы)
-                - UNAUTHORIZED: неавторизованный пользователь.
-                - REDIRECT_WITH_ERROR: битва не смогла состояться, например не прошло достаточно часов.
-                - NOT_FOUND: целевой пользователь не найден.
-                - SERVER_ERROR: непредвиденная ошибка.
+        Note:
+            - REDIRECT_WITH_INFO: успешная битва (перенаправление на итог битвы)
+            - UNAUTHORIZED: неавторизованный пользователь.
+            - REDIRECT_WITH_ERROR: битва не смогла состояться, например не прошло достаточно часов.
+            - NOT_FOUND: целевой пользователь не найден.
+            - SERVER_ERROR: непредвиденная ошибка.
         """
 
         if user_id is None:

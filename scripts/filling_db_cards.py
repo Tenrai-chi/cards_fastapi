@@ -38,14 +38,17 @@ async def load_class_cards():
                     continue
 
                 if class_card['name'] not in existing_names:
-                    new_records.append(ClassCard(name=class_card['name'],
-                                                 skill=class_card['skill'],
-                                                 description=class_card['description'],
-                                                 description_for_history_fight=class_card['description_for_history_fight'],
-                                                 numeric_value=class_card['numeric_value'],
-                                                 chance_use=class_card['chance_use'],
-                                                 image=class_card['image'],
-                                                 ))
+                    new_records.append(
+                        ClassCard(
+                            name=class_card['name'],
+                            skill=class_card['skill'],
+                            description=class_card['description'],
+                            description_for_history_fight=class_card['description_for_history_fight'],
+                            numeric_value=class_card['numeric_value'],
+                            chance_use=class_card['chance_use'],
+                            image=class_card['image'],
+                        )
+                    )
                     logger.info(f'Добавлен класс карт: {class_card["name"]}')
                 else:
                     logger.info(f'Класс карт {class_card["name"]} уже существует, пропускаем')
@@ -66,8 +69,9 @@ async def load_class_cards():
 
 
 async def load_type_cards():
-    """ Заполняет таблицу Type со списком типов карт,
-        а затем отдельной транзакцией устанавливает связи
+    """
+    Заполняет таблицу Type со списком типов карт,
+    а затем отдельной транзакцией устанавливает связи.
     """
 
     try:
@@ -107,9 +111,13 @@ async def load_type_cards():
             red_type = types['Красный']
             blue_type = types['Синий']
 
-            if all([green_type.better_id is not None, green_type.worst_id is not None,
-                    red_type.better_id is not None, red_type.worst_id is not None,
-                    blue_type.better_id is not None, blue_type.worst_id is not None]):
+            if all(
+                    [
+                        green_type.better_id is not None, green_type.worst_id is not None,
+                        red_type.better_id is not None, red_type.worst_id is not None,
+                        blue_type.better_id is not None, blue_type.worst_id is not None
+                    ]
+            ):
                 logger.info('Связи между типами уже существуют, пропускаем')
 
             else:
@@ -150,16 +158,18 @@ async def load_rarity_cards():
 
             for rarity in all_rarities:
                 if rarity['name'] not in existing_names:
-                    new_records.append(Rarity(name=rarity['name'],
-                                              max_level=rarity['max_level'],
-                                              coefficient_damage_for_level=rarity['coefficient_damage_for_level'],
-                                              coefficient_hp_for_level=rarity['coefficient_hp_for_level'],
-                                              min_hp=rarity['min_hp'],
-                                              max_hp=rarity['max_hp'],
-                                              min_damage=rarity['min_damage'],
-                                              max_damage=rarity['max_damage'],
-                                              drop_chance=rarity['drop_chance'],
-                                              ))
+                    new_records.append(Rarity(
+                        name=rarity['name'],
+                        max_level=rarity['max_level'],
+                        coefficient_damage_for_level=rarity['coefficient_damage_for_level'],
+                        coefficient_hp_for_level=rarity['coefficient_hp_for_level'],
+                        min_hp=rarity['min_hp'],
+                        max_hp=rarity['max_hp'],
+                        min_damage=rarity['min_damage'],
+                        max_damage=rarity['max_damage'],
+                        drop_chance=rarity['drop_chance'],
+                    )
+                    )
                     logger.info(f'Добавлена редкость карт: {rarity["name"]}')
                 else:
                     logger.info(f'Редкость карт {rarity["name"]} уже существует, пропускаем')
@@ -180,8 +190,9 @@ async def load_rarity_cards():
 
 
 async def load_card_store():
-    """ Заполняет таблицу CardStore со списком карт в магазине.
-        Проверяет наличие карты в бд по классу, редкости и типу.
+    """
+    Заполняет таблицу CardStore со списком карт в магазине.
+    Проверяет наличие карты в бд по классу, редкости и типу.
     """
 
     try:
@@ -224,16 +235,18 @@ async def load_card_store():
                     logger.info(f'Карта {class_name} / {type_name} / {rarity_name} уже существует, пропускаем')
                     continue
 
-                new_records.append(CardStore(class_card_id=class_obj.id,
-                                             type_id=type_obj.id,
-                                             rarity_id=rarity_obj.id,
-                                             hp=card['hp'],
-                                             damage=card['damage'],
-                                             sale_now=bool(card['sale_now']),
-                                             price=card['price'],
-                                             discount=card['discount'],
-                                             discount_now=bool(card['discount_now']),
-                                             ))
+                new_records.append(CardStore(
+                    class_card_id=class_obj.id,
+                    type_id=type_obj.id,
+                    rarity_id=rarity_obj.id,
+                    hp=card['hp'],
+                    damage=card['damage'],
+                    sale_now=bool(card['sale_now']),
+                    price=card['price'],
+                    discount=card['discount'],
+                    discount_now=bool(card['discount_now']),
+                )
+                )
                 logger.info(f'Добавлена карта в магазин: {class_name} / {type_name} / {rarity_name}')
 
             if new_records:

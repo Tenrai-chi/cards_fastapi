@@ -5,28 +5,33 @@ from sqlalchemy import select, func, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
-from cards_app.exeptions import (NotEnoughSlotsError, AmuletNotFoundError, NotAmuletOwnerError,
-                                 NotEnoughUpgradeItemsError, CardNotFoundError, NotCardOwnerError, MaxUpgradeCardError)
-from cards_app.models import (UsersInventory, ExperienceItems, User, AmuletItem, AmuletType, UpgradeItemsUsers, Card,
-                              UpgradeItemsType)
+from cards_app.exeptions import (
+    NotEnoughSlotsError, AmuletNotFoundError, NotAmuletOwnerError,
+    NotEnoughUpgradeItemsError, CardNotFoundError, NotCardOwnerError, MaxUpgradeCardError
+)
+from cards_app.models import (
+    UsersInventory, ExperienceItems, User, AmuletItem, AmuletType, UpgradeItemsUsers, Card,
+    UpgradeItemsType
+)
 from cards_app.services.cards import get_card_with_details
-from cards_app.services.profile import charge_user_gold, create_transaction
 from cards_app.types import RewardLootAfterFightDict
 
 logger = logging.getLogger(__name__)
 
 
-async def add_experience_books_batch(session_db: AsyncSession,
-                                     user_profile_id: int,
-                                     items_amount: dict[int, int]
-                                     ) -> None:
-    """ Добавляет книги опыта в инвентарь пользователя.
-        Если у пользователя уже есть такой предмет – увеличивает количество,
-        иначе создаёт новую запись.
-        Args:
-            session_db: сессия базы данных
-            user_profile_id: ID Profile пользователя
-            items_amount: словарь с ID типа книги и количеством
+async def add_experience_books_batch(
+        session_db: AsyncSession,
+        user_profile_id: int,
+        items_amount: dict[int, int]
+) -> None:
+    """
+    Добавляет книги опыта в инвентарь пользователя.
+    Если у пользователя уже есть такой предмет – увеличивает количество,
+    иначе создаёт новую запись.
+    Args:
+        session_db: сессия базы данных
+        user_profile_id: ID Profile пользователя
+        items_amount: словарь с ID типа книги и количеством
     """
 
     if not items_amount:
@@ -48,26 +53,29 @@ async def add_experience_books_batch(session_db: AsyncSession,
             inventory_map[item_id].amount += add_amount
             session_db.add(inventory_map[item_id])
         else:
-            new_inv = UsersInventory(owner_id=user_profile_id,
-                                     item_id=item_id,
-                                     amount=add_amount
-                                     )
+            new_inv = UsersInventory(
+                owner_id=user_profile_id,
+                item_id=item_id,
+                amount=add_amount
+            )
             session_db.add(new_inv)
     logger.info(f'Пользователь ID Profile {user_profile_id} получил книги')
 
 
-async def add_upgrade_item_to_user(session_db: AsyncSession,
-                                   user_profile_id: int,
-                                   upgrade_item: UpgradeItemsType,
-                                   ) -> None:
-    """ Добавляет книги опыта в инвентарь пользователя.
-        Если у пользователя уже есть такой предмет – увеличивает количество,
-        иначе создаёт новую запись.
-        Принимает в аргументах либо редкость, либо название книги
-        Args:
-            session_db: сессия базы данных
-            user_profile_id: ID Profile пользователя
-            upgrade_item: сущность предмета усиления
+async def add_upgrade_item_to_user(
+        session_db: AsyncSession,
+        user_profile_id: int,
+        upgrade_item: UpgradeItemsType,
+) -> None:
+    """
+    Добавляет книги опыта в инвентарь пользователя.
+    Если у пользователя уже есть такой предмет – увеличивает количество,
+    иначе создаёт новую запись.
+    Принимает в аргументах либо редкость, либо название книги
+    Args:
+        session_db: сессия базы данных
+        user_profile_id: ID Profile пользователя
+        upgrade_item: сущность предмета усиления
     """
 
     stmt_inv = (
@@ -94,22 +102,26 @@ async def add_upgrade_item_to_user(session_db: AsyncSession,
     logger.info(f'Пользователь ID Profile {user_profile_id} получил {upgrade_item.name}')
 
 
-async def can_user_receive_amulet(session_db: AsyncSession,
-                                  current_user: User,
-                                  need_slots: int) -> None:
-    """ Проверяет, хватит ли у пользователя места в инвентаре для новых амулетов.
-        Args:
-            session_db: сессия базы данных
-            current_user: объект User текущего пользователя
-            need_slots: количество слотов, необходимых для новых амулетов
-        Raises:
-            NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
+async def can_user_receive_amulet(
+        session_db: AsyncSession,
+        current_user: User,
+        need_slots: int
+) -> None:
+    """
+    Проверяет, хватит ли у пользователя места в инвентаре для новых амулетов.
+    Args:
+        session_db: сессия базы данных
+        current_user: объект User текущего пользователя
+        need_slots: количество слотов, необходимых для новых амулетов
+    Raises:
+        NotEnoughSlotsError: если свободных слотов меньше, чем необходимо
     """
 
-    stmt_count_amulets = (select(func.count())
-                          .select_from(AmuletItem)
-                          .where(AmuletItem.owner_id == current_user.profile.id)
-                          )
+    stmt_count_amulets = (
+        select(func.count())
+        .select_from(AmuletItem)
+        .where(AmuletItem.owner_id == current_user.profile.id)
+    )
     result = await session_db.execute(stmt_count_amulets)
     amulets_count = result.scalar_one()
     if need_slots > current_user.profile.amulet_slots - amulets_count:
@@ -118,15 +130,15 @@ async def can_user_receive_amulet(session_db: AsyncSession,
         raise NotEnoughSlotsError('У вас недостаточно места для новых амулетов')
 
 
-async def get_all_amulets_user(session_db: AsyncSession, owner_id: int
-                               ) -> list[AmuletItem]:
-    """ Возвращает список всех амулетов пользователя.
-        Args:
-            session_db: сессия базы данных
-            owner_id: ID Profile владельца
+async def get_all_amulets_user(session_db: AsyncSession, owner_id: int) -> list[AmuletItem]:
+    """
+    Возвращает список всех амулетов пользователя.
+    Args:
+        session_db: сессия базы данных
+        owner_id: ID Profile владельца
 
-        Returns:
-            list[AmuletItem]: список амулетов, принадлежащих пользователю
+    Returns:
+        list[AmuletItem]: список амулетов, принадлежащих пользователю
     """
 
     stmt_amulets = (
@@ -139,15 +151,17 @@ async def get_all_amulets_user(session_db: AsyncSession, owner_id: int
     return amulets
 
 
-async def give_amulets_to_user_butch(session_db: AsyncSession,
-                                     owner_id: int,
-                                     amulets_amount: dict[int, int]
-                                     ) -> None:
-    """ Создает в инвентарь пользователя амулет по названию амулета.
-        Args:
-            session_db: сессия базы данных
-            owner_id: ID Profile пользователя
-            amulets_amount: словарь с айди амулетов и количеством копий
+async def give_amulets_to_user_butch(
+        session_db: AsyncSession,
+        owner_id: int,
+        amulets_amount: dict[int, int]
+) -> None:
+    """
+    Создает в инвентарь пользователя амулет по названию амулета.
+    Args:
+        session_db: сессия базы данных
+        owner_id: ID Profile пользователя
+        amulets_amount: словарь с айди амулетов и количеством копий
     """
 
     if not amulets_amount:
@@ -164,27 +178,30 @@ async def give_amulets_to_user_butch(session_db: AsyncSession,
     logger.info(f'Пользователь Profile {owner_id} получил {sum(amulets_amount.values())} амулетов')
 
 
-async def delete_amulet(session_db: AsyncSession,
-                        owner_id: int,
-                        amulet_id: int
-                        ) -> int:
-    """ Удаление амулета из инвентаря пользователя.
-        Args:
-            session_db: сессия базы данных
-            owner_id: ID Profile пользователя, который запросил удаление
-            amulet_id: ID амулета
-        Returns:
-            int: 50 % цены удаления (продажи)
-        Raises:
-            - AmuletNotFoundError: если такого амулета нет в базе данных
-            - NotAmuletOwnerError: если пользователь не является владельцем
+async def delete_amulet(
+        session_db: AsyncSession,
+        owner_id: int,
+        amulet_id: int
+) -> int:
+    """
+    Удаление амулета из инвентаря пользователя.
+    Args:
+        session_db: сессия базы данных
+        owner_id: ID Profile пользователя, который запросил удаление
+        amulet_id: ID амулета
+    Returns:
+        int: 50 % цены удаления (продажи)
+    Raises:
+        - AmuletNotFoundError: если такого амулета нет в базе данных
+        - NotAmuletOwnerError: если пользователь не является владельцем
     """
 
-    stmt_amulet = (select(AmuletItem)
-                   .where(AmuletItem.id == amulet_id)
-                   .options(selectinload(AmuletItem.amulet_type))
-                   .with_for_update()
-                   )
+    stmt_amulet = (
+        select(AmuletItem)
+        .where(AmuletItem.id == amulet_id)
+        .options(selectinload(AmuletItem.amulet_type))
+        .with_for_update()
+    )
     result = await session_db.execute(stmt_amulet)
     amulet = result.scalar_one_or_none()
     if amulet is None:
@@ -195,8 +212,7 @@ async def delete_amulet(session_db: AsyncSession,
                        f'не являясь владельцем')
         raise NotAmuletOwnerError()
     if amulet.card_id:
-        await remove_amulet_from_card(session_db=session_db,
-                                      amulet=amulet)
+        await remove_amulet_from_card(session_db=session_db, amulet=amulet)
 
     logger.info(f'Амулет ID {amulet.id} удален')
     price_for_sell = amulet.amulet_type.price // 2
@@ -204,15 +220,17 @@ async def delete_amulet(session_db: AsyncSession,
     return price_for_sell
 
 
-async def remove_amulet_from_card(session_db: AsyncSession,
-                                  amulet: AmuletItem | None = None,
-                                  card_id: int | None = None,
-                                  ) -> None:
-    """ Снятие амулета с карты
-        Args:
-            session_db: сессия базы данных
-            amulet: Амулет (при необходимости)
-            card_id: ID карты (при необходимости)
+async def remove_amulet_from_card(
+        session_db: AsyncSession,
+        amulet: AmuletItem | None = None,
+        card_id: int | None = None,
+) -> None:
+    """
+    Снятие амулета с карты
+    Args:
+        session_db: сессия базы данных
+        amulet: Амулет (при необходимости)
+        card_id: ID карты (при необходимости)
     """
 
     if amulet:
@@ -231,25 +249,29 @@ async def remove_amulet_from_card(session_db: AsyncSession,
         logger.info(f'Амулет ID {amulet.id} снят с карты')
 
 
-async def reward_loot_after_fight(session_db: AsyncSession,
-                                  user: User,
-                                  buff_value: int | None = None
-                                  ) -> RewardLootAfterFightDict:
-    """ Выпадение книг опытов и амулетов после боя.
-        Книги выпадают по одной на редкость.
-        Максимум амулетов можно получить 2.
-        Args:
-            session_db: сессия базы данных
-            user: User + Profile пользователя
-            buff_value: численное значение усиления, если карта пользователя класса Эльф
-        Returns:
-            RewardLootAfterFightDict:
-                - amulets (list[AmuletType]):
-                - exp_items (list[ExperienceItems]):
+async def reward_loot_after_fight(
+        session_db: AsyncSession,
+        user: User,
+        buff_value: int | None = None
+) -> RewardLootAfterFightDict:
+    """
+    Выпадение книг опытов и амулетов после боя.
+    Книги выпадают по одной на редкость.
+    Максимум амулетов можно получить 2.
+    Args:
+        session_db: сессия базы данных
+        user: User + Profile пользователя
+        buff_value: численное значение усиления, если карта пользователя класса Эльф
+    Returns:
+        RewardLootAfterFightDict:
+            - amulets (list[AmuletType]):
+            - exp_items (list[ExperienceItems]):
     """
 
-    answer_data = {'exp_items': [],
-                   'amulets': []}
+    answer_data = {
+        'exp_items': [],
+        'amulets': []
+    }
 
     count_stmt = select(func.count()).select_from(AmuletItem).where(AmuletItem.owner_id == user.profile.id)
     count = (await session_db.execute(count_stmt)).scalar_one()
@@ -274,9 +296,11 @@ async def reward_loot_after_fight(session_db: AsyncSession,
         # Начисление амулетов
         if new_amulets:
             amulets_amount = {amulet.id: 1 for amulet in new_amulets}
-            await give_amulets_to_user_butch(session_db=session_db,
-                                             owner_id=user.profile.id,
-                                             amulets_amount=amulets_amount)
+            await give_amulets_to_user_butch(
+                session_db=session_db,
+                owner_id=user.profile.id,
+                amulets_amount=amulets_amount
+            )
 
     # Запускает получение книг опыта add_experience_books (по редкости)
     all_exp_items: list = await get_all_exp_items(session_db=session_db)
@@ -289,9 +313,11 @@ async def reward_loot_after_fight(session_db: AsyncSession,
             answer_data['exp_items'].append(item)
 
     if books_counter:
-        await add_experience_books_batch(session_db=session_db,
-                                         user_profile_id=user.profile.id,
-                                         items_amount=books_counter)
+        await add_experience_books_batch(
+            session_db=session_db,
+            user_profile_id=user.profile.id,
+            items_amount=books_counter
+        )
 
     answer_data['amulets'] = new_amulets
 
@@ -299,11 +325,12 @@ async def reward_loot_after_fight(session_db: AsyncSession,
 
 
 async def get_all_types_amulets(session_db: AsyncSession) -> list[AmuletType]:
-    """ Получает все типы амулетов с их редкостью
-        Args:
-            session_db: сессия базы данных
-        Returns:
-            list[AmuletType]: все существующие типы амулетов
+    """
+    Получает все типы амулетов с их редкостью
+    Args:
+        session_db: сессия базы данных
+    Returns:
+        list[AmuletType]: все существующие типы амулетов
     """
 
     stmt_amulets = select(AmuletType).options(selectinload(AmuletType.rarity))
@@ -313,11 +340,12 @@ async def get_all_types_amulets(session_db: AsyncSession) -> list[AmuletType]:
 
 
 async def get_all_exp_items(session_db: AsyncSession) -> list[ExperienceItems]:
-    """ Получает все типы книг опыта.
-        Args:
-            session_db: сессия базы данных
-        Returns:
-            list: из всех существующих типов книг опыта
+    """
+    Получает все типы книг опыта.
+    Args:
+        session_db: сессия базы данных
+    Returns:
+        list: из всех существующих типов книг опыта
     """
 
     stmt_exp_items = select(ExperienceItems)
@@ -326,15 +354,17 @@ async def get_all_exp_items(session_db: AsyncSession) -> list[ExperienceItems]:
     return exp_items
 
 
-async def get_exp_items_in_user_inventory(session_db: AsyncSession,
-                                          owner_id: int
-                                          ) -> list[UsersInventory]:
-    """ Получает список книг опыта в инвентаре пользователя.
-        Args:
-            session_db: сессия базы данных
-            owner_id: ID Profile пользователя
-        Returns:
-            list[UsersInventory]: список книг опыта
+async def get_exp_items_in_user_inventory(
+        session_db: AsyncSession,
+        owner_id: int
+) -> list[UsersInventory]:
+    """
+    Получает список книг опыта в инвентаре пользователя.
+    Args:
+        session_db: сессия базы данных
+        owner_id: ID Profile пользователя
+    Returns:
+        list[UsersInventory]: список книг опыта
     """
 
     stmt_exp_items = (
@@ -349,15 +379,17 @@ async def get_exp_items_in_user_inventory(session_db: AsyncSession,
     return exp_items
 
 
-async def get_upgrade_items_in_user_inventory(session_db: AsyncSession,
-                                              owner_id: int
-                                              ) -> list[UpgradeItemsUsers]:
-    """ Получает список предметов усиления в инвентаре пользователя.
-        Args:
-            session_db: сессия базы данных
-            owner_id: ID Profile пользователя
-        Returns:
-            list[UpgradeItemsUsers]: список предметов усиления
+async def get_upgrade_items_in_user_inventory(
+        session_db: AsyncSession,
+        owner_id: int
+) -> list[UpgradeItemsUsers]:
+    """
+    Получает список предметов усиления в инвентаре пользователя.
+    Args:
+        session_db: сессия базы данных
+        owner_id: ID Profile пользователя
+    Returns:
+        list[UpgradeItemsUsers]: список предметов усиления
     """
 
     stmt_upg_items = (
@@ -371,17 +403,19 @@ async def get_upgrade_items_in_user_inventory(session_db: AsyncSession,
     return upg_items
 
 
-async def get_upgrade_item_in_inventory(session_db: AsyncSession,
-                                        upgrade_item_type_id: int,
-                                        owner_id: int
-                                        ) -> UpgradeItemsUsers:
-    """ Получает предмет усиления из инвентаря пользователя.
-        Args:
-            session_db: сессия базы данных
-            upgrade_item_type_id: ID типа предмета усиления
-            owner_id: ID Profile пользователя запросившего усиление
-        Returns:
-            UpgradeItemsUsers: предмет усиления из инвентаря
+async def get_upgrade_item_in_inventory(
+        session_db: AsyncSession,
+        upgrade_item_type_id: int,
+        owner_id: int
+) -> UpgradeItemsUsers:
+    """
+    Получает предмет усиления из инвентаря пользователя.
+    Args:
+        session_db: сессия базы данных
+        upgrade_item_type_id: ID типа предмета усиления
+        owner_id: ID Profile пользователя запросившего усиление
+    Returns:
+        UpgradeItemsUsers: предмет усиления из инвентаря
     """
 
     stmt_upg_item = (
@@ -396,15 +430,17 @@ async def get_upgrade_item_in_inventory(session_db: AsyncSession,
     return upg_item
 
 
-async def get_amulets_in_user_inventory(session_db: AsyncSession,
-                                        owner_id: int
-                                        ) -> list[AmuletItem]:
-    """ Получает список амулетов в инвентаре пользователя.
-        Args:
-            session_db: сессия базы данных
-            owner_id: ID Profile пользователя
-        Returns:
-            list[AmuletItem]: список амулетов
+async def get_amulets_in_user_inventory(
+        session_db: AsyncSession,
+        owner_id: int
+) -> list[AmuletItem]:
+    """
+    Получает список амулетов в инвентаре пользователя.
+    Args:
+        session_db: сессия базы данных
+        owner_id: ID Profile пользователя
+    Returns:
+        list[AmuletItem]: список амулетов
     """
 
     stmt_amulets = (
@@ -422,17 +458,19 @@ async def get_amulets_in_user_inventory(session_db: AsyncSession,
     return amulets
 
 
-async def upgrade_card_stats_and_level(session_db: AsyncSession,
-                                       card: Card,
-                                       upgrade_item: UpgradeItemsUsers
-                                       ) -> None:
-    """ Обновляет характеристики карты в зависимости от предмета усиления.
-        Args:
-            session_db: сессия базы данных
-            card: карта для усиления
-            upgrade_item: предмет усиления
-        Raises:
-            ValueError: при неожиданном типе усиления (не должен вызываться, так как база целостная)
+async def upgrade_card_stats_and_level(
+        session_db: AsyncSession,
+        card: Card,
+        upgrade_item: UpgradeItemsUsers
+) -> None:
+    """
+    Обновляет характеристики карты в зависимости от предмета усиления.
+    Args:
+        session_db: сессия базы данных
+        card: карта для усиления
+        upgrade_item: предмет усиления
+    Raises:
+        ValueError: при неожиданном типе усиления (не должен вызываться, так как база целостная)
     """
 
     if upgrade_item.upgrade_item_type.type == 'random':
@@ -461,36 +499,42 @@ async def upgrade_card_stats_and_level(session_db: AsyncSession,
     session_db.add(card)
 
 
-async def upgrade_card(session_db: AsyncSession,
-                       card_id: int,
-                       upgrade_item_id: int,
-                       user: User
-                       ) -> int:
-    """ Использует предмет усиления на карте.
-        Args:
-            session_db: сессия базы данных
-            card_id: ID карты
-            upgrade_item_id: ID типа предмета усиления
-            user: User + Profile пользователя
-        Returns:
-            int: Стоимость использоваения предмета усиления
-        Raises:
-            NotEnoughUpgradeItemsError: если предметов недостаточно
-            NotCardOwnerError: пользователь не является владельцем карты
-            CardNotFoundError: карты не существует
-            MaxUpgradeCardError: карта уже имеет максимальный уровень усиления
+async def upgrade_card(
+        session_db: AsyncSession,
+        card_id: int,
+        upgrade_item_id: int,
+        user: User
+) -> int:
+    """
+    Использует предмет усиления на карте.
+    Args:
+        session_db: сессия базы данных
+        card_id: ID карты
+        upgrade_item_id: ID типа предмета усиления
+        user: User + Profile пользователя
+    Returns:
+        int: Стоимость использования предмета усиления
+    Raises:
+        NotEnoughUpgradeItemsError: если предметов недостаточно
+        NotCardOwnerError: пользователь не является владельцем карты
+        CardNotFoundError: карты не существует
+        MaxUpgradeCardError: карта уже имеет максимальный уровень усиления
     """
 
-    upg_item = await get_upgrade_item_in_inventory(session_db=session_db,
-                                                   upgrade_item_type_id=upgrade_item_id,
-                                                   owner_id=user.profile.id)
+    upg_item = await get_upgrade_item_in_inventory(
+        session_db=session_db,
+        upgrade_item_type_id=upgrade_item_id,
+        owner_id=user.profile.id
+    )
     if upg_item is None or upg_item.amount < 1:
         logger.warning(f'У пользователя ID {user.id} недостаточно предметов усиления ID {upgrade_item_id}')
         raise NotEnoughUpgradeItemsError
 
-    card = await get_card_with_details(session_db=session_db,
-                                       card_id=card_id,
-                                       for_update=True)
+    card = await get_card_with_details(
+        session_db=session_db,
+        card_id=card_id,
+        for_update=True
+    )
     if card is None:
         logger.warning(f'Карта ID {card_id} не найдена')
         raise CardNotFoundError
@@ -504,8 +548,10 @@ async def upgrade_card(session_db: AsyncSession,
                        f'имеющую максимальный уровень усиления')
         raise MaxUpgradeCardError
 
-    await upgrade_card_stats_and_level(session_db=session_db,
-                                       card=card,
-                                       upgrade_item=upg_item)
+    await upgrade_card_stats_and_level(
+        session_db=session_db,
+        card=card,
+        upgrade_item=upg_item
+    )
 
     return upg_item.upgrade_item_type.price_of_use

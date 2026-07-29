@@ -12,20 +12,26 @@ from cards_app.schemas.response import (
 )
 from cards_app.services.inventory import get_upgrade_items_in_user_inventory
 from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
-from cards_app.exeptions import (NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
-                                 TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
-                                 InsufficientFundsUserError, MaxUpgradeCardError, UserNotFoundError)
-from cards_app.services.cards import (get_card_with_details, get_rarities_and_classes, generate_random_card,
-                                      create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
-                                      get_cards_for_merge, merge_card)
+from cards_app.exeptions import (
+    NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
+    TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
+    InsufficientFundsUserError, MaxUpgradeCardError, UserNotFoundError
+)
+from cards_app.services.cards import (
+    get_card_with_details, get_rarities_and_classes, generate_random_card,
+    create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
+    get_cards_for_merge, merge_card
+)
 from cards_app.services.inventory import upgrade_card
 from cards_app.schemas.cards import (
     CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard, UserCardsDTO,
     CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO
 )
 
-from cards_app.services.profile import (update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
-                                        charge_user_gold, create_transaction)
+from cards_app.services.profile import (
+    update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
+    charge_user_gold, create_transaction
+)
 
 from cards_app.utils.common import calculate_need_exp, time_difference_check
 from cards_app.models.users import User
@@ -489,20 +495,21 @@ class ViewMergeUseCase:
                     merge=None
                 )
 
-            current_card_dto = OneCardForMergeDTO(id=current_card.id,
-                                                  class_card_name=current_card.class_card.name,
-                                                  rarity_card_name=current_card.rarity_card.name,
-                                                  type_card_name=current_card.type_card.name,
-                                                  class_card_pic=current_card.class_card.image,
-                                                  hp=current_card.hp,
-                                                  damage=current_card.damage,
-                                                  level=current_card.level,
-                                                  max_level=current_card.rarity_card.max_level,
-                                                  merger=current_card.merger,
-                                                  max_merger=current_card.max_merger,
-                                                  enhancement=current_card.enhancement,
-                                                  max_enhancement=current_card.max_enhancement
-                                                  )
+            current_card_dto = OneCardForMergeDTO(
+                id=current_card.id,
+                class_card_name=current_card.class_card.name,
+                rarity_card_name=current_card.rarity_card.name,
+                type_card_name=current_card.type_card.name,
+                class_card_pic=current_card.class_card.image,
+                hp=current_card.hp,
+                damage=current_card.damage,
+                level=current_card.level,
+                max_level=current_card.rarity_card.max_level,
+                merger=current_card.merger,
+                max_merger=current_card.max_merger,
+                enhancement=current_card.enhancement,
+                max_enhancement=current_card.max_enhancement
+            )
 
             cards_dto = [
                 OneCardForMergeDTO(
@@ -598,8 +605,6 @@ class MergeUseCase:
                 error_message=f'Для слияния карты вы должны быть авторизованы',
                 success_message=None
             )
-        else:
-            current_user_dto = await user_info_to_dto(user=current_user)
 
         try:
             await merge_card(
@@ -710,9 +715,7 @@ class ViewUpgradeUseCase:
                 amount=item.amount)
                 for item in upgrade_items
             ]
-            upgrade_dto = FullInfoUpgradingDTO(card=current_card_dto,
-                                               upgrade_items=upgrade_items_dto,
-                                               )
+            upgrade_dto = FullInfoUpgradingDTO(card=current_card_dto, upgrade_items=upgrade_items_dto)
 
             return ViewUpgradeUseCaseResponse(
                 response_type=ResponseType.SUCCESS,
@@ -760,12 +763,12 @@ class UpgradeUseCase:
                - success_message (str | NOne): сообщение об успехе
                - current_user_dto (CurrentUserForMenuDTO | None):  DTO текущего пользователя
         Note:
-        - REDIRECT_WITH_INFO: успешное получение данных.
-        - UNAUTHORIZED: не авторизован.
-        - FORBIDDEN: нет прав.
-        - REDIRECT_WITH_ERROR: не хватает ресурсов.
-        - NOT_FOUND: карта или предмет не найден.
-        - SERVER_ERROR: любая другая непредвиденная ошибка.
+            - REDIRECT_WITH_INFO: успешное получение данных.
+            - UNAUTHORIZED: не авторизован.
+            - FORBIDDEN: нет прав.
+            - REDIRECT_WITH_ERROR: не хватает ресурсов.
+            - NOT_FOUND: карта или предмет не найден.
+            - SERVER_ERROR: любая другая непредвиденная ошибка.
         """
 
         if current_user_id is None:
@@ -776,10 +779,9 @@ class UpgradeUseCase:
                 success_message=None,
                 current_user=None
             )
-        await get_profile_for_update(session_db=self.session_db,
-                                     user_id=current_user_id)
-        # current_user получит профиль из сессии при запросе (используется для создания DTO)
+        await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
         current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
         if current_user is None:
             logger.warning(f'Попытка неавторизованного пользователя усилить карту')
             return UpgradeUseCaseResponse(
