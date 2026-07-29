@@ -270,9 +270,11 @@ async def buy_exp_items(session_db: AsyncSession,
 
     need_gold = exp_item.price * exp_item_amount
 
-    await add_experience_books_batch(session_db=session_db,
-                                     user_profile_id=user.profile.id,
-                                     items_amount={exp_item_id: exp_item_amount})
+    await add_experience_books_batch(
+        session_db=session_db,
+        user_profile_id=user.profile.id,
+        items_amount={exp_item_id: exp_item_amount}
+    )
     return need_gold
 
 

@@ -2,7 +2,9 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.exeptions import UserNotFoundError, NoCurrentCardError, CooldownNotElapsedError
+from cards_app.schemas.base import ExpItemsBase, AmuletBase
 from cards_app.schemas.fight import Participant, FightDTO
+from cards_app.schemas.response import ProcessFightUseCaseResponse
 from cards_app.services.cards import update_card_experience
 from cards_app.services.fight import (validate_battle_preconditions, get_cards_participants, fight_now,
                                       create_record_fight_history)
@@ -10,7 +12,8 @@ from cards_app.services.guild import update_guild_points_user
 from cards_app.services.inventory import reward_loot_after_fight
 from cards_app.services.profile import update_win_lose, add_gold_for_fight, create_transaction, update_rating_user
 from cards_app.services.users import user_info_to_dto
-from cards_app.types import ProcessFightUseCaseDict, AddGoldForFightDict, RewardLootAfterFightDict
+from cards_app.types import AddGoldForFightDict, RewardLootAfterFightDict
+from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +27,7 @@ class ProcessFightUseCase:
         self.session_db = session_db
 
     async def execute(self, user_id: int | None, enemy_id: int
-                      ) -> ProcessFightUseCaseDict:
+                      ) -> ProcessFightUseCaseResponse:
         """ Оркестрирует процесс рейтинговой битвы.
             1. Проверяет возможность битвы
             2. Проводит битву между 2 картами
@@ -34,48 +37,54 @@ class ProcessFightUseCase:
                 user_id: ID User текущего пользователя
                 enemy_id: ID User противника
             Returns:
-                ProcessFightUseCaseDict
+                ProcessFightUseCaseResponse
                     - fight_dto (FightDTO | None): DTO с результатом битвы
                     - error_message (str | None): сообщение об ошибке
-                    - status_code (int): HTTP статус-код.
+                    - response_type (str): статус ответа.
 
             Note:
-                - 200: успешная битва (перенаправление на итог битвы)
-                - 400: ошибка доступа (не выполнены условия, либо пользователь не авторизован)
-                - 500: непредвиденная ошибка.
+                - REDIRECT_WITH_INFO: успешная битва (перенаправление на итог битвы)
+                - UNAUTHORIZED: неавторизованный пользователь.
+                - REDIRECT_WITH_ERROR: битва не смогла состояться, например не прошло достаточно часов.
+                - NOT_FOUND: целевой пользователь не найден.
+                - SERVER_ERROR: непредвиденная ошибка.
         """
 
-        answer_data = {'fight_dto': None,
-                       'error_message': None,
-                       'status_code': None,
-                       'current_user_dto': None}
-
         if user_id is None:
-            answer_data['error_message'] = f'Для участия в битве вы должны быть авторизованы'
             logger.warning(f'Попытка неавторизованного пользователя участвовать в рейтинговой битве')
-            answer_data['status_code'] = 400
-            return answer_data
+            return ProcessFightUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для участия в битве вы должны быть авторизованы',
+                fight_dto=None,
+                current_user=None
+            )
 
         try:
             # 1. Проверка, что бой может состояться
-            participants: dict = await validate_battle_preconditions(self.session_db,
-                                                                     user_id=user_id,
-                                                                     enemy_id=enemy_id)
+            participants: dict = await validate_battle_preconditions(
+                self.session_db,
+                user_id=user_id,
+                enemy_id=enemy_id
+            )
             user = participants.get('user')
             enemy = participants.get('enemy')
 
             # 2. Подготовка карт и характеристик
-            cards: dict = await get_cards_participants(session_db=self.session_db,
-                                                       user_card_id=user.profile.current_card_id,
-                                                       enemy_card_id=enemy.profile.current_card_id)
+            cards: dict = await get_cards_participants(
+                session_db=self.session_db,
+                user_card_id=user.profile.current_card_id,
+                enemy_card_id=enemy.profile.current_card_id
+            )
             user_card = cards.get('user_card')
             enemy_card = cards.get('enemy_card')
 
             # 3. Бой между участниками
-            data_fight: dict = await fight_now(user=user,
-                                               enemy=enemy,
-                                               user_card=user_card,
-                                               enemy_card=enemy_card)
+            data_fight: dict = await fight_now(
+                user=user,
+                enemy=enemy,
+                user_card=user_card,
+                enemy_card=enemy_card
+            )
             is_victory = data_fight.get('is_victory')
             history_fight = data_fight.get('history_fight')
             winner = data_fight.get('winner')
@@ -83,14 +92,15 @@ class ProcessFightUseCase:
 
             # 4. Изменение статистики win\lose
             if is_victory:
-                await update_win_lose(session_db=self.session_db,
-                                      winner=winner,
-                                      loser=loser)
+                await update_win_lose(
+                    session_db=self.session_db,
+                    winner=winner,
+                    loser=loser
+                )
 
             # 5. Получение опыта карт
             for card in (user_card, enemy_card):
-                await update_card_experience(session_db=self.session_db,
-                                             card=card)
+                await update_card_experience(session_db=self.session_db, card=card)
 
             # 6. Определение результатов
             if not is_victory:
@@ -99,80 +109,116 @@ class ProcessFightUseCase:
                 user_result, enemy_result = ('win', 'lose') if winner.id == user.id else ('lose', 'win')
 
             # 7. Начисление золота
-            user_gold_data: AddGoldForFightDict = await add_gold_for_fight(session_db=self.session_db,
-                                                                           user=user,
-                                                                           result_battle=user_result)
-            enemy_gold_data: AddGoldForFightDict = await add_gold_for_fight(session_db=self.session_db,
-                                                                            user=enemy,
-                                                                            result_battle=enemy_result)
+            user_gold_data: AddGoldForFightDict = await add_gold_for_fight(
+                session_db=self.session_db,
+                user=user,
+                result_battle=user_result
+            )
+            enemy_gold_data: AddGoldForFightDict = await add_gold_for_fight(
+                session_db=self.session_db,
+                user=enemy,
+                result_battle=enemy_result
+            )
 
             # 8. Обновление рейтинга и очков гильдии
-            await update_guild_points_user(session_db=self.session_db,
-                                           user=user,
-                                           result_battle=user_result)
-            await update_guild_points_user(session_db=self.session_db,
-                                           user=enemy,
-                                           result_battle=enemy_result)
+            await update_guild_points_user(
+                session_db=self.session_db,
+                user=user,
+                result_battle=user_result
+            )
+            await update_guild_points_user(
+                session_db=self.session_db,
+                user=enemy,
+                result_battle=enemy_result
+            )
             await update_rating_user(session_db=self.session_db, user=user, user_fight_result=user_result)
             await update_rating_user(session_db=self.session_db, user=enemy, user_fight_result=enemy_result)
 
             # 9. Создание транзакций у пользователей
-            await create_transaction(session_db=self.session_db,
-                                     user_profile_id=user.profile.id,
-                                     gold_before=user_gold_data.get('gold_before'),
-                                     gold_after=user_gold_data.get('gold_after'),
-                                     comment=user_gold_data.get('comment'))
-            await create_transaction(session_db=self.session_db,
-                                     user_profile_id=user.profile.id,
-                                     gold_before=enemy_gold_data.get('gold_before'),
-                                     gold_after=enemy_gold_data.get('gold_after'),
-                                     comment=enemy_gold_data.get('comment'))
+            await create_transaction(
+                session_db=self.session_db,
+                user_profile_id=user.profile.id,
+                gold_before=user_gold_data.get('gold_before'),
+                gold_after=user_gold_data.get('gold_after'),
+                comment=user_gold_data.get('comment')
+            )
+            await create_transaction(
+                session_db=self.session_db,
+                user_profile_id=user.profile.id,
+                gold_before=enemy_gold_data.get('gold_before'),
+                gold_after=enemy_gold_data.get('gold_after'),
+                comment=enemy_gold_data.get('comment')
+            )
             # 10. Выпадение наград для пользователя после боя
             user_buff_elf_value = user_card.class_card.numeric_value if user_card.class_card.name == 'Эльф' else 0
-            user_loot: RewardLootAfterFightDict = await reward_loot_after_fight(session_db=self.session_db,
-                                                                                user=user,
-                                                                                buff_value=user_buff_elf_value)
+            user_loot: RewardLootAfterFightDict = await reward_loot_after_fight(
+                session_db=self.session_db,
+                user=user,
+                buff_value=user_buff_elf_value
+            )
 
             # Выпадение наград для соперника после боя (не выводится на странице)
             enemy_buff_elf_value = enemy_card.class_card.numeric_value if enemy_card.class_card.name == 'Эльф' else 0
-            await reward_loot_after_fight(session_db=self.session_db,
-                                          user=enemy,
-                                          buff_value=enemy_buff_elf_value)
+            await reward_loot_after_fight(
+                session_db=self.session_db,
+                user=enemy,
+                buff_value=enemy_buff_elf_value
+            )
             # 11. Создание записи о бое в истории
-            await create_record_fight_history(session_db=self.session_db,
-                                              is_victory=is_victory,
-                                              participant1_id=user.profile.id,
-                                              participant2_id=enemy.profile.id,
-                                              card1_id=user_card.id,
-                                              card2_id=enemy_card.id,
-                                              winner_id=winner.profile.id if is_victory else None)
+            await create_record_fight_history(
+                session_db=self.session_db,
+                is_victory=is_victory,
+                participant1_id=user.profile.id,
+                participant2_id=enemy.profile.id,
+                card1_id=user_card.id,
+                card2_id=enemy_card.id,
+                winner_id=winner.profile.id if is_victory else None
+            )
 
-            user_dto = Participant(id=user.id,
-                                   username=user.username,
-                                   profile_pic=user.profile.profile_pic)
-            enemy_dto = Participant(id=enemy.id,
-                                    username=enemy.username,
-                                    profile_pic=enemy.profile.profile_pic)
+            user_dto = Participant(
+                id=user.id,
+                username=user.username,
+                profile_pic=user.profile.profile_pic
+            )
+            enemy_dto = Participant(
+                id=enemy.id,
+                username=enemy.username,
+                profile_pic=enemy.profile.profile_pic
+            )
 
-            answer_data['fight_dto'] = FightDTO(user=user_dto,
-                                                enemy=enemy_dto,
-                                                history_fight=history_fight,
-                                                is_victory=is_victory,
-                                                reward_item_user=user_loot.get('exp_items'),
-                                                reward_amulet_user=user_loot.get('amulets'),
-                                                winner_id=winner.id if is_victory else None)
-            answer_data['status_code'] = 200
-            answer_data['current_user_dto'] = await user_info_to_dto(user=user)
+            fight_dto = FightDTO(
+                user=user_dto,
+                enemy=enemy_dto,
+                history_fight=history_fight,
+                is_victory=is_victory,
+                reward_item_user=user_loot.get('exp_items', []),
+                reward_amulet_user=user_loot.get('amulets', []),
+                winner_id=winner.id if is_victory else None
+            )
             await self.session_db.commit()
+            current_user_dto = await user_info_to_dto(user=user)
+            return ProcessFightUseCaseResponse(
+                response_type=ResponseType.REDIRECT_WITH_INFO,
+                error_message=None,
+                fight_dto=fight_dto,
+                current_user=current_user_dto
+            )
 
         except (UserNotFoundError, NoCurrentCardError, CooldownNotElapsedError) as error:
             await self.session_db.rollback()
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return ProcessFightUseCaseResponse(
+                response_type=error.response_type,
+                error_message=str(error),
+                fight_dto=None,
+                current_user=None
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ProcessFightUseCase: {error}', exc_info=True)
-        return answer_data
+            return ProcessFightUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
+                fight_dto=None,
+                current_user=None
+            )

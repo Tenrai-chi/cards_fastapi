@@ -10,15 +10,6 @@ class UseCaseResponse(BaseModel):
     response_type: ResponseType
 
 
-class SuccessFlagMixin(BaseModel):
-    """
-    Миксин для схем, которые могут содержать сообщение об успехе.
-    Используется в use case, где необходимо передать пользователю сообщение об успехе.
-    """
-
-    success: bool
-
-
 class ErrorMessageMixin(BaseModel):
     """
     Миксин для схем, которые могут содержать сообщения об ошибке.
@@ -84,4 +75,23 @@ class ExpItemsBase(BaseModel):
     name: str
     experience_amount: int
     image: str
+
+
+class GuildBase(BaseModel):
+    """ Данные гильдии """
+
+    id: int
+    name: str
+
+
+class ProfileBase(BaseModel):
+    """ Базовая информация профиля (доступна всем) """
+
+    id: int
+    username: str
+    about_user: str | None = None
+    profile_pic: str | None = None
+    win: int
+    lose: int
+    rating: int
 

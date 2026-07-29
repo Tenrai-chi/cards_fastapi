@@ -44,7 +44,7 @@ async def add_experience_books_batch(session_db: AsyncSession,
     inventory_map = {inventory.item_id: inventory for inventory in result_inventory.scalars().all()}
 
     for item_id, add_amount in items_amount.items():
-        if item_id in result_inventory:
+        if item_id in inventory_map:
             inventory_map[item_id].amount += add_amount
             session_db.add(inventory_map[item_id])
         else:

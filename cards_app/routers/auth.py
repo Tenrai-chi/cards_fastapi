@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, Form
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,54 +15,61 @@ templates = Jinja2Templates(directory=str(settings.BASE_DIR / 'templates'))
 
 
 @router.get(path='/register', name='register_page')
-async def register_page(request: Request):
+async def register_page(request: Request) -> Response:
     """ Отображает страницу регистрации """
 
-    return templates.TemplateResponse(request=request,
-                                      name='auth/register.html',
-                                      context={'request': request},
-                                      status_code=200)
+    return templates.TemplateResponse(
+        request=request,
+        name='auth/register.html',
+        context={'request': request},
+        status_code=200
+    )
 
 
 @router.post(path='/register', name='register')
-async def register(request: Request,
-                   username: str = Form(...),
-                   email: str = Form(...),
-                   password: str = Form(...),
-                   db_session: AsyncSession = Depends(get_db_session)
-                   ):
+async def register(
+        request: Request,
+        username: str = Form(...),
+        email: str = Form(...),
+        password: str = Form(...),
+        db_session: AsyncSession = Depends(get_db_session)
+) -> Response:
     """ Обрабатывает форму регистрации.
         При успехе перенаправляет на страницу входа, при ошибке возвращает форму с сообщением об ошибке.
     """
 
     result: dict = await create_user_and_profile(db_session, username, email, password)
     if result['error_message']:
-        return templates.TemplateResponse(request=request,
-                                          name='auth/register.html',
-                                          context={'request': request, 'error': result['error_message']},
-                                          status_code=200
-                                          )
+        return templates.TemplateResponse(
+            request=request,
+            name='auth/register.html',
+            context={'request': request, 'error': result['error_message']},
+            status_code=200
+        )
 
     url = request.url_for('login_page')
     return RedirectResponse(url, status_code=303)
 
 
 @router.get(path='/login', name='login_page')
-async def login_page(request: Request):
+async def login_page(request: Request) -> Response:
     """ Отображает форму входа """
 
-    return templates.TemplateResponse(request=request,
-                                      name='auth/login.html',
-                                      context={'request': request},
-                                      status_code=200)
+    return templates.TemplateResponse(
+        request=request,
+        name='auth/login.html',
+        context={'request': request},
+        status_code=200
+    )
 
 
 @router.post(path='/login', name='login')
-async def login(request: Request,
-                username: str = Form(...),
-                password: str = Form(...),
-                db_session: AsyncSession = Depends(get_db_session)
-                ):
+async def login(
+        request: Request,
+        username: str = Form(...),
+        password: str = Form(...),
+        db_session: AsyncSession = Depends(get_db_session)
+) -> Response:
     """ Обрабатывает форму входа в систему.
         При успехе устанавливает refresh_token и перенаправляет на страницу входа
         При ошибке возвращает форму с сообщением об ошибке.
@@ -70,24 +77,30 @@ async def login(request: Request,
 
     result: dict = await authenticate_and_create_tokens(db_session, username, password)
     if result['error_message']:
-        return templates.TemplateResponse(request=request,
-                                          name='auth/login.html',
-                                          context={'request': request, 'error': result['error_message']},
-                                          status_code=200)
+        return templates.TemplateResponse(
+            request=request,
+            name='auth/login.html',
+            context={'request': request, 'error': result['error_message']},
+            status_code=200
+        )
 
     user = result['user']
     url = request.url_for('user_profile', user_id=user.id)
     response = RedirectResponse(url=url, status_code=303)
-    response.set_cookie(key='access_token',
-                        value=result['access_token'],
-                        httponly=True,
-                        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-                        secure=False, samesite='lax')
-    response.set_cookie(key='refresh_token',
-                        value=result['refresh_token'],
-                        httponly=True,
-                        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
-                        secure=False, samesite='lax')
+    response.set_cookie(
+        key='access_token',
+        value=result['access_token'],
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        secure=False, samesite='lax'
+    )
+    response.set_cookie(
+        key='refresh_token',
+        value=result['refresh_token'],
+        httponly=True,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
+        secure=False, samesite='lax'
+    )
     return response
 
 

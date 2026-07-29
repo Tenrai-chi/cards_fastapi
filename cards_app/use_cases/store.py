@@ -1,22 +1,29 @@
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from cards_app.exeptions import (InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
-                                 CardInStoreNotFoundError, BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError,
-                                 AmuletNotOnSaleError)
+from cards_app.exeptions import (
+    InsufficientFundsUserError, NotEnoughSlotsError, CardNotOnSaleError,
+    CardInStoreNotFoundError, BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError,
+    AmuletNotOnSaleError
+)
 from cards_app.schemas.base import ExpItemsBase
 from cards_app.schemas.response import ViewCardStoreUseCaseResponse, ViewItemStoreUseCaseResponse, \
-    BuyStoreCardUseCaseResponse, BuyBoxUseCaseResponse
-from cards_app.schemas.store_new import CardInStoreDTO, CardStoreDTO, BoxStoreDTO, AmuletsStoreDTO, \
+    BuyStoreCardUseCaseResponse, BuyBoxUseCaseResponse, BuyItemUseCaseResponse
+from cards_app.schemas.store import (
+    CardInStoreDTO, CardStoreDTO, BoxStoreDTO, AmuletsStoreDTO,
     UpgradeItemsStoreDTO, ExpItemsStoreDTO, AllStoreDTO, AmuletRewardDTO
-from cards_app.services.cards import (get_temp_card_in_store, create_new_card_from_template,
-                                      create_record_in_history_receiving_card)
+)
+from cards_app.services.cards import (
+    get_temp_card_in_store, create_new_card_from_template,
+    create_record_in_history_receiving_card
+)
 from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
-from cards_app.services.store import (get_cards_in_store, get_box_in_store, get_amulets_in_store,
-                                      get_upgrade_items_in_store, get_exp_items_in_store, get_box_info, open_box_card,
-                                      open_box_exp_item, open_box_amulet, buy_exp_items, buy_amulet, buy_upgrade_item)
+from cards_app.services.store import (
+    get_cards_in_store, get_box_in_store, get_amulets_in_store,
+    get_upgrade_items_in_store, get_exp_items_in_store, get_box_info, open_box_card,
+    open_box_exp_item, open_box_amulet, buy_exp_items, buy_amulet, buy_upgrade_item
+)
 from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
-from cards_app.types import BuyItemUseCaseDict
 from cards_app.utils.common import calculate_final_price
 from cards_app.utils.response_types import ResponseType
 
@@ -81,10 +88,11 @@ class BuyStoreCardUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user_id: int | None,
-                      temp_card_id: int,
-                      ) -> BuyStoreCardUseCaseResponse:
+    async def execute(
+            self,
+            current_user_id: int | None,
+            temp_card_id: int,
+    ) -> BuyStoreCardUseCaseResponse:
         """
         Выполняет покупку карты в магазине.
         Args:
@@ -104,7 +112,6 @@ class BuyStoreCardUseCase:
             - SERVER_ERROR: любая другая непредвиденная ошибка.
            """
 
-        # Проверка, что пользователь авторизован
         if current_user_id is None:
             logger.warning(f'Попытка неавторизованного пользователя купить карту в магазине')
             return BuyStoreCardUseCaseResponse(
@@ -492,6 +499,16 @@ class BuyBoxUseCase:
                     amulets_items_dto=amulets_items_dto,
                     card_id=None
                 )
+            else:
+                return BuyBoxUseCaseResponse(
+                    response_type=ResponseType.SERVER_ERROR,
+                    error_message=None,
+                    success_message=None,
+                    current_user=current_user_dto,
+                    exp_items_dto=None,
+                    amulets_items_dto=None,
+                    card_id=None
+                )
 
         except (BoxNotFoundError, InsufficientFundsUserError, NotEnoughSlotsError) as error:
             await self.session_db.rollback()
@@ -526,92 +543,93 @@ class BuyExpItemUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user_id: int | None,
-                      exp_item_id: int,
-                      amount: int
-                      ) -> BuyItemUseCaseDict:
-        """ Выполняет
-            Args:
-               current_user_id: ID User текущего пользователя
-               exp_item_id: ID книги опыта
-               amount: количество книг
-            Returns:
-                BuyItemUseCaseDict:
-                    - status_code (int): HTTP статус-код.
-                    - success (bool): флаг успеха покупки
-                    - success_message (str | None):
-                    - error_message (str | None): сообщение об ошибке
-            Note:
-                - 303: успешное получение данных.
-                - 400: пользователь не авторизован ил не хватает денег
-                - 404: не найдена книга
-                - 500: непредвиденная ошибка
+    async def execute(
+            self,
+            current_user_id: int | None,
+            exp_item_id: int,
+            amount: int
+    ) -> BuyItemUseCaseResponse:
+        """
+        Выполняет покупку N количества книг.
+        Args:
+           current_user_id: ID User текущего пользователя
+           exp_item_id: ID книги опыта
+           amount: количество книг
+        Returns:
+            BuyItemUseCaseResponse:
+                - response_type (str): статус ответа.
+                - success_message (str | None):
+                - error_message (str | None): сообщение об ошибке
+        Note:
+            - REDIRECT_WITH_INFO: успешное получение данных.
+            - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
+            - UNAUTHORIZED: неавторизованный пользователь.
+            - NOT_FOUND: не найдена книга.
+            - SERVER_ERROR: непредвиденная ошибка.
         """
 
-        answer_data = {'status_code': None,
-                       'error_message': None,
-                       'success': None,
-                       'success_message': None,
-                       'current_user_dto': None
-                       }
-
         if current_user_id is None:
-            answer_data['success'] = False
-            answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Для покупки книг опыта вы должны быть авторизованы'
             logger.warning(f'Попытка неавторизованного пользователя купить книгу опыта')
-            return answer_data
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для покупки книг опыта вы должны быть авторизованы',
+                success_message=None
+            )
+
+        await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
+        current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для покупки книг опыта вы должны быть авторизованы',
+                success_message=None
+            )
 
         try:
-            # Блокирует профиль, чтобы избежать гонок
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
+            need_gold: int = await buy_exp_items(
+                session_db=self.session_db,
+                exp_item_id=exp_item_id,
+                exp_item_amount=amount,
+                user=current_user
+            )
+            gold_transaction: dict = await charge_user_gold(
+                session_db=self.session_db,
+                current_user=current_user,
+                need_gold=need_gold
+            )
+            await create_transaction(
+                session_db=self.session_db,
+                user_profile_id=current_user.profile.id,
+                gold_before=gold_transaction['gold_before'],
+                gold_after=gold_transaction['gold_after'],
+                comment=f'Покупка книг опыта в магазине'
+            )
 
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для покупки книг опыта вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя купить книгу опыта')
-                return answer_data
-
-            need_gold: int = await buy_exp_items(session_db=self.session_db,
-                                                 exp_item_id=exp_item_id,
-                                                 exp_item_amount=amount,
-                                                 user=current_user)
-            gold_transaction: dict = await charge_user_gold(session_db=self.session_db,
-                                                            current_user=current_user,
-                                                            need_gold=need_gold)
-            await create_transaction(session_db=self.session_db,
-                                     user_profile_id=current_user.profile.id,
-                                     gold_before=gold_transaction['gold_before'],
-                                     gold_after=gold_transaction['gold_after'],
-                                     comment=f'Покупка книг опыта в магазине')
-
-            answer_data['status_code'] = 303
-            answer_data['success'] = True
-            answer_data['success_message'] = f'Вы успешно купили {amount} книг'
             await self.session_db.commit()
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.REDIRECT_WITH_INFO,
+                error_message=None,
+                success_message=f'Вы успешно купили {amount} книг'
+            )
 
         except (InsufficientFundsUserError, ExpItemNotFoundError,) as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return BuyItemUseCaseResponse(
+                response_type=error.response_type,
+                error_message=str(error),
+                success_message=None
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в BuyExpItemUseCase: {error}', exc_info=True)
-
-        return answer_data
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
+                success_message=None
+            )
 
 
 class BuyAmuletUseCase:
@@ -620,89 +638,90 @@ class BuyAmuletUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user_id: int | None,
-                      amulet_id: int,
-                      ) -> BuyItemUseCaseDict:
-        """ Выполняет
-            Args:
-               current_user_id: ID User текущего пользователя
-               amulet_id: ID амулета
-            Returns:
-                BuyItemUseCaseDict:
-                    - status_code (int): HTTP статус-код.
-                    - success (bool): флаг успеха покупки
-                    - success_message (str | None):
-                    - error_message (str | None): сообщение об ошибке
-            Note:
-                - 303: успешное получение данных.
-                - 400: пользователь не авторизован ил не хватает денег
-                - 404: не найдена книга
-                - 500: непредвиденная ошибка
+    async def execute(
+            self,
+            current_user_id: int | None,
+            amulet_id: int,
+    ) -> BuyItemUseCaseResponse:
+        """
+        Выполняет покупку амулета в магазине.
+        Args:
+           current_user_id: ID User текущего пользователя
+           amulet_id: ID амулета
+        Returns:
+            BuyItemUseCaseResponse:
+                - response_type (str): статус ответа.
+                - success_message (str | None):
+                - error_message (str | None): сообщение об ошибке
+        Note:
+           - REDIRECT_WITH_INFO: успешное получение данных и перенаправление.
+           - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
+           - UNAUTHORIZED: неавторизованный пользователь.
+           - SERVER_ERROR: любая другая непредвиденная ошибка.
         """
 
-        answer_data = {'status_code': None,
-                       'error_message': None,
-                       'success': None,
-                       'success_message': None,
-                       'current_user_dto': None
-                       }
-
         if current_user_id is None:
-            answer_data['success'] = False
-            answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
-            return answer_data
+            logger.warning(f'Попытка неавторизованного пользователя купить амулет')
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=None,
+                success_message=None
+            )
+
+        await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
+        current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя купить амулет')
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=None,
+                success_message=None
+            )
 
         try:
-            # Блокирует профиль, чтобы избежать гонок
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
+            amulet_price: int = await buy_amulet(
+                session_db=self.session_db,
+                amulet_id=amulet_id,
+                user=current_user
+            )
+            gold_transaction: dict = await charge_user_gold(
+                session_db=self.session_db,
+                current_user=current_user,
+                need_gold=amulet_price
+            )
+            await create_transaction(
+                session_db=self.session_db,
+                user_profile_id=current_user.profile.id,
+                gold_before=gold_transaction['gold_before'],
+                gold_after=gold_transaction['gold_after'],
+                comment=f'Покупка книг опыта в магазине'
+            )
 
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для покупки амулета вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя купить амулет')
-                return answer_data
-
-            amulet_price: int = await buy_amulet(session_db=self.session_db,
-                                                 amulet_id=amulet_id,
-                                                 user=current_user)
-            gold_transaction: dict = await charge_user_gold(session_db=self.session_db,
-                                                            current_user=current_user,
-                                                            need_gold=amulet_price)
-            await create_transaction(session_db=self.session_db,
-                                     user_profile_id=current_user.profile.id,
-                                     gold_before=gold_transaction['gold_before'],
-                                     gold_after=gold_transaction['gold_after'],
-                                     comment=f'Покупка книг опыта в магазине')
-
-            answer_data['status_code'] = 303
-            answer_data['success'] = True
-            answer_data['success_message'] = f'Вы успешно купили амулет'
             await self.session_db.commit()
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.REDIRECT_WITH_INFO,
+                error_message=None,
+                success_message=f'Вы успешно купили амулет'
+            )
 
         except (AmuletNotFoundError, AmuletNotOnSaleError, NotEnoughSlotsError,
                 InsufficientFundsUserError, ) as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return BuyItemUseCaseResponse(
+                response_type=error.response_type,
+                error_message=str(error),
+                success_message=None
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в BuyAmuletUseCase: {error}', exc_info=True)
-
-        return answer_data
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
+                success_message=None
+            )
 
 
 class BuyUpgradeItemUseCase:
@@ -711,86 +730,86 @@ class BuyUpgradeItemUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user_id: int | None,
-                      upgrade_item_id: int,
-                      ) -> BuyItemUseCaseDict:
-        """ Выполняет покупку предмета усиления в магазине
-            Args:
-               current_user_id: ID User текущего пользователя
-               upgrade_item_id: ID предмета усиления
-            Returns:
-                BuyItemUseCaseDict:
-                    - status_code (int): HTTP статус-код.
-                    - success (bool): флаг успеха покупки
-                    - success_message (str | None):
-                    - error_message (str | None): сообщение об ошибке
-            Note:
-                - 303: успешное получение данных.
-                - 400: пользователь не авторизован ил не хватает денег
-                - 404: не найдена книга
-                - 500: непредвиденная ошибка
+    async def execute(
+            self,
+            current_user_id: int | None,
+            upgrade_item_id: int,
+    ) -> BuyItemUseCaseResponse:
+        """
+        Выполняет покупку предмета усиления в магазине.
+        Args:
+           current_user_id: ID User текущего пользователя
+           upgrade_item_id: ID предмета усиления
+        Returns:
+            BuyItemUseCaseDict:
+                - response_type (str): статус ответа.
+                - success_message (str | None):
+                - error_message (str | None): сообщение об ошибке
+        Note:
+            - REDIRECT_WITH_INFO: успешное получение данных и перенаправление.
+            - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
+            - UNAUTHORIZED: неавторизованный пользователь.
+            - SERVER_ERROR: любая другая непредвиденная ошибка.
         """
 
-        answer_data = {'status_code': None,
-                       'error_message': None,
-                       'success': None,
-                       'success_message': None,
-                       'current_user_dto': None
-                       }
-
         if current_user_id is None:
-            answer_data['success'] = False
-            answer_data['status_code'] = 400
-            answer_data['error_message'] = f'Для покупки предмета усиления вы должны быть авторизованы'
-            logger.warning(f'Попытка неавторизованного пользователя купить предмет усиления')
-            return answer_data
+            logger.warning(f'Попытка неавторизованного пользователя купить амулет')
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=None,
+                success_message=None
+            )
+
+        await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
+        current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя купить амулет')
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=None,
+                success_message=None
+            )
 
         try:
-            # Блокирует профиль, чтобы избежать гонок
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
+            need_gold: int = await buy_upgrade_item(
+                session_db=self.session_db,
+                upgrade_item_id=upgrade_item_id,
+                user=current_user
+            )
+            gold_transaction: dict = await charge_user_gold(
+                session_db=self.session_db,
+                current_user=current_user,
+                need_gold=need_gold
+            )
+            await create_transaction(
+                session_db=self.session_db,
+                user_profile_id=current_user.profile.id,
+                gold_before=gold_transaction['gold_before'],
+                gold_after=gold_transaction['gold_after'],
+                comment=f'Покупка книг опыта в магазине'
+            )
 
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для покупки предмета усиления вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя купить предмет усиления')
-                return answer_data
-
-            need_gold: int = await buy_upgrade_item(session_db=self.session_db,
-                                                    upgrade_item_id=upgrade_item_id,
-                                                    user=current_user)
-            gold_transaction: dict = await charge_user_gold(session_db=self.session_db,
-                                                            current_user=current_user,
-                                                            need_gold=need_gold)
-            await create_transaction(session_db=self.session_db,
-                                     user_profile_id=current_user.profile.id,
-                                     gold_before=gold_transaction['gold_before'],
-                                     gold_after=gold_transaction['gold_after'],
-                                     comment=f'Покупка книг опыта в магазине')
-
-            answer_data['status_code'] = 303
-            answer_data['success'] = True
-            answer_data['success_message'] = f'Вы успешно купили предмет усиления'
             await self.session_db.commit()
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.REDIRECT_WITH_INFO,
+                error_message=None,
+                success_message=f'Вы успешно купили предмет усиления'
+            )
 
         except (InsufficientFundsUserError, ExpItemNotFoundError,) as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
+            return BuyItemUseCaseResponse(
+                response_type=error.response_type,
+                error_message=str(error),
+                success_message=None
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в BuyUpgradeItemUseCase: {error}', exc_info=True)
-
-        return answer_data
+            return BuyItemUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
+                success_message=None
+            )

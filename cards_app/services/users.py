@@ -20,11 +20,12 @@ async def user_info_to_dto(user: User | None) -> CurrentUserForMenu | None:
     """
 
     if user:
-        current_user_dto = CurrentUserForMenu(id=user.id,
-                                              username=user.username,
-                                              gold=user.profile.gold,
-                                              diamond=user.profile.diamond,
-                                              )
+        current_user_dto = CurrentUserForMenu(
+            id=user.id,
+            username=user.username,
+            gold=user.profile.gold,
+            diamond=user.profile.diamond,
+        )
         return current_user_dto
 
 

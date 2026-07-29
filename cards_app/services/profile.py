@@ -99,11 +99,13 @@ async def get_user_fight_history(session_db: AsyncSession, profile_id: int, limi
         .options(
             joinedload(FightHistory.participant1).joinedload(Profile.user),
             joinedload(FightHistory.participant2).joinedload(Profile.user),
-            joinedload(FightHistory.winner),  # winner – тоже Profile
+            joinedload(FightHistory.winner),
             selectinload(FightHistory.card1).joinedload(Card.class_card),
             selectinload(FightHistory.card1).joinedload(Card.type_card),
+            selectinload(FightHistory.card1).joinedload(Card.rarity_card),
             selectinload(FightHistory.card2).joinedload(Card.class_card),
             selectinload(FightHistory.card2).joinedload(Card.type_card),
+            selectinload(FightHistory.card2).joinedload(Card.rarity_card),
         )
     )
     result = await session_db.execute(stmt_battle_history)

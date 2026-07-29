@@ -348,7 +348,7 @@ class GetAwardStartEventUseCase:
                              f'принят неожиданная награда: {award_of_day.type_award}', exc_info=True)
                 return GetAwardStartEventUseCaseResponse(
                     response_type=ResponseType.SERVER_ERROR,
-                    error_message=f'Упс, произошла непредвиденная ошибка. Попробуйте позже :(',
+                    error_message=None,
                     success_message=None,
                     new_card_id=None
                 )

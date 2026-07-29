@@ -3,21 +3,23 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import UserFavoriteException
-from cards_app.schemas.base import AmuletBase
+from cards_app.schemas.base import AmuletBase, ProfileBase, GuildBase, CardBase
+from cards_app.schemas.profile import FavoriteUsersPageDTO, FavoriteUserDTO, RecordTransaction, TransactionsDTO, \
+    FightHistoryRecordDTO, ProfileFullInfoDTO
+from cards_app.schemas.response import FavoriteUsersUseCaseResponse, UserTransactionsUseCaseResponse, \
+    ViewProfileUseCaseResponse, ToggleFavoriteUserUseCaseResponse
 from cards_app.services.profile import (get_base_info_profile, get_battle_stats,
                                         get_user_fight_history, is_favorite, add_user_to_favorite,
                                         remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user,
                                         get_user_transactions)
 from cards_app.services.cards import get_card_with_details
-from cards_app.schemas.profile import (ProfileResponseDTO, ProfileBaseDTO, GuildDTO,
-                                       CardDTO, FightHistoryRecordDTO, CardBriefDTO, FavoriteUserDTO,
-                                       FavoriteUsersPageDTO, TransactionsDTO,
-                                       RecordTransaction)
+from cards_app.schemas.profile import (
+                                       CardDTO)
 from cards_app.models.users import User
 from cards_app.exeptions import UserNotFoundError, NotEnoughSlotsError
 from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
-from cards_app.types import (ViewProfileUseCaseDict, AddFavoriteUserUseCaseDict, RemoveFavoriteUserUseCaseDict,
-                             FavoriteUsersUseCaseDict, UserTransactionsUseCaseDict)
+
+from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
 
@@ -31,87 +33,80 @@ class ViewProfileUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user: User | None,
-                      target_user_id: int
-                      ) -> ViewProfileUseCaseDict:
+    async def execute(
+            self,
+            current_user: User | None,
+            target_user_id: int
+    ) -> ViewProfileUseCaseResponse:
         """ Выполняет получение и подготовку данных профиля для отображения
             Args:
                 current_user: User + Profile текущего пользователя
                 target_user_id: ID Profile пользователя, чей профиль просматривается
 
             Returns:
-                ViewProfileUseCaseDict:
+                ViewProfileUseCaseResponse:
                     - user_info (ProfileResponseDTO | None): DTO с полной информацией профиля
                     - error_message (str | None): сообщение об ошибке
-                    - status_code (int): HTTP статус-код
+                    - response_type (str): статус ответа.
             Note:
-                - 200: успешное получение данных
-                - 404: пользователь не найден
-                - 500: непредвиденная ошибка
+                - SUCCESS: успешное получение данных
+                - NOT_FOUND: пользователь не найден
+                - SERVER_ERROR: непредвиденная ошибка
         """
-
-        answer_data = {'user_info': None,
-                       'error_message': None,
-                       'status_code': None}
 
         try:
             # Для просмотра своей страницы все равно вызывается загрузка профиля, так как нужна еще и гильдия
-            target_user = await get_base_info_profile(session_db=self.session_db,
-                                                      user_id=target_user_id)
+            target_user = await get_base_info_profile(session_db=self.session_db, user_id=target_user_id)
         except UserNotFoundError as error:
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
-            return answer_data
+            return ViewProfileUseCaseResponse(
+                response_type=error.response_type,
+                error_message=str(error),
+                user_info=None
+            )
         except Exception as error:
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в ViewProfileUseCase: {error}', exc_info=True)
-            return answer_data
-
-        base_dto = ProfileBaseDTO(id=target_user.id,
-                                  username=target_user.username,
-                                  about_user=target_user.profile.about_user,
-                                  profile_pic=target_user.profile.profile_pic,
-                                  win=target_user.profile.win,
-                                  lose=target_user.profile.lose,
-                                  rating=target_user.profile.rating
-                                  )
+            return ViewProfileUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
+                user_info=None
+            )
 
         guild_dto = None
         if target_user.profile.guild:
-            guild_dto = GuildDTO(id=target_user.profile.guild.id,
-                                 name=target_user.profile.guild.name,
-                                 )
+            guild_dto = GuildBase(id=target_user.profile.guild.id, name=target_user.profile.guild.name)
 
         # 4. Избранная карта и амулет
         card_dto = None
         amulet_dto = None
         if target_user.profile.current_card_id:
-            card = await get_card_with_details(session_db=self.session_db,
-                                               card_id=target_user.profile.current_card_id)
+            card = await get_card_with_details(
+                session_db=self.session_db,
+                card_id=target_user.profile.current_card_id
+            )
             if card:
-                card_dto = CardDTO(id=card.id,
-                                   class_card_name=card.class_card.name,
-                                   rarity_card_name=card.rarity_card.name,
-                                   type_card_name=card.type_card.name,
-                                   class_card_pic=card.class_card.image,
-                                   hp=card.hp,
-                                   damage=card.damage,
-                                   skill=card.class_card.skill,
-                                   level=card.level,
-                                   max_level=card.rarity_card.max_level,
-                                   merger=card.merger,
-                                   max_merger=card.max_merger,
-                                   enhancement=card.enhancement,
-                                   max_enhancement=card.max_enhancement,
-                                   )
+                card_dto = CardDTO(
+                    id=card.id,
+                    class_card_name=card.class_card.name,
+                    rarity_card_name=card.rarity_card.name,
+                    type_card_name=card.type_card.name,
+                    class_card_pic=card.class_card.image,
+                    hp=card.hp,
+                    damage=card.damage,
+                    skill=card.class_card.skill,
+                    level=card.level,
+                    max_level=card.rarity_card.max_level,
+                    merger=card.merger,
+                    max_merger=card.max_merger,
+                    enhancement=card.enhancement,
+                    max_enhancement=card.max_enhancement,
+                )
                 if card.amulet:
-                    amulet_dto = AmuletBase(id=card.amulet.id,
-                                            name=card.amulet.amulet_type.name,
-                                            bonus_hp=card.amulet.amulet_type.bonus_hp,
-                                            bonus_damage=card.amulet.amulet_type.bonus_damage,
-                                            )
+                    amulet_dto = AmuletBase(
+                        id=card.amulet.id,
+                        name=card.amulet.amulet_type.name,
+                        bonus_hp=card.amulet.amulet_type.bonus_hp,
+                        bonus_damage=card.amulet.amulet_type.bonus_damage,
+                    )
 
         is_owner = current_user and current_user.id == target_user_id
 
@@ -125,9 +120,11 @@ class ViewProfileUseCase:
         if is_owner:
             role = 'owner'
             user_email = target_user.email
-            fights = await get_user_fight_history(session_db=self.session_db,
-                                                  profile_id=target_user.profile.id,
-                                                  limit=50)
+            fights = await get_user_fight_history(
+                session_db=self.session_db,
+                profile_id=target_user.profile.id,
+                limit=50
+            )
             battle_history = []
             for fight in fights:
 
@@ -150,37 +147,55 @@ class ViewProfileUseCase:
                 # Получаем данные оппонента (пользователь из профиля)
                 opponent_user = opponent_profile.user
 
-                battle_history.append(FightHistoryRecordDTO(date_and_time=fight.date_and_time,
-                                                            result=result,
-                                                            user_card=CardBriefDTO(
-                                                                id=target_card.id,
-                                                                class_name=target_card.class_card.name,
-                                                                type_name=target_card.type_card.name
-                                                            ),
-                                                            opponent_id=opponent_user.id,
-                                                            opponent_username=opponent_user.username,
-                                                            opponent_card=CardBriefDTO(
-                                                                id=opponent_card.id,
-                                                                class_name=opponent_card.class_card.name,
-                                                                type_name=opponent_card.type_card.name
-                                                            )
-                                                            )
-                                      )
+                battle_history.append(
+                    FightHistoryRecordDTO(
+                        date_and_time=fight.date_and_time,
+                        result=result,
+                        user_card=CardBase(
+                            id=target_card.id,
+                            class_card_name=target_card.class_card.name,
+                            rarity_card_name=target_card.rarity_card.name,
+                            type_card_name=target_card.type_card.name,
+                            class_card_pic=target_card.class_card.image,
+                            hp=target_card.hp,
+                            damage=target_card.damage
+                        ),
+                        opponent_id=opponent_user.id,
+                        opponent_username=opponent_user.username,
+                        opponent_card=CardBase(
+                            id=opponent_card.id,
+                            class_card_name=opponent_card.class_card.name,
+                            rarity_card_name=opponent_card.rarity_card.name,
+                            type_card_name=opponent_card.type_card.name,
+                            class_card_pic=opponent_card.class_card.image,
+                            hp=opponent_card.hp,
+                            damage=opponent_card.damage
+                        )
+                    )
+                )
 
         elif current_user is not None:
             role = 'guest'
             if current_user.profile:
-                stats = await get_battle_stats(session_db=self.session_db,
-                                               profile1_id=current_user.profile.id,
-                                               profile2_id=target_user.profile.id
-                                               )
+                stats = await get_battle_stats(
+                    session_db=self.session_db,
+                    profile1_id=current_user.profile.id,
+                    profile2_id=target_user.profile.id
+                )
                 win_vs, lose_vs = stats
-                is_fav = await is_favorite(session_db=self.session_db,
-                                           current_profile_id=current_user.profile.id,
-                                           target_profile_id=target_user.profile.id
-                                           )
+                is_fav = await is_favorite(
+                    session_db=self.session_db,
+                    current_profile_id=current_user.profile.id,
+                    target_profile_id=target_user.profile.id
+                )
 
-        user_info = ProfileResponseDTO(profile=base_dto,
+        user_info = ProfileFullInfoDTO(id=target_user.id,
+                                       username=target_user.username,
+                                       about_user=target_user.profile.about_user,
+                                       profile_pic=target_user.profile.profile_pic,
+                                       win=target_user.profile.win,
+                                       lose=target_user.profile.lose,
+                                       rating=target_user.profile.rating,
                                        guild=guild_dto,
                                        card=card_dto,
                                        amulet=amulet_dto,
@@ -191,9 +206,11 @@ class ViewProfileUseCase:
                                        is_favorite=is_fav,
                                        role=role,
                                        )
-        answer_data['user_info'] = user_info
-        answer_data['status_code'] = 200
-        return answer_data
+        return ViewProfileUseCaseResponse(
+            response_type=ResponseType.SUCCESS,
+            error_message=None,
+            user_info=user_info
+        )
 
 
 class AddFavoriteUserUseCase:
@@ -205,80 +222,77 @@ class AddFavoriteUserUseCase:
     async def execute(self,
                       current_user_id: int | None,
                       target_user_id: int
-                      ) -> AddFavoriteUserUseCaseDict:
-        """ Добавляет целевого пользователя в избранное текущего.
-            Args:
-                current_user_id: ID User текущего пользователя
-                target_user_id: ID Profile пользователя, которого нужно добавить в избранное.
-            Returns:
-                AddFavoriteUserUseCaseDict:
-                    - success (bool): True при успешном добавлении.
-                    - error_message (str | None): сообщение об ошибке.
-                    - status_code (int): HTTP статус-код.
-                    - success_message (str | None): сообщение об успехе.
-            Note:
-                - 303: успешное добавление и перенаправление
-                - 400: ошибка доступа
-                - 500: непредвиденная ошибка
+                      ) -> ToggleFavoriteUserUseCaseResponse:
+        """
+        Добавляет целевого пользователя в избранное текущего.
+        Args:
+            current_user_id: ID User текущего пользователя
+            target_user_id: ID Profile пользователя, которого нужно добавить в избранное.
+        Returns:
+            ToggleFavoriteUserUseCaseResponse:
+                - error_message (str | None): сообщение об ошибке.
+                - response_type (str): статус ответа.
+                - success_message (str | None): сообщение об успехе.
+        Note:
+            - REDIRECT_WITH_INFO: успешное добавление.
+            - REDIRECT_WITH_ERROR: Ошибка добавления.
+            - UNAUTHORIZED: запрос неавторизованного пользователя.
+            - NOT_FOUND: целевой пользователь не найден.
+            - SERVER_ERROR: непредвиденная ошибка
         """
 
-        answer_data = {'success': None,
-                       'error_message': None,
-                       'status_code': None,
-                       'success_message': None,
-                       'current_user_dto': None}
-
         if current_user_id is None:
-            answer_data['success'] = False
-            answer_data['error_message'] = 'Для добавления пользователя в список избранных вы должны быть авторизованы'
-            answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя добавить пользователя в избранное')
-            return answer_data
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для добавления пользователя в список избранных вы должны быть авторизованы',
+                success_message=None
+            )
+
+        await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
+        current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя добавить пользователя в избранное')
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для добавления пользователя в список избранных вы должны быть авторизованы',
+                success_message=None
+            )
 
         try:
-            # Блокирует профиль, чтобы избежать гонок
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
-
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для добавления пользователя в список избранных вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя добавить пользователя в список избранных')
-                return answer_data
 
             await ensure_favorite_slot_available(self.session_db, current_user)
-            await add_user_to_favorite(session_db=self.session_db,
-                                       current_user_id=current_user.profile.id,
-                                       target_user_id=target_user_id)
+            await add_user_to_favorite(
+                session_db=self.session_db,
+                current_user_id=current_user.profile.id,
+                target_user_id=target_user_id
+            )
 
             await self.session_db.commit()
-            answer_data['success'] = True
-            answer_data['status_code'] = 303
-            answer_data['success_message'] = 'Пользователь добавлен в избранное'
-            return answer_data
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=ResponseType.REDIRECT_WITH_INFO,
+                error_message=None,
+                success_message=f'Пользователь добавлен в избранное'
+            )
 
         except (UserFavoriteException, NotEnoughSlotsError) as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
-
-            return answer_data
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=error.response_type,
+                error_message=str(error),
+                success_message=None
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в AddFavoriteUserUseCase: {error}', exc_info=True)
 
-            return answer_data
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
+                success_message=None
+            )
 
 
 class RemoveFavoriteUserUseCase:
@@ -287,83 +301,78 @@ class RemoveFavoriteUserUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self,
-                      current_user_id: int | None,
-                      target_user_id: int
-                      ) -> RemoveFavoriteUserUseCaseDict:
-        """ Удаляет целевого пользователя из избранного текущего.
-            Args:
-                current_user_id: ID User текущего пользователя
-                target_user_id: ID Profile пользователя, которого нужно удалить из избранного.
-            Returns:
-                RemoveFavoriteUserUseCaseDict:
-                    - success (bool): True при успешном удалении.
-                    - error_message (str | None): сообщение об ошибке.
-                    - status_code (int): HTTP статус-код.
-                    - success_message (str | None): сообщение об успехе.
-            Note:
-                - 303: успешное удаление и перенаправление
-                - 400: ошибка доступа
-                - 500: непредвиденная ошибка
+    async def execute(
+            self,
+            current_user_id: int | None,
+            target_user_id: int
+    ) -> ToggleFavoriteUserUseCaseResponse:
+        """
+        Удаляет целевого пользователя из избранного текущего.
+        Args:
+            current_user_id: ID User текущего пользователя
+            target_user_id: ID Profile пользователя, которого нужно удалить из избранного.
+        Returns:
+            ToggleFavoriteUserUseCaseResponse:
+                - error_message (str | None): сообщение об ошибке.
+                - response_type (str): статус ответа.
+                - success_message (str | None): сообщение об успехе.
+        Note:
+            - REDIRECT_WITH_INFO: успешное добавление.
+            - REDIRECT_WITH_ERROR: Ошибка добавления.
+            - UNAUTHORIZED: запрос неавторизованного пользователя.
+            - NOT_FOUND: целевой пользователь не найден.
+            - SERVER_ERROR: непредвиденная ошибка
         """
 
-        answer_data = {'success': None,
-                       'error_message': None,
-                       'status_code': None,
-                       'success_message': None,
-                       'current_user_dto': None
-                       }
-
         if current_user_id is None:
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Для удаления пользователя из списка избранных вы должны быть авторизованы'
-            answer_data['status_code'] = 400
             logger.warning(f'Попытка неавторизованного пользователя удить пользователя из списка избранных')
-            return answer_data
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                success_message=None,
+                error_message=f'Для удаления пользователя из списка избранных вы должны быть авторизованы'
+            )
+
+        await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
+        current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
+        if current_user is None:
+            logger.warning(f'Попытка неавторизованного пользователя удить пользователя из списка избранных')
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                success_message=None,
+                error_message=f'Для удаления пользователя из списка избранных вы должны быть авторизованы'
+            )
 
         try:
-            # Блокирует профиль, чтобы избежать гонок
-            await get_profile_for_update(session_db=self.session_db,
-                                         user_id=current_user_id)
-            # current_user получит профиль из сессии при запросе (используется для создания DTO)
-            current_user = await get_user_with_profile(session_db=self.session_db,
-                                                       user_id=current_user_id)
-
-            if current_user:
-                answer_data['current_user_dto'] = await user_info_to_dto(user=current_user)
-            else:
-                answer_data['success'] = False
-                answer_data['error_message'] = f'Для удаления пользователя из списка избранных вы должны быть авторизованы'
-                answer_data['status_code'] = 400
-                logger.warning(f'Попытка неавторизованного пользователя удить пользователя из списка избранных')
-                return answer_data
-
-            await remove_user_from_favorite(session_db=self.session_db,
-                                            current_user_id=current_user.profile.id,
-                                            target_user_id=target_user_id)
+            await remove_user_from_favorite(
+                session_db=self.session_db,
+                current_user_id=current_user.profile.id,
+                target_user_id=target_user_id
+            )
 
             await self.session_db.commit()
-            answer_data['success'] = True
-            answer_data['status_code'] = 303
-            answer_data['success_message'] = 'Пользователь удален из избранного'
-            return answer_data
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=ResponseType.REDIRECT_WITH_INFO,
+                success_message=f'Пользователь удален из избранного',
+                error_message=None
+            )
 
         except (UserNotFoundError, UserFavoriteException) as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = str(error)
-            answer_data['status_code'] = error.status_code
-
-            return answer_data
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=error.response_type,
+                success_message=None,
+                error_message=str(error)
+            )
 
         except Exception as error:
             await self.session_db.rollback()
-            answer_data['success'] = False
-            answer_data['error_message'] = f'Упс, произошла непредвиденная ошибка. Попробуйте позже :('
-            answer_data['status_code'] = 500
             logger.error(f'Непредвиденная ошибка в RemoveFavoriteUserUseCase: {error}', exc_info=True)
-
-            return answer_data
+            return ToggleFavoriteUserUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                success_message=None,
+                error_message=None
+            )
 
 
 class FavoriteUsersUseCase:
@@ -372,84 +381,64 @@ class FavoriteUsersUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None,
-                      ) -> FavoriteUsersUseCaseDict:
+    async def execute(self, current_user: User | None) -> FavoriteUsersUseCaseResponse:
         """ Формирует FavoriteUsersPageDTO для просмотра списка избранных пользователей
             Args:
                 current_user: User + Profile текущего пользователя
             Returns:
-                FavoriteUsersUseCaseDict:
-                    - favorite_users_dto (FavoriteUsersPageDTO | None): DTO избранных пользователей
+                FavoriteUsersUseCaseResponse:
+                    - favorite_users (FavoriteUsersPageDTO | None): DTO избранных пользователей
                     - error_message (str | None): сообщение об ошибке.
-                    - status_code (int): HTTP статус-код.
+                    - response_type (str): статус ответа.
             Note:
-                - 200: успешное получение данных
+                - SUCCESS: успешное получение данных.
+                - UNAUTHORIZED: неавторизованный пользователь.
+                - SERVER_ERROR: любая ошибка.
         """
 
-        answer_data = {'favorite_users_dto': None,
-                       'status_code': None,
-                       'error_message': None}
-
         if current_user is None:
-            answer_data['error_message'] = f'Вы должны быть авторизованы'
-            answer_data['status_code'] = 404
-            return answer_data
-        all_favorite_users: list = await get_favorite_user(self.session_db,
-                                                           user_profile_id=current_user.profile.id)
-        favorite_users = []
-        for user in all_favorite_users:
-            favorite_users.append(FavoriteUserDTO(id=user.favorite_user.id,
-                                                  username=user.favorite_user.user.username))
-        favorite_users_dto = FavoriteUsersPageDTO(amount_users=len(all_favorite_users),
-                                                  max_amount_users=current_user.profile.max_favorite,
-                                                  favorite_users=favorite_users)
-        answer_data['status_code'] = 200
-        answer_data['favorite_users_dto'] = favorite_users_dto
+            # answer_data['error_message'] = f'Вы должны быть авторизованы'
+            # answer_data['status_code'] = 404
+            # return answer_data
+            return FavoriteUsersUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                error_message=f'Для просмотра избранных вы должны быть авторизованы',
+                favorite_users=None
+            )
 
-        return answer_data
+        try:
+            all_favorite_users: list = await get_favorite_user(self.session_db, user_profile_id=current_user.profile.id)
+            favorite_users = []
+            for user in all_favorite_users:
+                favorite_users.append(
+                    FavoriteUserDTO(
+                        id=user.favorite_user.id,
+                        username=user.favorite_user.user.username
+                    )
+                )
+            favorite_users_dto = FavoriteUsersPageDTO(
+                amount_users=len(all_favorite_users),
+                max_amount_users=current_user.profile.max_favorite,
+                favorite_users=favorite_users
+            )
+            # answer_data['status_code'] = 200
+            # answer_data['favorite_users_dto'] = favorite_users_dto
+            #
+            # return answer_data
+            return FavoriteUsersUseCaseResponse(
+                response_type=ResponseType.SUCCESS,
+                error_message=None,
+                favorite_users=favorite_users_dto
+            )
 
-
-# class ViewUsersRatingUseCase:
-#     """ Use Case для просмотра таблицы рейтинга """
-#
-#     def __init__(self, session_db: AsyncSession):
-#         self.session_db = session_db
-#
-#     async def execute(self, page: int, size: int
-#                       ) -> ViewUsersRatingDict:
-#         """ Выполняет получение новостей и формирует DTO для отображения.
-#             Args:
-#                 page: номер страницы (начиная с 1).
-#                 size: количество новостей на странице.
-#             Returns:
-#                 ViewUsersRatingDict:
-#                     - rating_dto (RatingTableDTO | None): DTO с пользователя и пагинацией.
-#                     - status_code (int):  HTTP статус-код всегда 200
-#         """
-#
-#         answer_data = {'rating_dto': None,
-#                        'status_code': None}
-#
-#         offset = (page - 1) * size
-#         users_models = await get_rating_users(session_db=self.session_db, limit=size, offset=offset)
-#
-#         total = await get_total_users_count(self.session_db)
-#         total_pages = (total + size - 1) // size
-#
-#         user_record = [UserRatingTableDTO(id=user.id,
-#                                           username=user.username,
-#                                           rating=user.profile.rating)
-#                        for user in users_models
-#                        ]
-#
-#         rating_dto = RatingTableDTO(user_rating=user_record,
-#                                     total=total,
-#                                     page=page,
-#                                     size=size,
-#                                     total_pages=total_pages)
-#         answer_data['rating_dto'] = rating_dto
-#         answer_data['status_code'] = 200
-#         return answer_data
+        except Exception as error:
+            await self.session_db.rollback()
+            logger.error(f'Непредвиденная ошибка в FavoriteUsersUseCase: {error}', exc_info=True)
+            return FavoriteUsersUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                error_message=None,
+                favorite_users=None
+            )
 
 
 class UserTransactionsUseCase:
@@ -459,43 +448,49 @@ class UserTransactionsUseCase:
         self.session_db = session_db
 
     async def execute(self, current_user: User | None,
-                      ) -> UserTransactionsUseCaseDict:
+                      ) -> UserTransactionsUseCaseResponse:
         """ Формирует TransactionsDTO пользователя
             Args:
                 current_user: User + Profile текущего пользователя
             Returns:
                 UserTransactionsUseCaseDict:
                     - transactions (TransactionsDTO | None): DTO избранных пользователей
-                    - status_code (int): HTTP статус-код.
-                    - error_message: текст ошибки
+                    - response_type (str): статус ответа.
+                    - error_message: текст ошибки.
             Note:
-                - 200: успешное получение данных
-                - 400: если пользователь не авторизован
+                - SUCCESS: успешное получение данных.
+                - UNAUTHORIZED: если пользователь не авторизован.
+                - SERVER_ERROR: любая другая ошибка.
         """
 
-        answer_data = {'transactions_dto': None,
-                       'error_message': None,
-                       'status_code': None}
-
         if current_user is None:
-            answer_data['error_message'] = f'Для просмотра транзакций вы должны быть авторизованы'
-            answer_data['status_code'] = 400
-            return answer_data
+            return UserTransactionsUseCaseResponse(
+                response_type=ResponseType.UNAUTHORIZED,
+                transactions=None
+            )
 
-        user_transactions: list = await get_user_transactions(session_db=self.session_db,
-                                                              user_id=current_user.id)
-        user_transactions_dto = TransactionsDTO(
-            transactions=[
-                RecordTransaction(date_and_time=tx.date_and_time,
-                                  before=tx.before,
-                                  after=tx.after,
-                                  comment=tx.comment,
-                                  delta=tx.after - tx.before
-                                  )
-                for tx in user_transactions
-            ],
-        )
+        try:
+            user_transactions: list = await get_user_transactions(session_db=self.session_db, user_id=current_user.id)
+            user_transactions_dto = TransactionsDTO(
+                transactions=[
+                    RecordTransaction(
+                        date_and_time=tx.date_and_time,
+                        before=tx.before,
+                        after=tx.after,
+                        comment=tx.comment,
+                        delta=tx.after - tx.before
+                    )
+                    for tx in user_transactions
+                ],
+            )
 
-        answer_data['transactions_dto'] = user_transactions_dto
-        answer_data['status_code'] = 200
-        return answer_data
+            return UserTransactionsUseCaseResponse(
+                response_type=ResponseType.SUCCESS,
+                transactions=user_transactions_dto
+            )
+        except Exception as error:
+            logger.error(f'Непредвиденная ошибка в UserTransactionsUseCase: {error}', exc_info=True)
+            return UserTransactionsUseCaseResponse(
+                response_type=ResponseType.SERVER_ERROR,
+                transactions=None
+            )

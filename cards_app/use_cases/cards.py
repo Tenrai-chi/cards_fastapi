@@ -211,11 +211,9 @@ class GetFreeCardUseCase:
             current_user_id: ID User текущего пользователя или None
         Returns:
             GetFreeCardUseCaseResponse:
-                - success (bool): True при успешном получении карты
                 - new_card_id (int | None): ID новой карты (при успехе)
                 - error_message (str | None): сообщение об ошибке
                 - response_type (str): статус ответа.
-                - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя.
         Raises:
            CooldownNotElapsedError: если не прошло достаточно времени.
         Note:
@@ -231,9 +229,7 @@ class GetFreeCardUseCase:
             logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
             return GetFreeCardUseCaseResponse(
                 response_type=ResponseType.UNAUTHORIZED,
-                success=False,
                 new_card_id=None,
-                current_user=None,
                 error_message=f'Для получения бесплатной карты вы должны быть авторизованы'
             )
 
@@ -244,14 +240,9 @@ class GetFreeCardUseCase:
             logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
             return GetFreeCardUseCaseResponse(
                 response_type=ResponseType.UNAUTHORIZED,
-                success=False,
                 new_card_id=None,
-                current_user=None,
                 error_message=f'Для получения бесплатной карты вы должны быть авторизованы'
             )
-
-        else:
-            current_user_dto = await user_info_to_dto(user=current_user)
         try:
             # Получение и блокировка данных для транзакции
             if current_user.profile.receiving_timer is not None:
@@ -288,9 +279,7 @@ class GetFreeCardUseCase:
 
             return GetFreeCardUseCaseResponse(
                 response_type=ResponseType.REDIRECT_WITH_INFO,
-                success=True,
                 new_card_id=new_card_id,
-                current_user=current_user_dto,
                 error_message=None
             )
 
@@ -299,9 +288,7 @@ class GetFreeCardUseCase:
 
             return GetFreeCardUseCaseResponse(
                 response_type=error.response_type,
-                success=False,
                 new_card_id=None,
-                current_user=current_user_dto,
                 error_message=str(error)
             )
 
@@ -310,9 +297,7 @@ class GetFreeCardUseCase:
             logger.error(f'Непредвиденная ошибка в GetFreeCardUseCase: {error}', exc_info=True)
             return GetFreeCardUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
-                success=False,
                 new_card_id=None,
-                current_user=current_user_dto,
                 error_message=None
             )
 
@@ -588,7 +573,6 @@ class MergeUseCase:
            MergeUseCaseResponse:
                - response_type (str): статус ответа.
                - error_message (str): сообщение об ошибке
-               - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя
         Note:
            - REDIRECT_WITH_INFO: успешное получение данных.
            - UNAUTHORIZED: пользователь не авторизован.
@@ -602,20 +586,16 @@ class MergeUseCase:
             return MergeUseCaseResponse(
                 response_type=ResponseType.UNAUTHORIZED,
                 error_message=f'Для слияния карты вы должны быть авторизованы',
-                current_user=None,
-                success=False,
                 success_message=None
             )
         await get_profile_for_update(session_db=self.session_db, user_id=current_user_id)
-        # current_user получит профиль из сессии при запросе (используется для создания DTO)
         current_user = await get_user_with_profile(session_db=self.session_db, user_id=current_user_id)
+
         if current_user is None:
             logger.warning(f'Попытка неавторизованного пользователя получить бесплатную карту')
             return MergeUseCaseResponse(
                 response_type=ResponseType.UNAUTHORIZED,
                 error_message=f'Для слияния карты вы должны быть авторизованы',
-                current_user=None,
-                success=False,
                 success_message=None
             )
         else:
@@ -631,8 +611,6 @@ class MergeUseCase:
             return MergeUseCaseResponse(
                 response_type=ResponseType.REDIRECT_WITH_INFO,
                 error_message=None,
-                current_user=current_user_dto,
-                success=True,
                 success_message=f'Вы успешно повысили уровень слияния карты'
             )
 
@@ -641,8 +619,6 @@ class MergeUseCase:
             return MergeUseCaseResponse(
                 response_type=error.response_type,
                 error_message=str(error),
-                current_user=current_user_dto,
-                success=False,
                 success_message=None
             )
 
@@ -652,8 +628,6 @@ class MergeUseCase:
             return MergeUseCaseResponse(
                 response_type=ResponseType.SERVER_ERROR,
                 error_message=None,
-                current_user=current_user_dto,
-                success=False,
                 success_message=None
             )
 

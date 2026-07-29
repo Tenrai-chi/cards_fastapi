@@ -547,7 +547,7 @@ async def upgrade_card(
 
     else:
         error_msg = data.error_message
-        encoded_error = quote(error_msg)
+        encoded_error = quote(error_msg) if error_msg else ''
         status_code = RESPONSE_TYPE_TO_HTTP.get(data.response_type, 500)
         url = request.url_for('view_error', error_code=status_code)
         full_url = f'{url}?error={encoded_error}'

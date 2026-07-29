@@ -1,11 +1,15 @@
-from cards_app.schemas.base import UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, \
+from cards_app.schemas.base import (
+    UseCaseResponse, ErrorMessageMixin, CurrentUserMixin,
     SuccessMessageMixin, ExpItemsBase
+)
 from cards_app.schemas.cards import CardInfoDTO, GetFreeCardDTO, UserCardsDTO, CardsTradingDTO, CardsForMergeDTO
+from cards_app.schemas.fight import FightDTO
 from cards_app.schemas.inventory import FullInfoUpgradingDTO, FullInventoryDTO
 from cards_app.schemas.news import NewsDTO
 from cards_app.schemas.profile import RatingTableDTO
+from cards_app.schemas.profile import FavoriteUsersPageDTO, TransactionsDTO, ProfileFullInfoDTO
 from cards_app.schemas.start_event import StartEventAwardsDTO
-from cards_app.schemas.store_new import CardStoreDTO, AllStoreDTO, AmuletRewardDTO
+from cards_app.schemas.store import CardStoreDTO, AllStoreDTO, AmuletRewardDTO
 
 
 # -------- Cards --------
@@ -21,7 +25,7 @@ class ViewGetFreeCardUseCaseResponse(UseCaseResponse):
     get_free_card: GetFreeCardDTO | None
 
 
-class GetFreeCardUseCaseResponse(UseCaseResponse, CurrentUserMixin, SuccessFlagMixin, ErrorMessageMixin):
+class GetFreeCardUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
     """ Ответ для получения бесплатной карты """
 
     new_card_id: int | None
@@ -45,7 +49,7 @@ class ViewMergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
     merge: CardsForMergeDTO | None
 
 
-class MergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin, CurrentUserMixin, SuccessFlagMixin, SuccessMessageMixin):
+class MergeUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessageMixin):
     """ Ответ на запрос слить карты. Пустой, потому что все данные наследуются из миксин. """
 
 
@@ -120,3 +124,37 @@ class BuyBoxUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessageMi
     exp_items_dto: list[ExpItemsBase] | None
     amulets_items_dto: list[AmuletRewardDTO] | None
     card_id: int | None
+
+
+class BuyItemUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessageMixin):
+    """ Ответ на запрос покупки книг опыта """
+
+
+# -------- Users / Profile --------
+class FavoriteUsersUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
+    """ Ответ на запрос получения списка избранных пользователей """
+
+    favorite_users: FavoriteUsersPageDTO | None
+
+
+class UserTransactionsUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
+    """ Ответ на запрос получения списка транзакций """
+
+    transactions: TransactionsDTO | None
+
+
+class ViewProfileUseCaseResponse(UseCaseResponse, ErrorMessageMixin):
+    """ Ответ на запрос получения профиля пользователя """
+
+    user_info: ProfileFullInfoDTO | None
+
+
+class ToggleFavoriteUserUseCaseResponse(UseCaseResponse, ErrorMessageMixin, SuccessMessageMixin):
+    """ Ответ на запрос добавления/удаления пользователя из списка избранных """
+
+
+# -------- Fight --------
+class ProcessFightUseCaseResponse(UseCaseResponse, ErrorMessageMixin, CurrentUserMixin):
+    """ Ответ на запрос вступления в битву """
+
+    fight_dto: FightDTO | None
