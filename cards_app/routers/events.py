@@ -251,7 +251,7 @@ async def get_award_start_event(
         current_user_id: int | None = Depends(get_current_user_id),
 ) -> Response:
     """
-    Получение награды стартового события/
+    Получение награды стартового события.
     Args:
         request: объект запроса FastAPI.
         session_db: сессия базы данных из зависимости.
@@ -264,7 +264,7 @@ async def get_award_start_event(
     Notes:
         Возможные типы ответов:
         - REDIRECT_WITH_INFO: редирект к обновленным данным.
-        - REDIRECT_WITH_ERROR: редирект на страницу получения карты с ошибкой.
+        - REDIRECT_WITH_ERROR и UNAUTHORIZED: редирект на страницу получения карты с ошибкой.
         - UNAUTHORIZED и SERVER_ERROR редирект на страницу с ошибкой.
     """
 
@@ -284,7 +284,7 @@ async def get_award_start_event(
             full_url = f'{url}?success={encoded_success}'
             return RedirectResponse(full_url, status_code=303)
 
-    elif data.response_type == ResponseType.REDIRECT_WITH_ERROR:
+    elif data.response_type in (ResponseType.REDIRECT_WITH_ERROR, ResponseType.UNAUTHORIZED):
         error_msg = data.error_message
         encoded_success = quote(error_msg)
         url = request.url_for('start_event_page')

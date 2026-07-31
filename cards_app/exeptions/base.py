@@ -6,7 +6,7 @@ class AppException(Exception):
     Базовое исключение для всех бизнес-ошибок приложения.
     Attributes:
         message (str): Текст ошибки.
-        response_type (str): статус ответа.
+        response_type (str): тип ответа.
     """
 
     def __init__(self, message: str, response_type: ResponseType):

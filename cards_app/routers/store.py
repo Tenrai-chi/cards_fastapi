@@ -423,7 +423,7 @@ async def buy_upgrade_item_in_store(
         current_user_id: int | None = Depends(get_current_user_id),
 ) -> Response:
     """
-    Покупка амулета в магазине.
+    Покупка предмета усиления в магазине.
     Args:
         request: объект запроса FastAPI.
         upgrade_item_id: ID предмета усиления.

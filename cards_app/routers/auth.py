@@ -34,8 +34,9 @@ async def register(
         password: str = Form(...),
         db_session: AsyncSession = Depends(get_db_session)
 ) -> Response:
-    """ Обрабатывает форму регистрации.
-        При успехе перенаправляет на страницу входа, при ошибке возвращает форму с сообщением об ошибке.
+    """
+    Обрабатывает форму регистрации.
+    При успехе перенаправляет на страницу входа, при ошибке возвращает форму с сообщением об ошибке.
     """
 
     result: dict = await create_user_and_profile(db_session, username, email, password)
@@ -70,9 +71,10 @@ async def login(
         password: str = Form(...),
         db_session: AsyncSession = Depends(get_db_session)
 ) -> Response:
-    """ Обрабатывает форму входа в систему.
-        При успехе устанавливает refresh_token и перенаправляет на страницу входа
-        При ошибке возвращает форму с сообщением об ошибке.
+    """
+    Обрабатывает форму входа в систему.
+    При успехе устанавливает refresh_token и перенаправляет на страницу входа
+    При ошибке возвращает форму с сообщением об ошибке.
     """
 
     result: dict = await authenticate_and_create_tokens(db_session, username, password)

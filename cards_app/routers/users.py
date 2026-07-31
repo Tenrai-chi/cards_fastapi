@@ -9,8 +9,8 @@ from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.routers.response_mapping import RESPONSE_TYPE_TO_HTTP, get_error_template
 from cards_app.schemas.response import (
-    FavoriteUsersUseCaseResponse, UserTransactionsUseCaseResponse,
-    ViewProfileUseCaseResponse, ToggleFavoriteUserUseCaseResponse, ProcessFightUseCaseResponse
+    FavoriteUsersUseCaseResponse, UserTransactionsUseCaseResponse, ViewProfileUseCaseResponse,
+    ToggleFavoriteUserUseCaseResponse, ProcessFightUseCaseResponse
 )
 from cards_app.services.users import user_info_to_dto
 from cards_app.models.users import User
@@ -319,7 +319,7 @@ async def fight_user(
     Notes:
         Возможные типы ответов:
         - REDIRECT_WITH_INFO: КОНКРЕТНО ТУТ РЕНДЕРИТ ИТОГ БОЯ.
-        - REDIRECT_WITH_ERROR: редирект на страницу получения карты с ошибкой.
+        - REDIRECT_WITH_ERROR, UNAUTHORIZED: редирект на страницу получения карты с ошибкой.
         - NOT_FOUND, UNAUTHORIZED и SERVER_ERROR редирект на страницу с ошибкой.
     """
 

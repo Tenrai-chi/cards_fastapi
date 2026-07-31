@@ -171,8 +171,8 @@ async def get_free_card(
     Notes:
         Возможные типы ответов:
         - REDIRECT_WITH_INFO: редирект к обновленным данным.
-        - REDIRECT_WITH_ERROR: редирект на страницу получения карты с ошибкой,
-        - UNAUTHORIZED и SERVER_ERROR редирект на страницу с ошибкой.
+        - REDIRECT_WITH_ERROR и UNAUTHORIZED: редирект на страницу получения карты с ошибкой,
+        - SERVER_ERROR редирект на страницу с ошибкой.
     """
 
     use_case = GetFreeCardUseCase(session_db)
@@ -183,7 +183,7 @@ async def get_free_card(
         url = request.url_for('view_card', card_id=new_card_id)
         return RedirectResponse(url, status_code=303)
 
-    elif data.response_type == ResponseType.REDIRECT_WITH_ERROR:
+    elif data.response_type in (ResponseType.REDIRECT_WITH_ERROR, ResponseType.UNAUTHORIZED):
         error_msg = data.error_message
         encoded_error = quote(error_msg)
         url = request.url_for('get_card')
