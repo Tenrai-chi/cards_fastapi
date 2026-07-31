@@ -3,32 +3,26 @@ from cards_app.utils.response_types import ResponseType
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.schemas.base import AmuletBase
-from cards_app.schemas.inventory import FullInfoUpgradingDTO, CardUpgradingDTO, UpgradeItemsInventoryDTO
-from cards_app.schemas.response import (
-    ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
-    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,
-    MergeUseCaseResponse, ViewUpgradeUseCaseResponse, UpgradeUseCaseResponse
-)
-from cards_app.services.inventory import get_upgrade_items_in_user_inventory
-from cards_app.services.users import get_user_with_profile, user_info_to_dto, get_profile_for_update
 from cards_app.exeptions import (
     NotEnoughSlotsError, CooldownNotElapsedError, CardNotFoundError, NotCardOwnerError,
     TooManyCardsMergeError, SelfMergeError, NotEnoughUpgradeItemsError,
     InsufficientFundsUserError, MaxUpgradeCardError, UserNotFoundError
 )
-from cards_app.services.cards import (
-    get_card_with_details, get_rarities_and_classes, generate_random_card,
-    create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
-    get_cards_for_merge, merge_card
-)
-from cards_app.services.inventory import upgrade_card
-from cards_app.schemas.cards import (
+
+from cards_app.schemas import (
+    AmuletBase, ViewCardUseCaseResponse, ViewGetFreeCardUseCaseResponse,
+    GetFreeCardUseCaseResponse, ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,
+    MergeUseCaseResponse, ViewUpgradeUseCaseResponse, UpgradeUseCaseResponse,
+    FullInfoUpgradingDTO, CardUpgradingDTO, UpgradeItemsInventoryDTO,
     CardDTO, CardInfoDTO, GetFreeCardDTO, RarityCard, ClassCard, UserCardsDTO,
     CardsTradingDTO, OneCardForMergeDTO, CardsForMergeDTO
 )
 
-from cards_app.services.profile import (
+from cards_app.services import (
+    get_card_with_details, get_rarities_and_classes, generate_random_card,
+    create_record_in_history_receiving_card, get_all_cards_user, get_cards_in_trading,
+    get_cards_for_merge, merge_card, get_upgrade_items_in_user_inventory,
+    get_user_with_profile, user_info_to_dto, get_profile_for_update, upgrade_card,
     update_user_receiving_timer, check_can_user_receive_card, get_base_info_profile,
     charge_user_gold, create_transaction
 )
@@ -45,11 +39,7 @@ class ViewCardUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(
-            self,
-            card_id: int,
-            current_user: User | None
-    ) -> ViewCardUseCaseResponse:
+    async def execute(self, card_id: int, current_user: User | None) -> ViewCardUseCaseResponse:
         """
         Выполняет получение информации о карте и надетом амулете при наличии.
         Args:
@@ -60,7 +50,7 @@ class ViewCardUseCase:
                - card_info (CardDTO | None): DTO с данными карты, амулета и флагом владельца.
                - error_message (str | None): текст ошибки, если произошла.
                - response_type (str): статус ответа.
-        Note:
+        Notes:
            - SUCCESS: успешное получение данных.
            - NOT_FOUND: карта не найдена.
            - SERVER_ERROR: любая другая непредвиденная ошибка.
@@ -137,10 +127,7 @@ class ViewGetFreeCardUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(
-            self,
-            current_user: User | None
-    ) -> ViewGetFreeCardUseCaseResponse:
+    async def execute(self, current_user: User | None) -> ViewGetFreeCardUseCaseResponse:
         """
         Получает списки всех классов, редкостей и флаг возможности получить карту сейчас.
         Args:
@@ -149,7 +136,7 @@ class ViewGetFreeCardUseCase:
             ViewGetFreeCardUseCaseResponse:
                 - get_free_card (GetFreeCardDTO): DTO со списками классов, редкостей и флагом can_get_free_card.
                 - response_type (str): статус ответа
-        Note:
+        Notes:
            - SUCCESS: успешное получение данных.
            - SERVER_ERROR: любая непредвиденная ошибка.
         """
@@ -205,10 +192,7 @@ class GetFreeCardUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(
-            self,
-            current_user_id: int | None
-    ) -> GetFreeCardUseCaseResponse:
+    async def execute(self, current_user_id: int | None) -> GetFreeCardUseCaseResponse:
         """
         Выполняет получение бесплатной карты для авторизованного пользователя.
         Проверяет авторизацию, таймер ожидания, наличие слотов.
@@ -222,7 +206,7 @@ class GetFreeCardUseCase:
                 - response_type (str): статус ответа.
         Raises:
            CooldownNotElapsedError: если не прошло достаточно времени.
-        Note:
+        Notes:
            - REDIRECT_WITH_INFO: успешное получение данных и перенаправление.
            - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
            - UNAUTHORIZED: неавторизованный пользователь.
@@ -314,10 +298,7 @@ class ViewUserCardsUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(
-            self,
-            user_id: int
-    ) -> ViewUserCardsUseResponse:
+    async def execute(self, user_id: int) -> ViewUserCardsUseResponse:
         """
         Получает список всех карт пользователя.
         Args:
@@ -327,7 +308,7 @@ class ViewUserCardsUseCase:
                - user_cards_dto (UserCardsDTO | None): DTO с данными карт.
                - error_message (str | None): текст ошибки, если произошла.
                - response_type (str): статус ответа.
-        Note:
+        Notes:
            - SUCCESS: успешное получение данных.
            - NOT_FOUND: пользователь не найден.
            - SERVER_ERROR: любая другая непредвиденная ошибка.
@@ -400,9 +381,9 @@ class ViewTradingUseCase:
            ViewTradingUseCaseResponse:
                - cards_trading (CardsTradingDTO | None): DTO с данными карт, выставленных на продажу пользователями.
                - response_type (str): статус ответа.
-        Note:
+        Notes:
            - SUCCESS: успешное получение данных.
-           - SERVER_ERROR
+           - SERVER_ERROR: любая непредвиденная ошибка.
         """
 
         try:
@@ -450,11 +431,7 @@ class ViewMergeUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(
-            self,
-            current_card_id: int,
-            current_user: User | None
-    ) -> ViewMergeUseCaseResponse:
+    async def execute(self, current_card_id: int, current_user: User | None) -> ViewMergeUseCaseResponse:
         """
         Выполняет получение карт для слияния.
         Args:
@@ -465,7 +442,7 @@ class ViewMergeUseCase:
                - merge (CardsForMergeDTO | None): DTO с данными карт для слияния.
                - response_type (str): статус ответа.
                - error_message (str): сообщение об ошибке
-        Note:
+        Notes:
            - SUCCESS: успешное получение данных.
            - FORBIDDEN: нет прав.
            - UNAUTHORIZED: не авторизован.
@@ -562,9 +539,9 @@ class MergeUseCase:
         self.session_db = session_db
 
     async def execute(
-            self,
-            current_card_id: int,
-            current_user_id: int | None,
+            self, 
+            current_card_id: int, 
+            current_user_id: int | None, 
             cards_for_merge: list[int]
     ) -> MergeUseCaseResponse:
         """
@@ -573,18 +550,18 @@ class MergeUseCase:
         Если количество выбранных карт больше чем требуется, или выбраны недоступные карты,
         то возвращается ошибка, а слияния не происходит.
         Args:
-           current_user_id: ID User текущего пользователя
-           current_card_id: ID текущей карты
-           cards_for_merge: список ID карт для слияния
+           current_user_id: ID User текущего пользователя.
+           current_card_id: ID текущей карты.
+           cards_for_merge: список ID карт для слияния.
         Returns:
            MergeUseCaseResponse:
                - response_type (str): статус ответа.
-               - error_message (str): сообщение об ошибке
-        Note:
+               - error_message (str): сообщение об ошибке.
+        Notes:
            - REDIRECT_WITH_INFO: успешное получение данных.
            - UNAUTHORIZED: пользователь не авторизован.
            - FORBIDDEN: нет прав.
-           - NOT_FOUND: карта(ы) не найдена(ы)
+           - NOT_FOUND: карта(ы) не найдена(ы).
            - SERVER_ERROR: любая другая непредвиденная ошибка.
         """
 
@@ -649,7 +626,7 @@ class ViewUpgradeUseCase:
             current_user: User | None
     ) -> ViewUpgradeUseCaseResponse:
         """
-        Выполняет получение карты и формирует DTO для отображения.
+        Выполняет получение карты и список доступных предметов усиления из инвентаря.
         Args:
            current_user: User + Profile текущего пользователя
            current_card_id: ID текущей карты
@@ -658,7 +635,7 @@ class ViewUpgradeUseCase:
                - upgrade_info (FullInfoUpgradingDTO | None): DTO с информацией для усиления карты
                - response_type (str): статус ответа.
                - error_message (str): сообщение об ошибке
-        Note:
+        Notes:
            - SUCCESS: успешное получение данных.
            - UNAUTHORIZED: пользователь не авторизован
            - FORBIDDEN: нет прав.
@@ -750,19 +727,18 @@ class UpgradeUseCase:
             upgrade_item_id: int
     ) -> UpgradeUseCaseResponse:
         """
-        Улучшение карты с помощью предмета усиления
+        Улучшение карты с помощью предмета усиления.
         Args:
-           current_user_id: ID User текущего пользователя
-           current_card_id: ID текущей карты
-           upgrade_item_id: ID предмета усиления в инвентаре
+           current_user_id: ID User текущего пользователя.
+           current_card_id: ID текущей карты.
+           upgrade_item_id: ID предмета усиления в инвентаре.
         Returns:
            UpgradeUseCaseResponse:
                - response_type (str): статус ответа.
-               - error_message (str | None): сообщение об ошибке
-               - success (bool): флаг о успехе
-               - success_message (str | NOne): сообщение об успехе
-               - current_user_dto (CurrentUserForMenuDTO | None):  DTO текущего пользователя
-        Note:
+               - error_message (str | None): сообщение об ошибке.
+               - success_message (str | NOne): сообщение об успехе.
+               - current_user_dto (CurrentUserForMenuDTO | None):  DTO текущего пользователя.
+        Notes:
             - REDIRECT_WITH_INFO: успешное получение данных.
             - UNAUTHORIZED: не авторизован.
             - FORBIDDEN: нет прав.

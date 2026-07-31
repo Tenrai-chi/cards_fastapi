@@ -2,17 +2,15 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from cards_app.exeptions import UserNotFoundError, NoCurrentCardError, CooldownNotElapsedError
-from cards_app.schemas.fight import Participant, FightDTO
-from cards_app.schemas.response import ProcessFightUseCaseResponse
-from cards_app.services.cards import update_card_experience
-from cards_app.services.fight import (
+
+from cards_app.schemas import Participant, FightDTO, ProcessFightUseCaseResponse
+
+from cards_app.services import (
     validate_battle_preconditions, get_cards_participants, fight_now,
-    create_record_fight_history
+    create_record_fight_history, update_card_experience, update_guild_points_user, reward_loot_after_fight,
+    update_win_lose, add_gold_for_fight, create_transaction, update_rating_user, user_info_to_dto
 )
-from cards_app.services.guild import update_guild_points_user
-from cards_app.services.inventory import reward_loot_after_fight
-from cards_app.services.profile import update_win_lose, add_gold_for_fight, create_transaction, update_rating_user
-from cards_app.services.users import user_info_to_dto
+
 from cards_app.types import AddGoldForFightDict, RewardLootAfterFightDict
 from cards_app.utils.response_types import ResponseType
 
@@ -20,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessFightUseCase:
-    """ Use case для рейтингового боя между двумя игроками с использованием избранных карт.
-    """
+    """ Use case для рейтингового боя между двумя игроками с использованием избранных карт. """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
@@ -42,7 +39,7 @@ class ProcessFightUseCase:
                 - error_message (str | None): сообщение об ошибке
                 - response_type (str): статус ответа.
 
-        Note:
+        Notes:
             - REDIRECT_WITH_INFO: успешная битва (перенаправление на итог битвы)
             - UNAUTHORIZED: неавторизованный пользователь.
             - REDIRECT_WITH_ERROR: битва не смогла состояться, например не прошло достаточно часов.

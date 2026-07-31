@@ -8,17 +8,16 @@ from cards_app.auth.dependencies import get_current_user_with_profile, get_curre
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.routers.response_mapping import RESPONSE_TYPE_TO_HTTP, get_error_template
-from cards_app.schemas.response import (
+from cards_app.schemas import (
     FavoriteUsersUseCaseResponse, UserTransactionsUseCaseResponse, ViewProfileUseCaseResponse,
     ToggleFavoriteUserUseCaseResponse, ProcessFightUseCaseResponse
 )
-from cards_app.services.users import user_info_to_dto
-from cards_app.models.users import User
+from cards_app.services import user_info_to_dto
+from cards_app.models import User
 
-from cards_app.use_cases.figth import ProcessFightUseCase
-from cards_app.use_cases.profile import (
+from cards_app.use_cases import (
     ViewProfileUseCase, AddFavoriteUserUseCase, RemoveFavoriteUserUseCase,
-    FavoriteUsersUseCase, UserTransactionsUseCase
+    FavoriteUsersUseCase, UserTransactionsUseCase, ProcessFightUseCase
 )
 from cards_app.utils.response_types import ResponseType
 

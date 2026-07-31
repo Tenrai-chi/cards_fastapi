@@ -439,7 +439,7 @@ async def get_cards_for_merge(
     return current_card, cards_for_merge
 
 
-async def _increase_merger(
+async def increase_merger(
         session_db: AsyncSession,
         card: Card,
         add_merge: int
@@ -538,7 +538,7 @@ async def merge_card(
     update_tasks = [clear_owner_card(session_db, card) for card in cards_for_merge]
     await asyncio.gather(*update_tasks)
 
-    await _increase_merger(
+    await increase_merger(
         session_db=session_db,
         card=current_card,
         add_merge=len(cards_for_merge)

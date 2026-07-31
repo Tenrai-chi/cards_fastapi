@@ -1,12 +1,12 @@
-from .users import *
 from .cards import *
+from .events import *
 from .exchange import *
 from .guilds import *
-from .events import *
+from .users import *
+
 
 __all__ = [
-    'Base',
-
+    # ------ cards ------
     'ClassCard',
     'Type',
     'Rarity',
@@ -14,12 +14,14 @@ __all__ = [
     'CardStore',
     'HistoryReceivingCards',
 
+    # ------ events ------
     'News',
     'InitialEventAwards',
     'TeamsForBattleEvent',
     'BattleEventParticipants',
     'BattleEventAwards',
 
+    # ------ exchange ------
     'SaleUserCards',
     'ExperienceItems',
     'UsersInventory',
@@ -29,16 +31,17 @@ __all__ = [
     'AmuletItem',
     'UpgradeItemsType',
     'UpgradeItemsUsers',
+    'Boxes',
 
+    # ------ guilds ------
     'GuildBuff',
     'Guild',
 
+    # ------ users ------
     'User',
     'Profile',
     'FavoriteUsers',
     'Transactions',
     'FightHistory',
     'RefreshToken',
-
-    'Boxes'
 ]

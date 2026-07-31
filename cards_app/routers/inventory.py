@@ -8,10 +8,10 @@ from cards_app.auth.dependencies import get_current_user_with_profile, get_curre
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.routers.response_mapping import RESPONSE_TYPE_TO_HTTP, get_error_template
-from cards_app.schemas.response import ViewInventoryUseCaseResponse, SaleAmuletUseCaseResponse
-from cards_app.services.users import user_info_to_dto
-from cards_app.models.users import User
-from cards_app.use_cases.inventory import ViewInventoryUseCase, SaleAmuletUseCase
+from cards_app.schemas import ViewInventoryUseCaseResponse, SaleAmuletUseCaseResponse
+from cards_app.services import user_info_to_dto
+from cards_app.models import User
+from cards_app.use_cases import ViewInventoryUseCase, SaleAmuletUseCase
 from cards_app.utils.response_types import ResponseType
 
 router = APIRouter(prefix='/inventory', tags=['inventory'])
@@ -44,9 +44,7 @@ async def inventory(
     Notes:
         Возможные типы ответов:
         - SUCCESS: рендеринг данных.
-        - UNAUTHORIZED: рендеринг страницы с ошибкой.
-        - BAD_REQUEST: ошибка фильтра.
-        - SERVER_ERROR: рендеринг страницы ошибки.
+        - UNAUTHORIZED, BAD_REQUEST и SERVER_ERROR: рендеринг страницы с ошибкой.
     """
 
     current_user_dto = await user_info_to_dto(current_user)

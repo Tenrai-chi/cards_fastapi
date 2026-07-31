@@ -15,11 +15,10 @@ from cards_app.schemas.response import (
     ViewUserCardsUseResponse, ViewTradingUseCaseResponse, ViewMergeUseCaseResponse,
     MergeUseCaseResponse, ViewUpgradeUseCaseResponse, UpgradeUseCaseResponse
 )
-from cards_app.services.users import user_info_to_dto
-from cards_app.use_cases.cards import (
-    ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase,
-    ViewUserCardsUseCase, ViewTradingUseCase, ViewMergeUseCase,
-    MergeUseCase, ViewUpgradeUseCase, UpgradeUseCase
+from cards_app.services import user_info_to_dto
+from cards_app.use_cases import (
+    ViewCardUseCase, ViewGetFreeCardUseCase, GetFreeCardUseCase, ViewUserCardsUseCase,
+    ViewTradingUseCase, ViewMergeUseCase, MergeUseCase, ViewUpgradeUseCase, UpgradeUseCase
 )
 from cards_app.utils.response_types import ResponseType
 from cards_app.routers.response_mapping import RESPONSE_TYPE_TO_HTTP, get_error_template
@@ -158,7 +157,7 @@ async def get_free_card(
         current_user_id: int | None = Depends(get_current_user_id),
 ) -> Response:
     """
-    Обработка запроса на получение бесплатной карты
+    Обработка запроса на получение бесплатной карты.
     Args:
         request: объект запроса FastAPI.
         session_db: сессия базы данных из зависимости.

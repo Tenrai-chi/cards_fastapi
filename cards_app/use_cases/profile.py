@@ -2,27 +2,23 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cards_app.exeptions import UserFavoriteException
-from cards_app.schemas.base import AmuletBase, GuildBase, CardBase
-from cards_app.schemas.profile import (
+from cards_app.exeptions import UserFavoriteException, UserNotFoundError, NotEnoughSlotsError
+
+from cards_app.schemas import (
     FavoriteUsersPageDTO, FavoriteUserDTO, RecordTransaction, TransactionsDTO,
-    FightHistoryRecordDTO, ProfileFullInfoDTO
-)
-from cards_app.schemas.response import (
-    FavoriteUsersUseCaseResponse, UserTransactionsUseCaseResponse,
+    FightHistoryRecordDTO, ProfileFullInfoDTO, AmuletBase, GuildBase, CardBase,
+    FavoriteUsersUseCaseResponse, UserTransactionsUseCaseResponse, CardDTO,
     ViewProfileUseCaseResponse, ToggleFavoriteUserUseCaseResponse
 )
-from cards_app.services.profile import (
+
+from cards_app.services import (
     get_base_info_profile, get_battle_stats,
     get_user_fight_history, is_favorite, add_user_to_favorite,
     remove_user_from_favorite, ensure_favorite_slot_available, get_favorite_user,
-    get_user_transactions
+    get_user_transactions, get_card_with_details, get_profile_for_update, get_user_with_profile
 )
-from cards_app.services.cards import get_card_with_details
-from cards_app.schemas.profile import CardDTO
+
 from cards_app.models.users import User
-from cards_app.exeptions import UserNotFoundError, NotEnoughSlotsError
-from cards_app.services.users import get_profile_for_update, get_user_with_profile
 
 from cards_app.utils.response_types import ResponseType
 
@@ -55,7 +51,7 @@ class ViewProfileUseCase:
                 - user_info (ProfileResponseDTO | None): DTO с полной информацией профиля
                 - error_message (str | None): сообщение об ошибке
                 - response_type (str): статус ответа.
-        Note:
+        Notes:
             - SUCCESS: успешное получение данных
             - NOT_FOUND: пользователь не найден
             - SERVER_ERROR: непредвиденная ошибка
@@ -242,7 +238,7 @@ class AddFavoriteUserUseCase:
                 - error_message (str | None): сообщение об ошибке.
                 - response_type (str): статус ответа.
                 - success_message (str | None): сообщение об успехе.
-        Note:
+        Notes:
             - REDIRECT_WITH_INFO: успешное добавление.
             - REDIRECT_WITH_ERROR: Ошибка добавления.
             - UNAUTHORIZED: запрос неавторизованного пользователя.
@@ -325,7 +321,7 @@ class RemoveFavoriteUserUseCase:
                 - error_message (str | None): сообщение об ошибке.
                 - response_type (str): статус ответа.
                 - success_message (str | None): сообщение об успехе.
-        Note:
+        Notes:
             - REDIRECT_WITH_INFO: успешное добавление.
             - REDIRECT_WITH_ERROR: Ошибка добавления.
             - UNAUTHORIZED: запрос неавторизованного пользователя.
@@ -400,7 +396,7 @@ class FavoriteUsersUseCase:
                 - favorite_users (FavoriteUsersPageDTO | None): DTO избранных пользователей
                 - error_message (str | None): сообщение об ошибке.
                 - response_type (str): статус ответа.
-        Note:
+        Notes:
             - SUCCESS: успешное получение данных.
             - UNAUTHORIZED: неавторизованный пользователь.
             - SERVER_ERROR: любая ошибка.
@@ -450,8 +446,7 @@ class UserTransactionsUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user: User | None,
-                      ) -> UserTransactionsUseCaseResponse:
+    async def execute(self, current_user: User | None) -> UserTransactionsUseCaseResponse:
         """
         Формирует TransactionsDTO пользователя
         Args:
@@ -461,7 +456,7 @@ class UserTransactionsUseCase:
                 - transactions (TransactionsDTO | None): DTO избранных пользователей
                 - response_type (str): статус ответа.
                 - error_message: текст ошибки.
-        Note:
+        Notes:
             - SUCCESS: успешное получение данных.
             - UNAUTHORIZED: если пользователь не авторизован.
             - SERVER_ERROR: любая другая ошибка.

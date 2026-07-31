@@ -8,8 +8,45 @@ from .store import *
 from .user import *
 
 __all__ = [
+    # ------ base ------
     'AppException',
 
+    # ------ card ------
+    'CardException',
+    'CardNotFoundError',
+    'NoCurrentCardError',
+    'NotCardOwnerError',
+    'EmptyCardsForMergeError',
+    'TooManyCardsMergeError',
+    'MaxUpgradeCardError',
+    'SelfMergeError',
+
+    # ------ fight ------
+    'FightException',
+    'SelfFightError',
+
+    # ------ inventory ------
+    'InventoryException',
+    'NotEnoughSlotsError',
+    'AmuletNotFoundError',
+    'NotAmuletOwnerError',
+    'NotEnoughUpgradeItemsError',
+
+    # ------ resource ------
+    'ResourceException',
+    'InsufficientFundsUserError',
+
+    # ------ store ------
+    'StoreException',
+    'CardInStoreNotFoundError',
+    'CardNotOnSaleError',
+    'BoxNotFoundError',
+    'ExpItemNotFoundError',
+    'AmuletNotFoundError',
+    'AmuletNotOnSaleError',
+    'UpgradeItemNotFoundError',
+
+    # ------ user ------
     'UserException',
     'UserNotFoundError',
     'CooldownNotElapsedError',
@@ -18,33 +55,4 @@ __all__ = [
     'SelfFavoriteRemoveError',
     'DuplicateFavoriteError',
     'FavoriteNotFoundError',
-
-    'CardException',
-    'CardNotFoundError',
-    'NoCurrentCardError',
-
-    'StoreException',
-    'CardInStoreNotFoundError',
-    'CardNotOnSaleError',
-
-    'ResourceException',
-    'InsufficientFundsUserError',
-
-    'InventoryException',
-    'NotEnoughSlotsError',
-
-    'FightException',
-    'SelfFightError',
-    'AmuletNotFoundError',
-    'NotAmuletOwnerError',
-    'NotCardOwnerError',
-    'EmptyCardsForMergeError',
-    'TooManyCardsMergeError',
-    'SelfMergeError',
-    'BoxNotFoundError',
-    'AmuletNotOnSaleError',
-    'UpgradeItemNotFoundError',
-    'ExpItemNotFoundError',
-    'NotEnoughUpgradeItemsError',
-    'MaxUpgradeCardError'
 ]

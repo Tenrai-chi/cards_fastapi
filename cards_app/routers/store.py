@@ -8,18 +8,17 @@ from cards_app.auth.dependencies import get_current_user_with_profile, get_curre
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
 from cards_app.routers.response_mapping import RESPONSE_TYPE_TO_HTTP, get_error_template
-from cards_app.schemas.response import (
+from cards_app.schemas import (
     ViewCardStoreUseCaseResponse, ViewItemStoreUseCaseResponse,
     BuyStoreCardUseCaseResponse, BuyBoxUseCaseResponse, BuyItemUseCaseResponse
 )
-from cards_app.services.users import user_info_to_dto
-from cards_app.use_cases.store import (
+from cards_app.services import user_info_to_dto
+from cards_app.use_cases import (
     BuyStoreCardUseCase, ViewItemStoreUseCase, BuyBoxUseCase, BuyExpItemUseCase,
-    BuyAmuletUseCase, BuyUpgradeItemUseCase
+    BuyAmuletUseCase, BuyUpgradeItemUseCase, ViewCardStoreUseCase
 )
 
 from cards_app.models.users import User
-from cards_app.use_cases.store import ViewCardStoreUseCase
 from cards_app.utils.response_types import ResponseType
 
 router = APIRouter(prefix='/store', tags=['store'])

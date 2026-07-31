@@ -6,24 +6,23 @@ from cards_app.exeptions import (
     CardInStoreNotFoundError, BoxNotFoundError, ExpItemNotFoundError, AmuletNotFoundError,
     AmuletNotOnSaleError
 )
-from cards_app.schemas.base import ExpItemsBase
-from cards_app.schemas.response import ViewCardStoreUseCaseResponse, ViewItemStoreUseCaseResponse, \
-    BuyStoreCardUseCaseResponse, BuyBoxUseCaseResponse, BuyItemUseCaseResponse
-from cards_app.schemas.store import (
+
+from cards_app.schemas import (
+    ViewCardStoreUseCaseResponse, ViewItemStoreUseCaseResponse, ExpItemsBase,
+    BuyStoreCardUseCaseResponse, BuyBoxUseCaseResponse, BuyItemUseCaseResponse,
     CardInStoreDTO, CardStoreDTO, BoxStoreDTO, AmuletsStoreDTO,
     UpgradeItemsStoreDTO, ExpItemsStoreDTO, AllStoreDTO, AmuletRewardDTO
 )
-from cards_app.services.cards import (
+
+from cards_app.services import (
     get_temp_card_in_store, create_new_card_from_template,
-    create_record_in_history_receiving_card
-)
-from cards_app.services.profile import check_can_user_receive_card, charge_user_gold, create_transaction
-from cards_app.services.store import (
-    get_cards_in_store, get_box_in_store, get_amulets_in_store,
+    create_record_in_history_receiving_card, check_can_user_receive_card, charge_user_gold,
+    get_cards_in_store, get_box_in_store, get_amulets_in_store, create_transaction,
     get_upgrade_items_in_store, get_exp_items_in_store, get_box_info, open_box_card,
-    open_box_exp_item, open_box_amulet, buy_exp_items, buy_amulet, buy_upgrade_item
+    open_box_exp_item, open_box_amulet, buy_exp_items, buy_amulet, buy_upgrade_item,
+    get_profile_for_update, get_user_with_profile, user_info_to_dto
 )
-from cards_app.services.users import get_profile_for_update, get_user_with_profile, user_info_to_dto
+
 from cards_app.utils.common import calculate_final_price
 from cards_app.utils.response_types import ResponseType
 
@@ -31,10 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 class ViewCardStoreUseCase:
-    """
-    Use case для просмотра магазина карт.
-    Преобразует данные для вывода информации о продаваемых картах.
-    """
+    """ Use case для просмотра магазина карт. """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
@@ -46,7 +42,7 @@ class ViewCardStoreUseCase:
             ViewCardStoreUseCaseResponse:
                 - response_type (str): статус ответа.
                 - card_store (CardStoreDTO | None): DTO со списком карт в магазине.
-        Note:
+        Notes:
             - SUCCESS: успешное получение данных.
             - SERVER_ERROR: непредвиденная ошибка.
         """
@@ -106,7 +102,7 @@ class BuyStoreCardUseCase:
                - success_message (str | None): сообщение об успехе.
                - new_card_id (int | None): ID созданной карты (при успехе).
                - response_type (str): статус ответа.
-        Note:
+        Notes:
             - REDIRECT_WITH_INFO: успешное получение данных.
             - UNAUTHORIZED: неавторизованный пользователь.
             - REDIRECT_WITH_ERROR: неверный фильтр.
@@ -224,7 +220,7 @@ class ViewItemStoreUseCase:
             ViewItemStoreUseCaseResponse:
                 - response_type (str): статус ответа.
                 - store (ItemStoreDTO | None): DTO  ассортиментов магазина
-        Note:
+        Notes:
             - SUCCESS: успешное получение данных.
             - BAD_REQUEST: неправильный параметр фильтра.
             - SERVER_ERROR: непредвиденная ошибка
@@ -384,7 +380,7 @@ class BuyBoxUseCase:
                 - error_message: сообщение об ошибке.
                 - success_message: сообщение об успехе.
                 - current_user_dto: DTO текущего пользователя для перенаправления.
-        Note:
+        Notes:
             - REDIRECT_WITH_INFO: успешное открытие сундука.
             - REDIRECT_WITH_ERROR: какая-то ошибка, например нехватка золота или места в инвентаре.
             - UNAUTHORIZED: пользователь не авторизован.
@@ -562,7 +558,7 @@ class BuyExpItemUseCase:
                 - response_type (str): статус ответа.
                 - success_message (str | None):
                 - error_message (str | None): сообщение об ошибке
-        Note:
+        Notes:
             - REDIRECT_WITH_INFO: успешное получение данных.
             - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
             - UNAUTHORIZED: неавторизованный пользователь.
@@ -655,7 +651,7 @@ class BuyAmuletUseCase:
                 - response_type (str): статус ответа.
                 - success_message (str | None):
                 - error_message (str | None): сообщение об ошибке
-        Note:
+        Notes:
            - REDIRECT_WITH_INFO: успешное получение данных и перенаправление.
            - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
            - UNAUTHORIZED: неавторизованный пользователь.
@@ -747,7 +743,7 @@ class BuyUpgradeItemUseCase:
                 - response_type (str): статус ответа.
                 - success_message (str | None):
                 - error_message (str | None): сообщение об ошибке
-        Note:
+        Notes:
             - REDIRECT_WITH_INFO: успешное получение данных и перенаправление.
             - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
             - UNAUTHORIZED: неавторизованный пользователь.

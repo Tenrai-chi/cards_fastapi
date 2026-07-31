@@ -4,17 +4,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import InventoryException
 from cards_app.models import User
-from cards_app.schemas.inventory import (
+
+from cards_app.schemas import (
     ExpItemsInventoryDTO, AmuletsInventoryDTO,
-    UpgradeItemsInventoryDTO, FullInventoryDTO
+    UpgradeItemsInventoryDTO, FullInventoryDTO,
+    ViewInventoryUseCaseResponse, SaleAmuletUseCaseResponse
 )
-from cards_app.schemas.response import ViewInventoryUseCaseResponse, SaleAmuletUseCaseResponse
-from cards_app.services.inventory import (
+
+from cards_app.services import (
     get_amulets_in_user_inventory, get_upgrade_items_in_user_inventory,
-    get_exp_items_in_user_inventory, delete_amulet
+    get_exp_items_in_user_inventory, delete_amulet, add_user_gold, create_transaction,
+    get_profile_for_update, get_user_with_profile
 )
-from cards_app.services.profile import add_user_gold, create_transaction
-from cards_app.services.users import get_profile_for_update, get_user_with_profile
+
 from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
@@ -37,7 +39,7 @@ class ViewInventoryUseCase:
                - inventory(InventoryDTO | None): DTO избранных пользователей
                - response_type (str): статус ответа.
                - error_message: текст ошибки
-        Note:
+        Notes:
             - SUCCESS: успешное получение данных.
             - UNAUTHORIZED: неавторизованный пользователь.
             - BAD_REQUEST: неверный фильтр.
@@ -182,8 +184,7 @@ class SaleAmuletUseCase:
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
 
-    async def execute(self, current_user_id: int | None, amulet_id: int
-                      ) -> SaleAmuletUseCaseResponse:
+    async def execute(self, current_user_id: int | None, amulet_id: int) -> SaleAmuletUseCaseResponse:
         """
         Выполняет запрос на продажу амулета из инвентаря пользователя.
         Args:
@@ -194,7 +195,7 @@ class SaleAmuletUseCase:
                - response_type (str): статус ответа.
                - error_message: текст ошибки
                - success_message: сообщение об успехе
-        Note:
+        Notes:
            - REDIRECT_WITH_INFO: успешная продажа.
            - REDIRECT_WITH_ERROR: перенаправление с ошибкой.
            - UNAUTHORIZED: неавторизованный пользователь.

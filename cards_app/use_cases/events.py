@@ -3,36 +3,30 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cards_app.exeptions import NotEnoughSlotsError
-from cards_app.schemas.profile import UserRatingTableDTO, RatingTableDTO
-from cards_app.schemas.response import (
-    ViewNewsUseCaseResponse, ViewUsersRatingResponse, ViewStartEventUseCaseResponse,
-    GetAwardStartEventUseCaseResponse
+
+from cards_app.schemas import (
+    UserRatingTableDTO, RatingTableDTO, ViewNewsUseCaseResponse, ViewUsersRatingResponse,
+    ViewStartEventUseCaseResponse, GetAwardStartEventUseCaseResponse, NewsRecordDTO, NewsDTO,
+    StartEventAwardDTO, StartEventAwardsDTO
 )
-from cards_app.services.cards import generate_card_start_event, create_record_in_history_receiving_card
-from cards_app.services.events import (
-    get_total_news_count, get_paginated_news, get_info_start_event_awards,
-    get_info_award, update_profile_event_award_received
-)
-from cards_app.schemas.news import NewsRecordDTO, NewsDTO
-from cards_app.schemas.start_event import StartEventAwardDTO, StartEventAwardsDTO
-from cards_app.services.store import get_book_by_name, get_amulet_by_name
-from cards_app.services.users import get_profile_for_update, get_user_with_profile
+
 from cards_app.models import User
-from cards_app.services.inventory import add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch
-from cards_app.services.events import can_get_start_event_award
-from cards_app.services.profile import (
-    check_can_user_receive_card, add_user_gold, create_transaction, get_rating_users,
-    get_total_users_count
+
+from cards_app.services import (
+    generate_card_start_event, create_record_in_history_receiving_card, get_total_news_count, get_paginated_news,
+    get_info_start_event_awards, get_user_with_profile, can_get_start_event_award, get_info_award,
+    update_profile_event_award_received, get_book_by_name, get_amulet_by_name, get_profile_for_update,
+    add_experience_books_batch, can_user_receive_amulet, give_amulets_to_user_butch, check_can_user_receive_card,
+    add_user_gold, create_transaction, get_rating_users, get_total_users_count
 )
+
 from cards_app.utils.response_types import ResponseType
 
 logger = logging.getLogger(__name__)
 
 
 class ViewNewsUseCase:
-    """ Use case для просмотра новостей.
-        Преобразует список новостей в DTO с информацией о страницах.
-    """
+    """ Use case для просмотра новостей. """
 
     def __init__(self, session_db: AsyncSession):
         self.session_db = session_db
@@ -47,7 +41,7 @@ class ViewNewsUseCase:
             ViewNewsUseCaseResponse:
                 - news (NewsDTO): DTO с новостями и пагинацией.
                 - response_type (str): статус ответа.
-        Note:
+        Notes:
            - SUCCESS: успешное получение данных.
            - SERVER_ERROR: любая непредвиденная ошибка.
         """
@@ -105,7 +99,7 @@ class ViewUsersRatingUseCase:
             ViewUsersRatingResponse:
                 - rating (RatingTableDTO | None): DTO с пользователя и пагинацией.
                 - response_type (str): статус ответа.
-        Note:
+        Notes:
            - SUCCESS: успешное получение данных.
            - SERVER_ERROR: любая непредвиденная ошибка.
         """
@@ -160,7 +154,7 @@ class ViewStartEventUseCase:
             ViewStartEventUseCaseResponse:
                 - start_event_awards_dto (StartEventAwardsDTO | None): DTO с новостями и пагинацией (если пользователь авторизован).
                 - response_type (str): статус ответа.
-        Note:
+        Notes:
             - SUCCESS: успешное получение данных.
             - SERVER_ERROR: ошибка.
         """
@@ -219,8 +213,8 @@ class GetAwardStartEventUseCase:
                - new_card_id (int | None): ID созданной карты, если награда была картой
                - response_type (str): статус ответа.
                - current_user_dto (CurrentUserForMenuDTO | None): DTO текущего пользователя
-        Note:
-           - REDIRECT_WITH_INFO: успешное получение (перенаправление на просмотр карты или на ту же страницу).
+        Notes:
+           - REDIRECT_WITH_INFO: успешное получение награды.
            - REDIRECT_WITH_ERROR: если получены все награды, или если по какой-то причине нельзя получить награду.
            - UNAUTHORIZED: неавторизованный пользователь.
            - SERVER_ERROR: непредвиденная ошибка.

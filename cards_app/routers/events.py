@@ -7,14 +7,16 @@ from urllib.parse import quote
 from cards_app.auth.dependencies import get_current_user_with_profile, get_current_user_id
 from cards_app.config.database import get_db_session
 from cards_app.config.settings import settings
-from cards_app.models.users import User
+from cards_app.models import User
 from cards_app.routers.response_mapping import TEMPLATE_FOR_STATUS, get_error_template, RESPONSE_TYPE_TO_HTTP
-from cards_app.schemas.response import (
+from cards_app.schemas import (
     ViewNewsUseCaseResponse, ViewUsersRatingResponse, ViewStartEventUseCaseResponse,
     GetAwardStartEventUseCaseResponse
 )
-from cards_app.services.users import user_info_to_dto
-from cards_app.use_cases.events import ViewUsersRatingUseCase, ViewNewsUseCase, ViewStartEventUseCase, GetAwardStartEventUseCase
+from cards_app.services import user_info_to_dto
+from cards_app.use_cases import (
+    ViewUsersRatingUseCase, ViewNewsUseCase, ViewStartEventUseCase, GetAwardStartEventUseCase
+)
 from cards_app.utils.response_types import ResponseType
 
 
